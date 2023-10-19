@@ -15,7 +15,7 @@ class Advice {
   }
 }
 
-function FCIRegulationPosition() {
+function FCIPositionAdvice() {
   const [excelData, setExcelData] = useState([]);
   const [excelFile, setExcelFile] = useState(null);
   const [responseData, setResponseData] = useState([{ id: '', specieType: '', operationAdvices: [Advice] }]);
@@ -65,7 +65,6 @@ function FCIRegulationPosition() {
       <input type="file" onChange={handleFileChange} />
       <button onClick={processExcel}>Process Excel</button>
       <button onClick={sendDataToBackend}>Send Data to Backend</button>
-      
       <br/>
       <div>
         <CRow>
@@ -130,4 +129,4 @@ function FCIRegulationPosition() {
   );
 }
 
-export default FCIRegulationPosition;
+export default FCIPositionAdvice;

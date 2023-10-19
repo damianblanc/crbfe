@@ -21,6 +21,7 @@ const Tables = React.lazy(() => import('./views/base/tables/Tables'))
 const Tooltips = React.lazy(() => import('./views/base/tooltips/Tooltips'))
 const FCIRegulationManager = React.lazy(() => import('./views/base/fciRegulationManager/FCIRegulationManager'))
 const FCIRegulationPosition = React.lazy(() => import('./views/base/fciRegulationPosition/FCIRegulationPosition'))
+const FCIPositionAdvice = React.lazy(() => import('./views/base/fciPositionAdvice/FCIPositionAdvice'))
 
 // Buttons
 const Buttons = React.lazy(() => import('./views/buttons/buttons/Buttons'))
@@ -98,7 +99,8 @@ const routes = [
   { path: '/notifications/toasts', name: 'Toasts', element: Toasts },
   { path: '/widgets', name: 'Widgets', element: Widgets },
   { path: '/base/fciRegulationManager', name: 'FCIRegulationManager', element: FCIRegulationManager },
-  { path: '/base/fciRegulationPosition', name: 'FCIRegulationPosition', element: FCIRegulationPosition }
+  { path: '/base/fciRegulationPosition', name: 'FCIRegulationPosition', element: FCIRegulationPosition },
+  { path: '/base/fciPositionAdvice', name: 'FCIPositionAdvice', element: FCIPositionAdvice }
 ]
 
 export default routes

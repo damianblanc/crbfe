@@ -62,6 +62,11 @@ const _nav = [
         name: 'FCI Regulation Position',
         to: '/base/fciRegulationPosition',
       },
+      {
+        component: CNavItem,
+        name: 'FCI Position Advices',
+        to: '/base/fciPositionAdvice',
+      },
 
   //     {
   //       component: CNavItem,

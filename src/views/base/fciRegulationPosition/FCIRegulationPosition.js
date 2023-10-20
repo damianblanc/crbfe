@@ -1,24 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 
-import { CCard, CCardBody, CCardHeader, CCol, CRow} from '@coreui/react'
+import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton} from '@coreui/react'
+import { cilFile, cilTrash, cilPaperPlane, cilMediaSkipBackward } from '@coreui/icons';
+
+import CIcon from '@coreui/icons-react'
 
 import './FCIRegulationTable.css';
+import './Popup.css';
 
-class Advice {
-  constructor(id, specieName, operationAdvice, quantity, price) {
-    this.id = id;
-    this.specieName = specieName;
-    this.operationAdvice = operationAdvice;
-    this.quantity = quantity;
-    this.price = price;
-  }
-}
+import Popup from 'reactjs-popup';
+import 'reactjs-popup/dist/index.css';
 
 function FCIRegulationPosition() {
+  const [data, setData] = useState([{ id: '', jsonPosition: '', position: '' }]);
   const [excelData, setExcelData] = useState([]);
   const [excelFile, setExcelFile] = useState(null);
-  const [responseData, setResponseData] = useState([{ id: '', specieType: '', operationAdvices: [Advice] }]);
+  const [responseData, setResponseData] = useState({ id: '', fciSymbol: '', timestamp: '', overview: '', jsonPosition: '', position: '' });
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -41,8 +39,19 @@ function FCIRegulationPosition() {
     reader.readAsBinaryString(excelFile);
   };
 
+  const downloadExcel = (fciSymbol, timestamp, jsonPosition) => {
+    var json = JSON.parse(jsonPosition);
+    const worksheet = XLSX.utils.json_to_sheet(json);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Position");
+    let buffer = XLSX.write(workbook, { bookType: "xlsx", type: "buffer" });
+    XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+    XLSX.writeFile(workbook, "Position_" + fciSymbol + "_" + timestamp + ".xlsx");
+  };
+
   const sendDataToBackend = () => {
-    fetch('http://localhost:8098/api/v1/calculate-disarrangement/fci/bth58/advice/criteria/price_uniformly_distribution', {
+    processExcel();
+    fetch('http://localhost:8098/api/v1/fci/bth58/position', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -53,69 +62,138 @@ function FCIRegulationPosition() {
       .then((data) => {
         console.log('Backend response:', data);
         setResponseData(data);
-        console.log("responseData = " + JSON.stringify(responseData));
+        console.log("responseData! = " + JSON.stringify(responseData));
       })    
       .catch((error) => {
         console.error('Error sending data to the backend:', error);
       });
   };
 
+  const deletePosition = () => {
+
+  }
+
+  useEffect(() => {
+    fetch('http://localhost:8098/api/v1/fci/BTH58/position')
+      .then((response) => response.json())
+      .then((json) => setData(json));
+  }, []);
+
   return (
     <div>
-      <input type="file" onChange={handleFileChange} />
-      <button onClick={processExcel}>Process Excel</button>
-      <button onClick={sendDataToBackend}>Send Data to Backend</button>
-      
+       <CRow>
+          <CCol xs={12}>
+            <CCard>
+              <CCardHeader>
+                <strong className="text-medium-emphasis small">Upload Position</strong>
+              </CCardHeader>
+              <CCardBody>
+              <table>
+              <thead>
+                  <tr>
+                    <th>Format</th>
+                    <th>File</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                <tr>
+                  <td width="15%">Excel file (.xlsx format)</td>
+                  <td width="60%"><input type="file" onChange={handleFileChange}></input></td>
+                  {/* <td><button onClick={processExcel}>Process Excel</button></td> */}
+                  <td>
+                  <CButton shape='rounded' size='sm' color='string' onClick={() => sendDataToBackend()}>
+                      <CIcon icon={cilPaperPlane} size="xl"/>
+                  </CButton>
+                  </td>
+                </tr>
+                </tbody>
+                </table>  
+              </CCardBody>
+            </CCard>
+        </CCol>
+      </CRow> 
       <br/>
       <div>
         <CRow>
         <CCol xs={12}>
           <CCard>
-            <CCardHeader>
-              <strong>FCI Regulation Position Advices</strong>
+            <CCardHeader className="text-medium-emphasis small">
+              <strong>FCI Regulation Positions</strong>
             </CCardHeader>
             <CCardBody>
               <p className="text-medium-emphasis small">
-                Refers to a <code>&lt;FCI Regulation Position List&gt;</code> that advices operations based on positon detected biases
+                 <code>&lt;FCI Regulation Position List&gt;</code>
               </p>
               <table>
                 <thead>
                   <tr>
-                    <th>Specie</th>
-                    {/* <tr>
-                          <th>Name</th>
-                          <th>Advice</th>
-                          <th>Quantity</th>
-                          <th>Price</th>
-                        </tr> */}
+                    <th>#</th>
+                    <th>FCI</th>
+                    <th>Date</th>
+                    <th>Overview</th>
+                    <th>Position</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {responseData.map((item) => 
+                  {data.map((item) => 
                     <React.Fragment key={item.id}>
                     <tr>
-                    <td>{item.specieType}</td>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Name</th>
-                          <th>Operation Advice</th>
-                          <th>Quantity</th>
-                          <th>Current Market Price</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {item.operationAdvices.map((advice) => 
-                              <React.Fragment key={advice.id}>
-                                <tr>
-                                  <td>{advice.specieName}</td> 
-                                  <td>{advice.operationAdvice}</td> 
-                                  <td>{advice.quantity}</td> 
-                                  <td>{advice.price}</td> 
-                                </tr>
-                              </React.Fragment> )}
-                      </tbody>
-                    </table>
+                      <td width="5%">{item.id}</td>
+                      <td width="5%">{item.fciSymbol}</td>
+                      <td width="15%">{item.timestamp}</td>
+                      <td width="30%">{item.overview}</td>
+                      <td>
+                        <>
+                          <Popup trigger={<button>Position Details</button>} position="left center" modal>
+                          <CRow>
+                            <CCol xs={12}>
+                              <CCard>
+                                <CCardHeader>
+                                  <strong className="text-medium-emphasis small"><code>#{item.id} - Position Details</code></strong>
+                                </CCardHeader>
+                                <CCardBody>
+                                <table>
+                                  <thead>
+                                    <tr/>
+                                  </thead>
+                                  <tbody>  
+                                    <tr>
+                                      <td>
+                                      <CRow>
+                                        <CCol xs={12}>
+                                          <CCard>
+                                          <CCardHeader>
+                                            <strong className="text-medium-emphasis small">{item.fciSymbol} - {item.timestamp} - {item.overview}</strong>
+                                          </CCardHeader>
+                                          <CCardBody>
+                                            {item.jsonPosition}
+                                            </CCardBody>
+                                        </CCard>
+                                        </CCol>
+                                      </CRow> 
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                  </table>
+                              </CCardBody>
+                            </CCard>
+                            </CCol>
+                          </CRow> 
+                          </Popup>
+                        </>
+                      </td>
+                      <td>
+                        <>
+                          <CButton shape='rounded' size='sm' color='string' onClick={() => deletePosition()}>
+                                <CIcon icon={cilTrash} size="xl"/>
+                          </CButton>
+                          <CButton shape='rounded' size='sm' color='string' onClick={() => downloadExcel(item.fciSymbol, item.timestamp, item.jsonPosition) }>
+                                <CIcon icon={cilFile} size="xl"/>
+                          </CButton>
+                        </>
+                      </td>
                     </tr>
                     </React.Fragment>
                   )}

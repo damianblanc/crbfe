@@ -210,12 +210,25 @@ const _nav = [
   //     },
   //   ],
   // },
+ 
   {
-    component: CNavItem,
-    name: 'Charts',
-    to: '/charts',
-    icon: <CIcon icon={cilChartPie} customClassName="nav-icon" />,
-  },
+    component: CNavGroup,
+    name: 'Reports & Analisys',
+    to: '/report',
+    icon: <CIcon icon={cilPuzzle} customClassName="nav-icon" />,
+    items: [
+        {
+          component: CNavItem,
+          name: 'Original Charts',
+          to: '/report/charts',
+        },
+        {
+          component: CNavItem,
+          name: 'FCI Position Bias',
+          to: '/report/FCIPositionBias',
+        },
+      ],
+  }
   // {
   //   component: CNavGroup,
   //   name: 'Icons',

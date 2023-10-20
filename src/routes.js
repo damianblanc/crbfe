@@ -22,6 +22,7 @@ const Tooltips = React.lazy(() => import('./views/base/tooltips/Tooltips'))
 const FCIRegulationManager = React.lazy(() => import('./views/base/fciRegulationManager/FCIRegulationManager'))
 const FCIRegulationPosition = React.lazy(() => import('./views/base/fciRegulationPosition/FCIRegulationPosition'))
 const FCIPositionAdvice = React.lazy(() => import('./views/base/fciPositionAdvice/FCIPositionAdvice'))
+const FCIPositionBias = React.lazy(() => import('./views/report/fciPositionBias/FCIPositionBias'))
 
 // Buttons
 const Buttons = React.lazy(() => import('./views/buttons/buttons/Buttons'))
@@ -38,7 +39,7 @@ const Range = React.lazy(() => import('./views/forms/range/Range'))
 const Select = React.lazy(() => import('./views/forms/select/Select'))
 const Validation = React.lazy(() => import('./views/forms/validation/Validation'))
 
-const Charts = React.lazy(() => import('./views/charts/Charts'))
+const Charts = React.lazy(() => import('./views/report/charts/Charts'))
 
 // Icons
 const CoreUIIcons = React.lazy(() => import('./views/icons/coreui-icons/CoreUIIcons'))
@@ -100,7 +101,8 @@ const routes = [
   { path: '/widgets', name: 'Widgets', element: Widgets },
   { path: '/base/fciRegulationManager', name: 'FCIRegulationManager', element: FCIRegulationManager },
   { path: '/base/fciRegulationPosition', name: 'FCIRegulationPosition', element: FCIRegulationPosition },
-  { path: '/base/fciPositionAdvice', name: 'FCIPositionAdvice', element: FCIPositionAdvice }
+  { path: '/base/fciPositionAdvice', name: 'FCIPositionAdvice', element: FCIPositionAdvice },
+  { path: '/report/fciPositionBias', name: 'FCIPositionBias', element: FCIPositionBias }
 ]
 
 export default routes

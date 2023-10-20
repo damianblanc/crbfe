@@ -4,6 +4,9 @@ import { CCard, CCardBody, CCol, CCardHeader, CRow, CButton } from '@coreui/reac
 import CIcon from '@coreui/icons-react'
 import { cilFile, cilTrash, cilPaperPlane, cilMediaSkipBackward } from '@coreui/icons';
 
+import Popup from 'reactjs-popup';
+import 'reactjs-popup/dist/index.css';
+
 import {
   CChartBar,
   CChartDoughnut,
@@ -34,6 +37,7 @@ function FCIPositionBias() {
     const [regulationPercentageData, setRegulationPercentageData] = useState({ percentages: [FCIPercentage]});
     const [regulationValueData, setRegulationValueData] = useState({ values: [FCIValue]});
     const [queryRow, setQueryRow] = useState({ fci: '', position: ''});
+    const [currentPositionData, setCurrentPositionData] = useState({ id: '', fciSymbol: '', createdOn: '', overview: '', jsonPosition: '', position: '' });
 
     // http://localhost:8098/api/v1/calculate-bias/fci/BTH58/position/1/regulation-valued
     // http://localhost:8098/api/v1/calculate-bias/fci/BTH58/position/1/regulation-percentages
@@ -112,6 +116,24 @@ function FCIPositionBias() {
       });
   };
 
+  const getFCICurrentPositionData = (fciSymbol, positionId) => {
+    fetch('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/' + positionId, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('Backend response:', data);
+        setCurrentPositionData(data);
+        console.log("responseData! = " + JSON.stringify(currentPositionData));
+      })    
+      .catch((error) => {
+        console.error('Error sending data to the backend:', error);
+      });
+  };
+
 
 // const FCIPositionBias = () => {
 const random = () => Math.round(Math.random() * 100)
@@ -147,7 +169,10 @@ const random = () => Math.round(Math.random() * 100)
                   <CButton shape='rounded' size='sm' color='string' onClick={() => getFCIPositionPercentages(queryRow.fci, queryRow.position)}>
                       <CIcon icon={cilPaperPlane} size="xl"/>
                   </CButton>
-                  <CButton shape='rounded' size='sm' color='string' onClick={() => getFCIRegulationPercentages('BTH58', 1)}>
+                  <CButton shape='rounded' size='sm' color='string' onClick={() => getFCIRegulationPercentages(queryRow.fci, queryRow.position)}>
+                      <CIcon icon={cilPaperPlane} size="xl"/>
+                  </CButton>
+                  <CButton shape='rounded' size='sm' color='string' onClick={() => getFCICurrentPositionData(queryRow.fci, queryRow.position)}>
                       <CIcon icon={cilPaperPlane} size="xl"/>
                   </CButton>
                   </td>
@@ -159,8 +184,83 @@ const random = () => Math.round(Math.random() * 100)
         </CCol>
     </CRow>
 
-{ console.log(positionPercentageData.percentages.map((p) => p.specieType).join())}
-{ console.log(positionPercentageData.percentages.map((p) => p.percentage).join()) }
+
+    <CRow>
+        <CCol xs={12}>
+          <CCard>
+            <CCardHeader className="text-medium-emphasis small">
+              <strong>FCI Regulation Positions</strong>
+            </CCardHeader>
+            <CCardBody>
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>FCI</th>
+                    <th>Date</th>
+                    <th>Overview</th>
+                    <th>Position</th>
+                  </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                      <td width="5%">{currentPositionData.id}</td>
+                      <td width="10%">{queryRow.fci}</td>
+                      <td width="21%">{currentPositionData.createdOn}</td>
+                      <td width="52%">{currentPositionData.overview}</td>
+                      <td>
+                        <>
+                          <Popup trigger={<button>Position Details</button>} position="left center" modal>
+                          <CRow>
+                            <CCol xs={12}>
+                              <CCard>
+                                <CCardHeader>
+                                  <strong className="text-medium-emphasis small"><code>#{currentPositionData.id} - Position Details</code></strong>
+                                </CCardHeader>
+                                <CCardBody>
+                                <table>
+                                  <thead>
+                                    <tr/>
+                                  </thead>
+                                  <tbody>  
+                                    <tr>
+                                      <td>
+                                      <CRow>
+                                        <CCol xs={12}>
+                                          <CCard>
+                                          <CCardHeader>
+                                            <strong className="text-medium-emphasis small">{currentPositionData.fciSymbol} - {currentPositionData.timestamp} - {currentPositionData.overview}</strong>
+                                          </CCardHeader>
+                                          <CCardBody>
+                                            {currentPositionData.jsonPosition}
+                                            </CCardBody>
+                                        </CCard>
+                                        </CCol>
+                                      </CRow> 
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                  </table>
+                              </CCardBody>
+                            </CCard>
+                            </CCol>
+                          </CRow> 
+                          </Popup>
+                        </>
+                      </td>
+                      <td>
+                      </td>
+                    </tr>
+                </tbody>
+              </table>
+          </CCardBody>
+         </CCard>
+        </CCol>
+       </CRow> 
+
+
+{/* { console.log(positionPercentageData.percentages.map((p) => p.specieType).join())}
+{ console.log(positionPercentageData.percentages.map((p) => p.percentage).join()) } */}
   
   <CRow>
       <CCol xs={12}>
@@ -169,13 +269,12 @@ const random = () => Math.round(Math.random() * 100)
             <strong className="text-medium-emphasis small">FCI Regulation Composion and Current FCI Position comparison</strong>
           </CCardHeader>
           <CCardBody>
-            </CCardBody>
-        </CCard>
-      </CCol>
+          <CRow>
+     
 
-          <CCol xs={6}>
+          <CCol xs={3}>
               <CCard className="mb-4">
-                <CCardHeader>Expected Regulation Definition</CCardHeader>
+                <CCardHeader>Expected FCI Regulation Definition</CCardHeader>
                 <CCardBody>
                   <CChartBar
                     data={{
@@ -194,7 +293,46 @@ const random = () => Math.round(Math.random() * 100)
               </CCard>
             </CCol>
 
-            <CCol xs={6}>
+            <CCol xs={3}>
+          <CCard className="mb-4">
+            <CCardHeader>Expected FCI Regulation Definition</CCardHeader>
+            <CCardBody>
+              <CChartPie
+                data={{
+                  labels: regulationPercentageData.percentages.map((p) => p.specieType),
+                  datasets: [
+                    {
+                      data: regulationPercentageData.percentages.map((p) => p.percentage),
+                      backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
+                      hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
+                    },
+                  ],
+                }}
+              />
+            </CCardBody>
+          </CCard>
+        </CCol>
+
+        <CCol xs={3}>
+          <CCard className="mb-4">
+            <CCardHeader>Current FCI Position Bias</CCardHeader>
+            <CCardBody>
+              <CChartDoughnut
+                data={{
+                  labels: positionPercentageData.percentages.map((p) => p.specieType),
+                  datasets: [
+                    {
+                      backgroundColor: ['#41B883', '#E46651', '#00D8FF', '#DD1B16'],
+                      data: positionPercentageData.percentages.map((p) => p.percentage),
+                    },
+                  ],
+                }}
+              />
+            </CCardBody>
+          </CCard>
+        </CCol>
+
+            <CCol xs={3}>
               <CCard className="mb-4">
                 <CCardHeader>Current FCI Position</CCardHeader>
                 <CCardBody>
@@ -214,6 +352,11 @@ const random = () => Math.round(Math.random() * 100)
                 </CCardBody>
               </CCard>
             </CCol>
+            </CRow>
+            </CCardBody>
+        </CCard>
+      </CCol>
+
 
         {/* <CCol xs={6}>
           <CCard className="mb-4">
@@ -245,44 +388,12 @@ const random = () => Math.round(Math.random() * 100)
             </CCardBody>
           </CCard>
         </CCol> */}
-        {/* <CCol xs={6}>
-          <CCard className="mb-4">
-            <CCardHeader>Current Position Bias</CCardHeader>
-            <CCardBody>
-              <CChartDoughnut
-                data={{
-                  labels: ['Equity', 'Bond', 'Cash'],
-                  datasets: [
-                    {
-                      backgroundColor: ['#41B883', '#E46651', '#00D8FF', '#DD1B16'],
-                      data: [14.9909, 17.7550, 67.2540],
-                    },
-                  ],
-                }}
-              />
-            </CCardBody>
-          </CCard>
-        </CCol>
-        <CCol xs={6}>
-          <CCard className="mb-4">
-            <CCardHeader>Current Position Bias</CCardHeader>
-            <CCardBody>
-              <CChartPie
-                data={{
-                  labels: ['Equity', 'Bond', 'Cash'],
-                  datasets: [
-                    {
-                      data: [14.9909, 17.7550, 67.2540],
-                      backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
-                      hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
-                    },
-                  ],
-                }}
-              />
-            </CCardBody>
-          </CCard>
-        </CCol>
-        <CCol xs={6}>
+
+       
+
+       
+       
+      {/*  <CCol xs={6}>
           <CCard className="mb-4">
             <CCardHeader>Polar Area Chart</CCardHeader>
             <CCardBody>

@@ -17,22 +17,22 @@ class FCIRegulation {
 }
 
 class FCIComposition {
-  constructor(id, specieType, percentage) {
-    this.id = id;
-    this.specieType = specieType;
+  constructor(fciCompositionId, fciSpecieTypeId, percentage) {
+    this.fciCompositionId = fciCompositionId;
+    this.fciSpecieTypeId = fciSpecieTypeId;
     this.percentage = percentage;
   }
 }
 
 function findAndSumNumbers (inputString) {
-  const numbers = inputString.match(/\d+/g);
+  const numbers = inputString.match(/\d+\.?\d+/g);
   if (numbers) {
-    return numbers.reduce((acc, num) => acc + parseInt(num, 10), 0);
+    return Math.round(numbers.reduce((acc, num) => acc + parseFloat(num, 10), 0));
   }
 };
 
 function FCIRegulationTable() {
-  const [data, setData] = useState([{ id: '', symbol: '', name: '', description: '', composition: [FCIComposition], compositionWithId: [FCIComposition] }]);
+  const [data, setData] = useState([{ id: '', symbol: '', name: '', description: '', composition: [FCIComposition]}]);
   const [newRow, setNewRow] = useState({ id: '', symbol: '', name: '', description: '', composition: '' });
   const [editRow, setEditRow] = useState({ id: '', symbol: '', name: '', description: '', composition: '', compositionWithId: '' });
   const [editRowId, setEditRowId] = useState(null);
@@ -41,35 +41,35 @@ function FCIRegulationTable() {
   const [validationErrors, setValidationErrors] = useState({});
   const [validationEditErrors, setValidationEditErrors] = useState({});
   const tableDataToSend = JSON.stringify(data, null, 2);
-  const [specieTypes, setSpecieTypes] = useState([]);
+  const [specieTypes, setSpecieTypes] = useState([{fciSpecieTypeId: '', name: '', description: ''}]);
   // const [sum, setSum] = useState(0);
   
 
 
   const validateNewRow = (row) => {
     const errors = {};
-    const regex = /^(?:[^:]+:\d+(\.\d+)?%)(?:;[^:]+:\d+(\.\d+)?%)*$/;
+    // const regex = /^(?:[^:]+:\d+(\.\d+)?%)(?:;[^:]+:\d+(\.\d+)?%)*$/;
     
-    if (!newRow.symbol) errors.symbol = 'Symbol is required';
-    if (!newRow.name) errors.name = 'Name is required';
-    if (!newRow.description) errors.description = 'Description is required';
-    if (!newRow.composition) { 
-        errors.composition = 'Composition is required';
-    } else {
-      if (!regex.test(newRow.composition.replace(/\s/g, ''))) {
-        errors.composition = 'Composition format should be "<Specie Type>:<Percentage Value> + %" separated by semicolons. I/E: Equity:40.5%;Bond:39.5%;Cash:20%';
-      } else {
-        if (findAndSumNumbers(newRow.composition) !== 100) errors.composition = 'Composition Percentage must close to 100%';
-      }
-    }
+    // if (!newRow.symbol) errors.symbol = 'Symbol is required';
+    // if (!newRow.name) errors.name = 'Name is required';
+    // if (!newRow.description) errors.description = 'Description is required';
+    // if (!newRow.composition) { 
+    //     errors.composition = 'Composition is required';
+    // } else {
+    //   if (!regex.test(newRow.composition.replace(/\s/g, ''))) {
+    //     errors.composition = 'Composition format should be "<Specie Type>:<Percentage Value> + %" separated by semicolons. I/E: Equity:40.5%;Bond:39.5%;Cash:20%';
+    //   } else {
+    //     if (findAndSumNumbers(newRow.composition) !== 100) errors.composition = 'Composition Percentage must close to 100%';
+    //   }
+    // }
 
-    var w = newRow.composition.replace(/\s/g, '').replace(/%/g, '').split(";");
-    w.map((specie) => {
-      var sp = specie.split(":").at(0);
-      if (!specieTypes.includes(sp)) {
-        errors.composition = 'Composition: ' + sp + ' is not a recognized specie type';
-      }
-    });
+    // var w = newRow.composition.replace(/\s/g, '').replace(/%/g, '').split(";");
+    // w.map((specie) => {
+    //   var sp = specie.split(":").at(0);
+    //   if (!specieTypes.includes(sp)) {
+    //     errors.composition = 'Composition: ' + sp + ' is not a recognized specie type';
+    //   }
+    // });
 
     // if (findAndSumNumbers(editRow.composition) !== 100) {
     //     errors.composition = 'Composition Percentage must close to 100%';
@@ -80,7 +80,7 @@ function FCIRegulationTable() {
   };
 
   const validateEditRow = () => {
-    const regex = /^(?:[^:]+:\d+(\.\d+)?%)(?:;[^:]+:\d+(\.\d+)?%)*$/;
+    const regex = /^(?:[^:]+:\d+(\.\d+)?%)(?:-[^:]+:\d+(\.\d+)?%)*$/;
     const errors = {};
     if (!editRow.symbol) errors.symbol = 'Symbol is required';
     if (!editRow.name) errors.name = 'Name is required';
@@ -88,34 +88,41 @@ function FCIRegulationTable() {
     if (!editRow.composition) { 
         errors.composition = 'Composition is required';
     } else if (!regex.test(String(editRow.composition).replace(/\s/g, ''))) {
-        errors.composition = 'Composition format should be "<Specie Type>:<Percentage Value> + %" separated by semicolons. I/E: Equity:40.5%;Bond:39.5%;Cash:20%';
+        errors.composition = 'Composition format should be "<Specie Type>:<Percentage Value> + %" separated by hyphens. I/E: Equity:40.5% - Bond:39.5% - Cash:20%';
     }
      
     var w = String(editRow.composition).replace(/\s/g, '').replace(/%/g, '').split(";");
     w.map((specie) => {
       var sp = specie.split(":").at(0);
-      if (!specieTypes.includes(sp)) {
+      if (!specieTypes.find(element => element.name === sp)) {
         errors.composition = 'Composition: ' + sp + ' is not a recognized specie type';
       }
     });
         
-    // if (findAndSumNumbers(editRow.composition) !== 100) {
-    //     errors.composition = 'Composition Percentage must close to 100%';
-    //   }
-    // }
+    if (findAndSumNumbers(editRow.composition) !== 100) {
+      errors.composition = 'Composition Percentage must close to 100%';
+    };
+
     return errors;
-  };
+  }
 
   useEffect(() => {
     fetch('http://localhost:8098/api/v1/fci')
       .then((response) => response.json())
-      .then((json) => setData(json));
+      .then((json) => { 
+        setData(json);
+        console.table(JSON.stringify(json));
+      });
   }, []);
 
+  /** Specie Types retrieving */
   useEffect(() => {
-    fetch('http://localhost:8098/api/v1/component/specie-types')
+    fetch('http://localhost:8098/api/v1/component/specie-type')
       .then((response) => response.json())
-      .then((json) => setSpecieTypes(json));
+      .then((json) => {
+        setSpecieTypes(json);
+        console.table(JSON.stringify(json));
+      })
   }, []);
 
   const clearAddRow = (() => {
@@ -134,6 +141,26 @@ function FCIRegulationTable() {
         }
       });
     }
+
+console.log("JSON.stringify(newRow, null, 1)" + JSON.stringify(newRow, null, 1));
+
+    fetch('http://localhost:8098/api/v1/fci', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(newRow, null, 1),
+    })
+      .then((response) => response.json())
+      .then((responseData) => {
+        console.log('Backend response:', responseData);
+        setNewRow({ ...data, responseData })
+        // console.log("responseData! = " + JSON.stringify(data));
+      })    
+      .catch((error) => {
+        console.error('Error sending data to the backend:', error);
+      });
+
   };
 
   const handleDeleteRow = (id, symbol) => {
@@ -149,7 +176,7 @@ function FCIRegulationTable() {
   const handleEditRowForward = (row) => {
     setEditRowId(row.id)
     setEditRow({ ...editRow, id: row.id, symbol: row.symbol, name: row.name, description: row.description,
-      composition: row.composition.map((c) => c.specieType + ":" + c.percentage + "%").join(';'),
+      composition: row.composition.map((c) => c !== undefined && findSpecieTypeById(c.fciSpecieTypeId).name + ": " + c.percentage + "%").join(' - '),
       compositionWithId : row.composition.map((c) => c.id + ":" + c.specieType).join(';')});
   }
 
@@ -157,28 +184,17 @@ function FCIRegulationTable() {
     setEditRowId(0);
   }
 
-  const findSpecieTypeId = (specieType) => {
-    var y;
-    editRow.compositionWithId.split(";").map((c) => {
-      var r = c.split(":");
-      if (r.at(1) === specieType) {
-        y = r.at(0);
-      }
-    })
-    return y;
-  }
-
   const handleEditRow = () => {
     const errors = validateEditRow(data.filter((r) => r.id !== editRow.id));
     if (Object.keys(errors).length === 0) {
       const f = new FCIRegulation(editRow.id, editRow.symbol, editRow.name, editRow.description, 
-        editRow.composition.replace(/\s/g, '').replace(/%/g, '').split(";") 
+        editRow.composition.replace(/\s/g, '').replace(/%/g, '').split("-") 
             .map((c) => {
                 var r = c.split(":");
-                return new FCIComposition(findSpecieTypeId(r.at(0)), r.at(0), parseFloat(r.at(1)));
+                return new FCIComposition(findSpecieTypeByName(r.at(0)).fciSpecieTypeId, findSpecieTypeByName(r.at(0)).fciSpecieTypeId, parseFloat(r.at(1)));
        }));
       
-      fetch('http://localhost:8098/api/v1/fci', {
+      fetch('http://localhost:8098/api/v1/fci/' + editRow.symbol + "'", {
         method: 'PUT',
         body: JSON.stringify(f),
         headers: {
@@ -195,6 +211,28 @@ function FCIRegulationTable() {
       setValidationEditErrors(errors);
     }
   };
+
+  // function getName(id) {
+  //   if(id === undefined) {return}
+  //   var element = findSpecieTypeById(id);
+  //   if (element) {
+  //     return element.name;
+  //   }
+  // }
+
+  function findSpecieTypeById(id) {
+    if(id === undefined) {return}
+    return specieTypes.find((element) => {
+      return element.fciSpecieTypeId === id;
+    })
+  }
+
+  function findSpecieTypeByName(name) {
+    if(name === undefined) {return}
+    return specieTypes.find((element) => {
+      return element.name === name;
+    })
+  }
 
   return (
        <CRow>
@@ -273,7 +311,7 @@ function FCIRegulationTable() {
                                   <CIcon icon={cilPaperPlane} size="xl"/>
                               </CButton>
 
-                              <CButton shape='rounded' size='sm' color='string' onClick={() => handleEditRowBack}>
+                              <CButton shape='rounded' size='sm' color='string' onClick={() => handleEditRowBack()}>
                                   <CIcon icon={cilMediaSkipBackward} size="xl"/>
                               </CButton>
                             </>
@@ -295,14 +333,14 @@ function FCIRegulationTable() {
                           {editRowId === row.id ? (
                             <input
                               type="text"
-                              placeholder={row.composition.map((c) => c.specieType + ": " + c.percentage + "% ").join('- ')}
+                              placeholder={row.composition.map((c) =>  + ": " + c.percentage + "% ").join('- ')}
                               value={editRow.composition}
                               onChange={(e) =>
                                 setEditRow({ ...editRow, composition: e.target.value })
                               }
                             />
                           ) : (
-                            row.composition.map((c) => c.specieType + ": " + c.percentage + "% ").join('- ')
+                            row.composition.map((c) => c.fciSpecieTypeId !== undefined && findSpecieTypeById(c.fciSpecieTypeId).name + ": " + c.percentage + "% ").join('- ')
                           )}
                         </td>
                       </tr>

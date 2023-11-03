@@ -207,7 +207,7 @@ const random = () => Math.round(Math.random() * 100)
                       <td width="5%">{currentPositionData.id}</td>
                       <td width="10%">{queryRow.fci}</td>
                       <td width="21%">{currentPositionData.createdOn}</td>
-                      <td width="52%">{currentPositionData.overview}</td>
+                      <td width="52 %">{currentPositionData.overview}</td>
                       <td>
                         <>
                           <Popup trigger={<button>Position Details</button>} position="left center" modal>

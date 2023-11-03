@@ -42,6 +42,7 @@ const Charts = () => {
           </CCardBody>
         </CCard>
       </CCol>
+      
       <CCol xs={6}>
         <CCard className="mb-4">
           <CCardHeader>Line Chart</CCardHeader>
@@ -72,6 +73,7 @@ const Charts = () => {
           </CCardBody>
         </CCard>
       </CCol>
+
       <CCol xs={6}>
         <CCard className="mb-4">
           <CCardHeader>Current Position Bias</CCardHeader>

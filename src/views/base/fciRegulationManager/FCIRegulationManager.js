@@ -3,7 +3,7 @@ import './FCIRegulationTable.css';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton} from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilPencil, cilTrash, cilPaperPlane, cilMediaSkipBackward } from '@coreui/icons';
+import { cilPencil, cilTrash, cilTransfer, cilMediaSkipBackward } from '@coreui/icons';
 
 
 class FCIRegulation {
@@ -43,38 +43,38 @@ function FCIRegulationTable() {
   const tableDataToSend = JSON.stringify(data, null, 2);
   const [specieTypes, setSpecieTypes] = useState([{fciSpecieTypeId: '', name: '', description: ''}]);
   // const [sum, setSum] = useState(0);
-  
 
 
   const validateNewRow = (row) => {
+    const regex = /^(?:[^:]+:\d+(\.\d+)?%)(?:-[^:]+:\d+(\.\d+)?%)*$/;
     const errors = {};
-    // const regex = /^(?:[^:]+:\d+(\.\d+)?%)(?:;[^:]+:\d+(\.\d+)?%)*$/;
-    
-    // if (!newRow.symbol) errors.symbol = 'Symbol is required';
-    // if (!newRow.name) errors.name = 'Name is required';
-    // if (!newRow.description) errors.description = 'Description is required';
-    // if (!newRow.composition) { 
-    //     errors.composition = 'Composition is required';
-    // } else {
-    //   if (!regex.test(newRow.composition.replace(/\s/g, ''))) {
-    //     errors.composition = 'Composition format should be "<Specie Type>:<Percentage Value> + %" separated by semicolons. I/E: Equity:40.5%;Bond:39.5%;Cash:20%';
-    //   } else {
-    //     if (findAndSumNumbers(newRow.composition) !== 100) errors.composition = 'Composition Percentage must close to 100%';
-    //   }
-    // }
+    if (!newRow.symbol) errors.symbol = 'Symbol is required';
+    if (!newRow.name) errors.name = 'Name is required';
+    if (!newRow.description) errors.description = 'Description is required';
+    if (!newRow.composition) { 
+        errors.composition1 = 'Composition is required';
+    } else if (!regex.test(String(newRow.composition).replace(/\s/g, ''))) {
+        errors.composition2 = 'Composition format should be "<Specie Type>:<Percentage Value> + %" separated by hyphens. I/E: Equity:40.5% - Bond:39.5% - Cash:20%';
+    }
+     
+    var w = String(newRow.composition).replace(/\s/g, '').replace(/%/g, '').split(";");
+    if (w.length === 1) {
+      var sp = w.at(0).split(":").at(0);
+      if (!specieTypes.find(element => element.name === sp)) {
+        errors.composition3 = 'Composition [' + sp + '] is not a recognized specie type';
+      }
+    } else {
+      w.map((specie) => {
+        var sp = specie.split(":").at(0);
+        if (!specieTypes.find(element => element.name === sp)) {
+          errors.composition4 = 'Composition [' + sp + '] is not a recognized specie type';
+        }
+      });
+    }
 
-    // var w = newRow.composition.replace(/\s/g, '').replace(/%/g, '').split(";");
-    // w.map((specie) => {
-    //   var sp = specie.split(":").at(0);
-    //   if (!specieTypes.includes(sp)) {
-    //     errors.composition = 'Composition: ' + sp + ' is not a recognized specie type';
-    //   }
-    // });
-
-    // if (findAndSumNumbers(editRow.composition) !== 100) {
-    //     errors.composition = 'Composition Percentage must close to 100%';
-    //   }
-    // }
+    if (findAndSumNumbers(newRow.composition) !== 100) {
+      errors.composition5 = 'Composition Percentage must close to 100%';
+    };
 
     return errors;
   };
@@ -88,19 +88,26 @@ function FCIRegulationTable() {
     if (!editRow.composition) { 
         errors.composition = 'Composition is required';
     } else if (!regex.test(String(editRow.composition).replace(/\s/g, ''))) {
-        errors.composition = 'Composition format should be "<Specie Type>:<Percentage Value> + %" separated by hyphens. I/E: Equity:40.5% - Bond:39.5% - Cash:20%';
+        errors.composition1 = 'Composition format should be "<Specie Type>:<Percentage Value> + %" separated by hyphens. I/E: Equity:40.5% - Bond:39.5% - Cash:20%';
     }
      
     var w = String(editRow.composition).replace(/\s/g, '').replace(/%/g, '').split(";");
-    w.map((specie) => {
+    if (w.length === 1) {
+      var sp = w.at(0).split(":").at(0);
+      if (!specieTypes.find(element => element.name === sp)) {
+        errors.composition2 = 'Composition [' + sp + '] is not a recognized specie type';
+      }
+    } else {
+      w.map((specie) => {
       var sp = specie.split(":").at(0);
       if (!specieTypes.find(element => element.name === sp)) {
-        errors.composition = 'Composition: ' + sp + ' is not a recognized specie type';
+        errors.composition3 = 'Composition [' + sp + '] is not a recognized specie type';
       }
-    });
-        
+      })
+    };
+
     if (findAndSumNumbers(editRow.composition) !== 100) {
-      errors.composition = 'Composition Percentage must close to 100%';
+      errors.composition4 = 'Composition Percentage must close to 100%';
     };
 
     return errors;
@@ -125,42 +132,43 @@ function FCIRegulationTable() {
       })
   }, []);
 
-  const clearAddRow = (() => {
+  const clearNewRow = (() => {
     setNewRow({ ...newRow, symbol: '', name: '', description: '', composition: '' });
   })
 
-  const handleAddRow = () => {
+  const handleNewRow = () => {
     const errors = validateNewRow();
     if (Object.keys(errors).length === 0) {
+      const f = new FCIRegulation(newRow.id, newRow.symbol, newRow.name, newRow.description, 
+        newRow.composition.replace(/\s/g, '').replace(/%/g, '').split("-") 
+            .map((c, index) => {
+                var r = c.split(":");
+                return new FCIComposition(null, findSpecieTypeByName(r.at(0)).fciSpecieTypeId, parseFloat(r.at(1)));
+       }));
+      
 
-      var w = editRow.composition.replace(/\s/g, '').replace(/%/g, '').split(";");
-      w.map((specie) => {
-        var sp = specie.split(":").at(0);
-        if (!specieTypes.includes(sp)) {
-          errors.composition = 'Composition: ' + sp + ' is not a recognized specie type';
-        }
-      });
-    }
-
-console.log("JSON.stringify(newRow, null, 1)" + JSON.stringify(newRow, null, 1));
+    console.log("JSON.stringify(newRow, null, 1)" + JSON.stringify(f));
 
     fetch('http://localhost:8098/api/v1/fci', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(newRow, null, 1),
+      body: JSON.stringify(f),
     })
       .then((response) => response.json())
       .then((responseData) => {
         console.log('Backend response:', responseData);
-        setNewRow({ ...data, responseData })
-        // console.log("responseData! = " + JSON.stringify(data));
+        setData([ ...data, responseData]);
+        clearNewRow();
       })    
       .catch((error) => {
         console.error('Error sending data to the backend:', error);
       });
-
+    setValidationErrors({});
+  } else {
+    setValidationErrors(errors);
+  }
   };
 
   const handleDeleteRow = (id, symbol) => {
@@ -189,9 +197,9 @@ console.log("JSON.stringify(newRow, null, 1)" + JSON.stringify(newRow, null, 1))
     if (Object.keys(errors).length === 0) {
       const f = new FCIRegulation(editRow.id, editRow.symbol, editRow.name, editRow.description, 
         editRow.composition.replace(/\s/g, '').replace(/%/g, '').split("-") 
-            .map((c) => {
+            .map((c, index) => {
                 var r = c.split(":");
-                return new FCIComposition(findSpecieTypeByName(r.at(0)).fciSpecieTypeId, findSpecieTypeByName(r.at(0)).fciSpecieTypeId, parseFloat(r.at(1)));
+                return new FCIComposition(index + 1, findSpecieTypeByName(r.at(0)).fciSpecieTypeId, parseFloat(r.at(1)));
        }));
       
       fetch('http://localhost:8098/api/v1/fci/' + editRow.symbol + "'", {
@@ -211,14 +219,6 @@ console.log("JSON.stringify(newRow, null, 1)" + JSON.stringify(newRow, null, 1))
       setValidationEditErrors(errors);
     }
   };
-
-  // function getName(id) {
-  //   if(id === undefined) {return}
-  //   var element = findSpecieTypeById(id);
-  //   if (element) {
-  //     return element.name;
-  //   }
-  // }
 
   function findSpecieTypeById(id) {
     if(id === undefined) {return}
@@ -308,7 +308,7 @@ console.log("JSON.stringify(newRow, null, 1)" + JSON.stringify(newRow, null, 1))
                           {editRowId === row.id ? (
                             <>
                               <CButton shape='rounded' size='sm' color='string' onClick={() => handleEditRow()}>
-                                  <CIcon icon={cilPaperPlane} size="xl"/>
+                                  <CIcon icon={cilTransfer} size="xl"/>
                               </CButton>
 
                               <CButton shape='rounded' size='sm' color='string' onClick={() => handleEditRowBack()}>
@@ -407,11 +407,11 @@ console.log("JSON.stringify(newRow, null, 1)" + JSON.stringify(newRow, null, 1))
                     </td>
                     <td className="text-medium-emphasis">
                       <>
-                      <CButton component="a" color="string" role="button" size='sm' onClick={() => handleAddRow()}>
-                          <CIcon icon={cilPaperPlane} size="xl"/>
+                      <CButton component="a" color="string" role="button" size='sm' onClick={() => handleNewRow()}>
+                          <CIcon icon={cilTransfer} size="xl"/>
                       </CButton>
 
-                      <CButton component="a" color="string" role="button" size='sm' onClick={() => clearAddRow}>
+                      <CButton component="a" color="string" role="button" size='sm' onClick={() => clearNewRow()}>
                           <CIcon icon={cilTrash} size="xl"/>
                       </CButton>
                       </>

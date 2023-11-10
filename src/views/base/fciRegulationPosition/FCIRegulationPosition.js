@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton} from '@coreui/react'
-import { cilFile, cilTrash, cilPaperPlane, cilMediaSkipBackward } from '@coreui/icons';
+import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer } from '@coreui/icons';
 
 import CIcon from '@coreui/icons-react'
 
@@ -12,11 +12,62 @@ import './Popup.css';
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
 
+class FCIPosition {
+  constructor(id, fciSymbol, timestamp, overview, jsonPosition, updatedMarketPosition) {
+    this.id = id;
+    this.fciSymbol = fciSymbol;
+    this.jsonPosition = jsonPosition;
+    this.updatedMarketPosition = updatedMarketPosition;
+    this.overview = overview;
+    this.timestamp = timestamp;
+  }
+}
+
+class FCIRegulationSymbolName {
+  constructor(id, fciSymbol, fciName) {
+    this.id = id;
+    this.fciSymbol = fciSymbol;
+    this.fciName = fciName;
+  }
+}
+
 function FCIRegulationPosition() {
-  const [data, setData] = useState([{ id: '', jsonPosition: '', position: '' }]);
+  const [fcireg, setFcireg] = useState([{FCIRegulationSymbolName}]);
+  const [data, setData] = useState([{FCIPosition}]);
   const [excelData, setExcelData] = useState([]);
   const [excelFile, setExcelFile] = useState(null);
-  const [responseData, setResponseData] = useState({ id: '', fciSymbol: '', timestamp: '', overview: '', jsonPosition: '', position: '' });
+  const [responseData, setResponseData] = useState({FCIPosition});
+  let [selectedFCISymbol, setSelectedFCISymbol] = useState('');
+
+  /** FCI Regulations - Symbol and Name */
+  useEffect(() => {
+    fetch('http://localhost:8098/api/v1/fci/symbol-name')
+      .then((response) => response.json())
+      .then((json) => setFcireg(json))
+      .then((json) => {
+        console.log("fcireg", fcireg);
+        console.log("fcireg[0].fcisymbol", fcireg[0].fciSymbol);
+        // console.log("Json = ", json);
+        // var d = JSON.stringify(json);
+        // console.log("d = ", d);
+      })
+      // .then((response) => console.log("fcireg[0].fciSymbol2 = ", fcireg[0].fciSymbol))
+      // .then(response => selectFciSymbol(fcireg[0].fciSymbol))
+  }, []);
+
+  // useEffect(() => {
+  //   selectFciSymbol(fcireg.at(0).fciSymbol)
+  //   },[]);
+
+  /** FCI Positions bound to selected FCI Regulation */
+  const selectFciSymbol = (symbol) => {
+    if (symbol !== undefined) {
+      setSelectedFCISymbol(symbol);
+      fetch('http://localhost:8098/api/v1/fci/' + symbol + '/position')
+        .then((response) => response.json())
+        .then((json) => setData(json));
+    }
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -49,9 +100,10 @@ function FCIRegulationPosition() {
     XLSX.writeFile(workbook, "Position_" + fciSymbol + "_" + timestamp + ".xlsx");
   };
 
-  const sendDataToBackend = () => {
-    processExcel();
-    fetch('http://localhost:8098/api/v1/fci/bth58/position', {
+  const createFCIPosition = () => {
+    if(excelData.length > 0) {
+    console.log("position: " + JSON.stringify(excelData, null, 1))
+    fetch('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -59,25 +111,42 @@ function FCIRegulationPosition() {
       body: "{\"position\":" + JSON.stringify(excelData, null, 1) + "}",
     })
       .then((response) => response.json())
-      .then((data) => {
-        console.log('Backend response:', data);
-        setResponseData(data);
+      .then((responseData) => {
+          setData([ ...data, responseData]);
         console.log("responseData! = " + JSON.stringify(responseData));
       })    
       .catch((error) => {
         console.error('Error sending data to the backend:', error);
       });
+    }
   };
 
   const deletePosition = () => {
 
   }
 
-  useEffect(() => {
-    fetch('http://localhost:8098/api/v1/fci/BTH58/position')
+  const refreshPosition = (fciSymbol, positionId) => {
+    fetch('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/' + positionId + '/refresh', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
       .then((response) => response.json())
-      .then((json) => setData(json));
-  }, []);
+      .then((responseData) => {
+        var d = JSON.parse(JSON.stringify(responseData));
+        const newState = data.map(obj => {
+          if (obj.id === positionId) {
+            return {...obj, overview: d.overview, updatedMarketPosition: d.updatedMarketPosition};
+          }
+          return obj;
+        });
+        setData(newState);
+      })    
+      .catch((error) => {
+        console.error('Error sending data to the backend:', error);
+      });
+  };
 
   return (
     <div>
@@ -85,14 +154,32 @@ function FCIRegulationPosition() {
           <CCol xs={12}>
             <CCard>
               <CCardHeader>
-                <strong className="text-medium-emphasis small">Upload Position</strong>
+                <strong className="text-medium-emphasis small">Select & Upload Position</strong>
               </CCardHeader>
               <CCardBody>
               <table>
+               <thead>
+                  <tr className="text-medium-emphasis">
+                    <td width="16%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
+                    <td width="80%">
+                      <select className="text-medium-emphasis large" onChange={(e) => selectFciSymbol(e.target.value)}>
+                        {fcireg?.map((fcireg) => 
+                          <React.Fragment key={fcireg.id}>
+                          <option value={fcireg.fciSymbol}>{fcireg.fciSymbol} - {fcireg.fciName}&nbsp;&nbsp;&nbsp;</option>
+                          </React.Fragment>
+                        )}
+                      </select>
+                    </td>
+                  </tr>
+                </thead>
+                <tbody><tr>&nbsp;</tr></tbody>
+               </table> 
+              <table>
               <thead>
-                  <tr>
+                  <tr className="text-medium-emphasis">
                     <th>Format</th>
                     <th>File</th>
+                    <th>Position</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -100,10 +187,14 @@ function FCIRegulationPosition() {
                 <tr>
                   <td width="15%">Excel file (.xlsx format)</td>
                   <td width="60%"><input type="file" onChange={handleFileChange}></input></td>
-                  {/* <td><button onClick={processExcel}>Process Excel</button></td> */}
+                  <td> 
+                    <CButton shape='rounded' size='sm' color='string' onClick={() => processExcel()}>
+                      <CIcon icon={cilSync} size="xl"/>
+                    </CButton>
+                  </td>
                   <td>
-                  <CButton shape='rounded' size='sm' color='string' onClick={() => sendDataToBackend()}>
-                      <CIcon icon={cilPaperPlane} size="xl"/>
+                  <CButton shape='rounded' size='sm' color='string' onClick={() => createFCIPosition()}>
+                      <CIcon icon={cilTransfer} size="xl"/>
                   </CButton>
                   </td>
                 </tr>
@@ -127,7 +218,7 @@ function FCIRegulationPosition() {
               </p>
               <table>
                 <thead>
-                  <tr>
+                  <tr className="text-medium-emphasis">
                     <th>#</th>
                     <th>FCI</th>
                     <th>Date</th>
@@ -137,7 +228,7 @@ function FCIRegulationPosition() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.map((item) => 
+                  {data?.map((item) => 
                     <React.Fragment key={item.id}>
                     <tr>
                       <td width="5%">{item.id}</td>
@@ -146,7 +237,10 @@ function FCIRegulationPosition() {
                       <td width="30%">{item.overview}</td>
                       <td>
                         <>
-                          <Popup trigger={<button>Position Details</button>} position="left center" modal>
+                          <Popup trigger={
+                              <CButton shape='rounded' size='sm' color='string' onClick={() => deletePosition()}>
+                                    <CIcon icon={cilClipboard} size="xl"/>
+                              </CButton>} position="left center" modal>
                           <CRow>
                             <CCol xs={12}>
                               <CCard>
@@ -168,7 +262,7 @@ function FCIRegulationPosition() {
                                             <strong className="text-medium-emphasis small">{item.fciSymbol} - {item.timestamp} - {item.overview}</strong>
                                           </CCardHeader>
                                           <CCardBody>
-                                            {item.jsonPosition}
+                                            {item.updatedMarketPosition}
                                             </CCardBody>
                                         </CCard>
                                         </CCol>
@@ -182,6 +276,9 @@ function FCIRegulationPosition() {
                             </CCol>
                           </CRow> 
                           </Popup>
+                          <CButton shape='rounded' size='sm' color='string' onClick={() => refreshPosition(item.fciSymbol, item.id) }>
+                                <CIcon icon={cilNoteAdd} size="xl"/>
+                          </CButton>
                         </>
                       </td>
                       <td>
@@ -189,7 +286,7 @@ function FCIRegulationPosition() {
                           <CButton shape='rounded' size='sm' color='string' onClick={() => deletePosition()}>
                                 <CIcon icon={cilTrash} size="xl"/>
                           </CButton>
-                          <CButton shape='rounded' size='sm' color='string' onClick={() => downloadExcel(item.fciSymbol, item.timestamp, item.jsonPosition) }>
+                          <CButton shape='rounded' size='sm' color='string' onClick={() => downloadExcel(item.fciSymbol, item.timestamp, item.updatedMarketPosition) }>
                                 <CIcon icon={cilFile} size="xl"/>
                           </CButton>
                         </>

@@ -7,6 +7,8 @@ import { cilFile, cilTrash, cilPaperPlane, cilMediaSkipBackward } from '@coreui/
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
 
+import axios from 'axios';
+
 import {
   CChartBar,
   CChartDoughnut,
@@ -17,8 +19,11 @@ import {
 } from '@coreui/react-chartjs'
 import { DocsCallout } from 'src/components'
 
+import './FCIRegulationTable.css';
+
 class FCIPercentage {
-    constructor(specieType, percentage) {
+    constructor(id, specieType, percentage) {
+      this.id = id;
       this.specieType = specieType;
       this.percentage = percentage;
     }
@@ -31,13 +36,135 @@ class FCIValue {
     }
 }
 
+class FCIRegulationSymbolName {
+  constructor(id, fciSymbol, fciName) {
+    this.id = id;
+    this.fciSymbol = fciSymbol;
+    this.fciName = fciName;
+  }
+}
+
+
+class FCIPositionIdCreatedOn {
+  constructor(id, fciCreatedOn) {
+    this.id = id;
+    this.fciCreatedOn = fciCreatedOn;
+  }
+}
+
+class FCIPosition {
+  constructor(id, fciSymbol, timestamp, overview, jsonPosition, updatedMarketPosition) {
+    this.id = id;
+    this.fciSymbol = fciSymbol;
+    this.jsonPosition = jsonPosition;
+    this.updatedMarketPosition = updatedMarketPosition;
+    this.overview = overview;
+    this.timestamp = timestamp;
+  }
+}
+
 function FCIPositionBias() {
-    const [positionPercentageData, setPositionPercentageData] = useState({ percentages: [FCIPercentage]});
-    const [positionValueData, setPositionValueData] = useState({ values: [FCIValue]});
-    const [regulationPercentageData, setRegulationPercentageData] = useState({ percentages: [FCIPercentage]});
-    const [regulationValueData, setRegulationValueData] = useState({ values: [FCIValue]});
-    const [queryRow, setQueryRow] = useState({ fci: '', position: ''});
-    const [currentPositionData, setCurrentPositionData] = useState({ id: '', fciSymbol: '', createdOn: '', overview: '', jsonPosition: '', position: '' });
+  //const [regulationPercentageData, setRegulationPercentageData] = useState({percentages: [FCIPercentage]});
+  const [regulationPercentages, setRegulationPercentages] = useState([]);
+  // const [positionPercentageData, setPositionPercentageData] = useState({ percentages: [FCIPercentage]});
+  const [positionPercentageData, setPositionPercentageData] = useState([]);
+  const [positionValueData, setPositionValueData] = useState({ values: [FCIValue]});
+  
+  const [regulationValueData, setRegulationValueData] = useState({ values: [FCIValue]});
+  const [queryRow, setQueryRow] = useState({ fci: '', position: ''});
+  const [regulations, setRegulations] = useState([{FCIRegulationSymbolName}]);
+  const [positions, setPositions] = useState([{FCIPositionIdCreatedOn}]);
+  const [currentPositionData, setCurrentPositionData] = useState([{FCIPosition}]);
+  const [selectedFCISymbol, setSelectedFCISymbol] = useState('');
+  const [reportTypes, setReportTypes] = useState([]);
+  const [selectReportType, setSelectedReportType] = useState('');
+  const [reportTypeData, setReportTypeData] = useState([]);
+
+  useEffect(() => {
+    /** FCI Regulations - Symbol and Name */
+    const fetchRegulations = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/symbol-name')
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    /** FCI Positions - Id and CreatedOn */
+    const fetchPositions = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/id-created-on')
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+     /** FCI Regulation Percentages - First Element */
+    const fetchPercentages = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/regulation-percentages')
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    /** FCI Component - Report Types */
+    const fetchReportTypes = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/component/report')
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    const setFetchedData = async () => {
+      const tempLoadedRegulations = await fetchRegulations();
+      const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
+      const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
+      const tempLoadedReportTypes = await fetchReportTypes();
+      setRegulations(tempLoadedRegulations);
+      setPositions(tempLoadedPositions);
+      setRegulationPercentages(tempLoadedPercentages);
+      setSelectedFCISymbol(tempLoadedRegulations[0].fciSymbol);
+      setReportTypes(tempLoadedReportTypes);
+    };
+    setFetchedData();
+  }, []); 
+
+  const processReportType = async (link) => {
+    const reportTypeData = async (link) => {
+      try {
+        const responseData = await axios.get()
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+    
+    const setFetchedReportTypeData = async () => {
+      const tempLoadedReportTypeData = await reportTypeData(link);
+      setReportTypeData(tempLoadedReportTypeData);
+    };
+  }
+
+  // const setCurrentSelectedFCISymbol = (fciSymbol) => {
+  //   setSelectedFCISymbol(fciSymbol);
+  //   console.log("fciSymbol = " + fciSymbol);
+  //   console.log("selectedFCISymbol = " + selectedFCISymbol);
+  // }
+
+  const selectPosition = (position) => {
+    if (position !== undefined) {
+      // setSelectedFCISymbol(position);
+      // fetch('http://localhost:8098/api/v1/fci/' + symbol + '/position')
+      //   .then((response) => response.json())
+      //   .then((json) => setFciPositions(json));
+    }
+  };
 
     // http://localhost:8098/api/v1/calculate-bias/fci/BTH58/position/1/regulation-valued
     // http://localhost:8098/api/v1/calculate-bias/fci/BTH58/position/1/regulation-percentages
@@ -45,7 +172,7 @@ function FCIPositionBias() {
     // http://localhost:8098/api/v1/calculate-bias/fci/BTH58/position/1/percentages
 
     const getFCIPositionPercentages = (fciSymbol, positionId) => {
-    fetch('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/percentages', {
+    fetch('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/percentages/refresh/true', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -62,425 +189,263 @@ function FCIPositionBias() {
       });
   };
 
-  const getFCIPositionValued = (fciSymbol, positionId) => {
-    fetch('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/valued', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('Backend response:', data);
-        setPositionValueData(data);
-        console.log("responseData! = " + JSON.stringify(positionValueData));
-      })    
-      .catch((error) => {
-        console.error('Error sending data to the backend:', error);
-      });
+  // const getFCIPositionValued = (fciSymbol, positionId) => {
+  //   fetch('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/valued', {
+  //     method: 'GET',
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //   })
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       console.log('Backend response:', data);
+  //       setPositionValueData(data);
+  //       console.log("responseData! = " + JSON.stringify(positionValueData));
+  //     })    
+  //     .catch((error) => {
+  //       console.error('Error sending data to the backend:', error);
+  //     });
+  // };
+
+  const listFCIRegulationPercentages = async () => {
+    console.log("I'm into getFCIRegulationPercentages");
+    try {
+      console.log("selectedFCISymbol = " + selectedFCISymbol);
+      const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/regulation-percentages')
+      setRegulationPercentages(responseData.data);
+      console.log("responseData.data = " + responseData.data);
+      console.log("regulationPercentageData = " + regulationPercentages);
+    } catch (error) {
+      console.error('Error sending data to the backend:', error);
+    }
   };
 
-  const getFCIRegulationPercentages = (fciSymbol, positionId) => {
-    fetch('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/regulation-percentages', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('Backend response:', data);
-        setRegulationPercentageData(data);
-        console.log("response Regulation Data! = " + JSON.stringify(regulationPercentageData));
-      })    
-      .catch((error) => {
-        console.error('Error sending data to the backend:', error);
-      });
-  };
+  // const getFCIRegulationValued = (fciSymbol, positionId) => {
+  //   fetch('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/regulation-valued', {
+  //     method: 'GET',
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //   })
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       console.log('Backend response:', data);
+  //       setRegulationValueData(data);
+  //       console.log("responseData! = " + JSON.stringify(regulationValueData));
+  //     })    
+  //     .catch((error) => {
+  //       console.error('Error sending data to the backend:', error);
+  //     });
+  // };
 
-  const getFCIRegulationValued = (fciSymbol, positionId) => {
-    fetch('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/regulation-valued', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('Backend response:', data);
-        setRegulationValueData(data);
-        console.log("responseData! = " + JSON.stringify(regulationValueData));
-      })    
-      .catch((error) => {
-        console.error('Error sending data to the backend:', error);
-      });
-  };
-
-  const getFCICurrentPositionData = (fciSymbol, positionId) => {
-    fetch('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/' + positionId, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('Backend response:', data);
-        setCurrentPositionData(data);
-        console.log("responseData! = " + JSON.stringify(currentPositionData));
-      })    
-      .catch((error) => {
-        console.error('Error sending data to the backend:', error);
-      });
-  };
+  // const getFCICurrentPositionData = (fciSymbol, positionId) => {
+  //   fetch('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/' + positionId, {
+  //     method: 'GET',
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //   })
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       console.log('Backend response:', data);
+  //       setCurrentPositionData(data);
+  //       console.log("responseData! = " + JSON.stringify(currentPositionData));
+  //     })    
+  //     .catch((error) => {
+  //       console.error('Error sending data to the backend:', error);
+  //     });
+  // };
 
 
 // const FCIPositionBias = () => {
-const random = () => Math.round(Math.random() * 100)
+//const random = () => Math.round(Math.random() * 100)
 
   return (
     <>
     <CRow>
-      <CCol xs={12}>
+          <CCol xs={12}>
             <CCard>
               <CCardHeader>
-                <strong className="text-medium-emphasis small">Position Analisys and Reporting</strong>
+                <strong className="text-medium-emphasis small">Select FCI Regulation & Position</strong>
               </CCardHeader>
               <CCardBody>
               <table>
-              <thead>
-                  <tr>
-                    <th>Actions</th>
+               <thead>
+                  <tr className="text-medium-emphasis">
+                    <td width="17%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
+                    <td width="25%">
+                      <select className="text-medium-emphasis large" onChange={(e) => setSelectedFCISymbol(e.target.value)}>
+                        {regulations?.map((regulation) => 
+                          <React.Fragment key={regulation.id}>
+                          <option value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
+                          </React.Fragment>
+                        )}
+                      </select>
+                    </td>
+                    <td width="11%"><code>&lt;FCI Position&gt;</code></td>
+                    <td width="25%">
+                      <select className="text-medium-emphasis large" onChange={(e) => selectPosition(e.target.value)}>
+                        {positions !== undefined && positions.map((fciPosition) => 
+                          <React.Fragment key={fciPosition.id}>
+                          <option value={fciPosition.id}>#{fciPosition.id} - {fciPosition.timestamp}&nbsp;&nbsp;&nbsp;</option>
+                          </React.Fragment>
+                        )}
+                      </select>
+                    </td>
+                    <td width="12%"><code>&lt;FCI Composition&gt;</code></td>
+                    <td>
+                      {<Popup trigger={
+                        <CButton shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages()}>
+                            <CIcon icon={cilFile} size="xl"/>
+                        </CButton>} position="right center" modal>
+                        {<CRow>
+                          <CCol xs={12}>
+                            <CCard>
+                              <CCardHeader>
+                                <strong className="text-medium-emphasis small">FCI Regulation Composion - {selectedFCISymbol}</strong>
+                              </CCardHeader>
+                              <CCardBody>
+                              <CRow>
+                              <CCol xs={5}>
+                                  <CCard className="mb-4">
+                                    <CCardHeader>Expected FCI Regulation Definition</CCardHeader>
+                                    <CCardBody>
+                                      <CChartPie
+                                        data={{
+                                          labels: regulationPercentages?.map((p) => p.specieType),
+                                          datasets: [
+                                            {
+                                              data: regulationPercentages?.map((p) => p.percentage),
+                                              backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
+                                              hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
+                                            },
+                                          ],
+                                        }}
+                                      />
+                                    </CCardBody>
+                                  </CCard>
+                                </CCol>
+                                <CCol>
+                                <CCard className="mb-4">
+                                    <CCardHeader>FCI Regulation Composition</CCardHeader>
+                                    <CCardBody>
+                                        <table  className="text-medium-emphasis">
+                                        <thead>
+                                            <tr className="text-medium-emphasis">
+                                              <th>Specie Type</th>
+                                              <th>Percentage</th>
+                                            </tr>  
+                                          </thead>  
+                                          <tbody>
+                                            {regulationPercentages?.map((p) => 
+                                             <React.Fragment key={p.id}>
+                                              <tr className="text-medium-emphasis">
+                                                <td>{p.specieType}</td>
+                                                <td>{p.percentage}</td>
+                                              </tr>
+                                             </React.Fragment> 
+                                            )}                                       
+                                          </tbody>
+                                        </table>
+                                    </CCardBody>
+                                  </CCard>
+                                </CCol>
+
+                                {/* <CCol xs={7}>
+                                    <CCard className="mb-4">
+                                      <CCardHeader>Expected FCI Regulation Definition</CCardHeader>
+                                      <CCardBody>
+                                        <CChartBar
+                                          data={{
+                                            labels: regulationPercentages?.map((p) =>p.specieType),
+                                            datasets: [
+                                              {
+                                                label: 'FCI Regulation Composition',
+                                                backgroundColor: '#f87979',
+                                                data: regulationPercentages?.map((p) => p.percentage),
+                                              },
+                                            ],
+                                          }}
+                                          labels="Percentages"
+                                        />
+                                      </CCardBody>
+                                    </CCard>
+                                  </CCol> */}
+                               </CRow>   
+                            </CCardBody>
+                            </CCard> 
+                          </CCol>
+                         </CRow>  }
+                      </Popup>}
+                    </td>
+                    
                   </tr>
                 </thead>
-                <tbody>
-                <tr>
-                  <td>
-                  <input
-                    type="text"
-                    placeholder="FCI"
-                    onChange={(e) => setQueryRow({ ...queryRow, fci: e.target.value })}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Position"
-                    onChange={(e) => setQueryRow({ ...queryRow, position: e.target.value })}
-                  />
-                  <CButton shape='rounded' size='sm' color='string' onClick={() => getFCIPositionPercentages(queryRow.fci, queryRow.position)}>
-                      <CIcon icon={cilPaperPlane} size="xl"/>
-                  </CButton>
-                  <CButton shape='rounded' size='sm' color='string' onClick={() => getFCIRegulationPercentages(queryRow.fci, queryRow.position)}>
-                      <CIcon icon={cilPaperPlane} size="xl"/>
-                  </CButton>
-                  <CButton shape='rounded' size='sm' color='string' onClick={() => getFCICurrentPositionData(queryRow.fci, queryRow.position)}>
-                      <CIcon icon={cilPaperPlane} size="xl"/>
-                  </CButton>
-                  </td>
-                </tr>
-                </tbody>
-                </table>  
-              </CCardBody>
-            </CCard>
+                </table>
+                </CCardBody>
+              </CCard>
         </CCol>
     </CRow>
-
-
+    <br/>
     <CRow>
-        <CCol xs={12}>
-          <CCard>
-            <CCardHeader className="text-medium-emphasis small">
-              <strong>FCI Regulation Positions</strong>
-            </CCardHeader>
-            <CCardBody>
-              <table>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>FCI</th>
-                    <th>Date</th>
-                    <th>Overview</th>
-                    <th>Position</th>
-                  </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                      <td width="5%">{currentPositionData.id}</td>
-                      <td width="10%">{queryRow.fci}</td>
-                      <td width="21%">{currentPositionData.createdOn}</td>
-                      <td width="52 %">{currentPositionData.overview}</td>
-                      <td>
-                        <>
-                          <Popup trigger={<button>Position Details</button>} position="left center" modal>
-                          <CRow>
-                            <CCol xs={12}>
-                              <CCard>
-                                <CCardHeader>
-                                  <strong className="text-medium-emphasis small"><code>#{currentPositionData.id} - Position Details</code></strong>
-                                </CCardHeader>
-                                <CCardBody>
-                                <table>
-                                  <thead>
-                                    <tr/>
-                                  </thead>
-                                  <tbody>  
-                                    <tr>
-                                      <td>
-                                      <CRow>
-                                        <CCol xs={12}>
-                                          <CCard>
-                                          <CCardHeader>
-                                            <strong className="text-medium-emphasis small">{currentPositionData.fciSymbol} - {currentPositionData.timestamp} - {currentPositionData.overview}</strong>
-                                          </CCardHeader>
-                                          <CCardBody>
-                                            {currentPositionData.jsonPosition}
-                                            </CCardBody>
-                                        </CCard>
-                                        </CCol>
-                                      </CRow> 
-                                      </td>
-                                    </tr>
-                                  </tbody>
-                                  </table>
-                              </CCardBody>
-                            </CCard>
-                            </CCol>
-                          </CRow> 
-                          </Popup>
-                        </>
-                      </td>
-                      <td>
-                      </td>
-                    </tr>
-                </tbody>
-              </table>
-          </CCardBody>
-         </CCard>
-        </CCol>
-       </CRow> 
-
-
-{/* { console.log(positionPercentageData.percentages.map((p) => p.specieType).join())}
-{ console.log(positionPercentageData.percentages.map((p) => p.percentage).join()) } */}
-  
-  <CRow>
       <CCol xs={12}>
         <CCard>
           <CCardHeader>
-            <strong className="text-medium-emphasis small">FCI Regulation Composion and Current FCI Position comparison</strong>
+            <strong className="text-medium-emphasis small">Position Distribution & Details</strong>
           </CCardHeader>
           <CCardBody>
-          <CRow>
-     
-
-          <CCol xs={3}>
-              <CCard className="mb-4">
-                <CCardHeader>Expected FCI Regulation Definition</CCardHeader>
-                <CCardBody>
-                  <CChartBar
-                    data={{
-                      labels: regulationPercentageData.percentages.map((p) =>p.specieType),
-                      datasets: [
-                        {
-                          label: 'FCI Regulation Composition',
-                          backgroundColor: '#f87979',
-                          data: regulationPercentageData.percentages.map((p) => p.percentage),
-                        },
-                      ],
-                    }}
-                    labels="Percentages"
-                  />
-                </CCardBody>
-              </CCard>
-            </CCol>
-
-            <CCol xs={3}>
-          <CCard className="mb-4">
-            <CCardHeader>Expected FCI Regulation Definition</CCardHeader>
-            <CCardBody>
-              <CChartPie
-                data={{
-                  labels: regulationPercentageData.percentages.map((p) => p.specieType),
-                  datasets: [
-                    {
-                      data: regulationPercentageData.percentages.map((p) => p.percentage),
-                      backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
-                      hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
-                    },
-                  ],
-                }}
-              />
-            </CCardBody>
-          </CCard>
-        </CCol>
-
-        <CCol xs={3}>
-          <CCard className="mb-4">
-            <CCardHeader>Current FCI Position Bias</CCardHeader>
-            <CCardBody>
-              <CChartDoughnut
-                data={{
-                  labels: positionPercentageData.percentages.map((p) => p.specieType),
-                  datasets: [
-                    {
-                      backgroundColor: ['#41B883', '#E46651', '#00D8FF', '#DD1B16'],
-                      data: positionPercentageData.percentages.map((p) => p.percentage),
-                    },
-                  ],
-                }}
-              />
-            </CCardBody>
-          </CCard>
-        </CCol>
-
-            <CCol xs={3}>
-              <CCard className="mb-4">
-                <CCardHeader>Current FCI Position</CCardHeader>
-                <CCardBody>
-                  <CChartBar
-                    data={{
-                      labels: positionPercentageData.percentages.map((p) => p.specieType),
-                      datasets: [
-                        {
-                          label: 'Positon Percentage Composition',
-                          backgroundColor: '#36A2EB',
-                          data: positionPercentageData.percentages.map((p) => p.percentage),
-                        },
-                      ],
-                    }}
-                    labels="Percentages"
-                  />
-                </CCardBody>
-              </CCard>
-            </CCol>
-            </CRow>
-            </CCardBody>
+              {regulationPercentages?.length > 0 ? (
+                <CRow>
+                <CCol xs={12}>
+                  <CCard>
+                    <CCardHeader>
+                      <table>
+                        <tr>
+                          <td width="12%">
+                            <strong className="text-medium-emphasis small">Report & Analysis</strong>
+                          </td>
+                          <td>
+                            <select className="text-medium-emphasis large" onChange={(e) => processReportType(e.target.value)}>
+                              {reportTypes?.map((reportType) => 
+                                <React.Fragment key={reportType.id}>
+                                <option value={reportType.link}>{reportType.name}&nbsp;&nbsp;&nbsp;</option>
+                                </React.Fragment>
+                              )}
+                      </select>
+                        </td>
+                      </tr>
+                      </table>
+                    </CCardHeader>
+                    <CCardBody>
+                    <CRow>
+                    <CCol xs={3}>
+                        <CCard className="mb-4">
+                          <CCardHeader>Expected FCI Regulation Definition</CCardHeader>
+                          <CCardBody>
+                            {<CChartPie
+                              data={{
+                                labels: regulationPercentages?.map((p) => p.specieType),
+                                datasets: [
+                                  {
+                                    data: regulationPercentages?.map((p) => p.percentage),
+                                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
+                                              hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
+                                  },
+                                ],
+                              }}
+                            />}
+                          </CCardBody>
+                        </CCard>
+                      </CCol>
+                    </CRow> 
+                  </CCardBody>
+                </CCard>
+              </CCol>
+              </CRow>   
+              ) :  null}
+        </CCardBody>
         </CCard>
-      </CCol>
-
-
-        {/* <CCol xs={6}>
-          <CCard className="mb-4">
-            <CCardHeader>Line Chart</CCardHeader>
-            <CCardBody>
-              <CChartLine
-                data={{
-                  labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-                  datasets: [
-                    {
-                      label: 'My First dataset',
-                      backgroundColor: 'rgba(220, 220, 220, 0.2)',
-                      borderColor: 'rgba(220, 220, 220, 1)',
-                      pointBackgroundColor: 'rgba(220, 220, 220, 1)',
-                      pointBorderColor: '#fff',
-                      data: [random(), random(), random(), random(), random(), random(), random()],
-                    },
-                    {
-                      label: 'My Second dataset',
-                      backgroundColor: 'rgba(151, 187, 205, 0.2)',
-                      borderColor: 'rgba(151, 187, 205, 1)',
-                      pointBackgroundColor: 'rgba(151, 187, 205, 1)',
-                      pointBorderColor: '#fff',
-                      data: [random(), random(), random(), random(), random(), random(), random()],
-                    },
-                  ],
-                }}
-              />
-            </CCardBody>
-          </CCard>
-        </CCol> */}
-
-       
-
-       
-       
-      {/*  <CCol xs={6}>
-          <CCard className="mb-4">
-            <CCardHeader>Polar Area Chart</CCardHeader>
-            <CCardBody>
-              <CChartPolarArea
-                data={{
-                  labels: ['Red', 'Green', 'Yellow'],
-                  datasets: [
-                    {
-                      data: [30, 30, 40],
-                      backgroundColor: ['#FF6384', '#4BC0C0', '#FFCE56', '#E7E9ED', '#36A2EB'],
-                    },
-                  ],
-                }}
-              />
-            </CCardBody>
-          </CCard>
         </CCol>
-        <CCol xs={6}>
-          <CCard className="mb-4">
-            <CCardHeader>Current FCI Position Bias</CCardHeader>
-            <CCardBody>
-              <CChartRadar
-                data={{
-                  labels: [
-                    'Equity',
-                    'Bond',
-                    'Cedears',
-                    'Derivados',
-                    'Cash',
-                  ],
-                  datasets: [
-                    {
-                      label: 'Equity',
-                      backgroundColor: 'rgba(220, 220, 220, 0.2)',
-                      borderColor: 'rgba(220, 220, 220, 1)',
-                      pointBackgroundColor: 'rgba(220, 220, 220, 1)',
-                      pointBorderColor: '#fff',
-                      pointHighlightFill: '#fff',
-                      pointHighlightStroke: 'rgba(220, 220, 220, 1)',
-                      data: [14.9909],
-                    },
-                    {
-                      label: 'Bond',
-                      backgroundColor: 'rgba(151, 187, 205, 0.2)',
-                      borderColor: 'rgba(151, 187, 205, 1)',
-                      pointBackgroundColor: 'rgba(151, 187, 205, 1)',
-                      pointBorderColor: '#fff',
-                      pointHighlightFill: '#fff',
-                      pointHighlightStroke: 'rgba(151, 187, 205, 1)',
-                      data: [17.7550],
-                    },
-                    {
-                      label: 'Cedears',
-                      backgroundColor: 'rgba(111, 127, 195, 1)',
-                      borderColor: 'rgba(111, 127, 195, 1)',
-                      pointBackgroundColor: 'rgba(151, 187, 205, 1)',
-                      pointBorderColor: '#fff',
-                      pointHighlightFill: '#fff',
-                      pointHighlightStroke: 'rgba(151, 187, 205, 1)',
-                      data: [23.7550],
-                    },
-                    {
-                      label: 'Derivados',
-                      backgroundColor: 'rgba(65, 96, 115, 3)',
-                      borderColor: 'rgba(65, 96, 115, 3)',
-                      pointBackgroundColor: 'rgba(151, 187, 205, 1)',
-                      pointBorderColor: '#fff',
-                      pointHighlightFill: '#fff',
-                      pointHighlightStroke: 'rgba(151, 187, 205, 1)',
-                      data: [23.7550],
-                    },
-                    {
-                      label: 'Cash',
-                      backgroundColor: 'rgba(121, 167, 215, 0.6)',
-                      borderColor: 'rgba(121, 167, 215, 2)',
-                      pointBackgroundColor: 'rgba(151, 187, 205, 1)',
-                      pointBorderColor: '#fff',
-                      pointHighlightFill: '#fff',
-                      pointHighlightStroke: 'rgba(151, 187, 205, 1)',
-                      data: [44.2540],
-                    },
-                  ],
-                }}
-              />
-            </CCardBody>
-          </CCard>
-        </CCol> */}
       </CRow>
       </>
   )

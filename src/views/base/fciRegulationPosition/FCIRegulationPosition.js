@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 
-import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton} from '@coreui/react'
+import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
 import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer } from '@coreui/icons';
 
 import CIcon from '@coreui/icons-react'
@@ -11,6 +11,8 @@ import './Popup.css';
 
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
+
+import axios from 'axios';
 
 class FCIPosition {
   constructor(id, fciSymbol, timestamp, overview, jsonPosition, updatedMarketPosition) {
@@ -32,42 +34,98 @@ class FCIRegulationSymbolName {
 }
 
 function FCIRegulationPosition() {
-  const [fcireg, setFcireg] = useState([{FCIRegulationSymbolName}]);
-  const [data, setData] = useState([{FCIPosition}]);
+  const [regulations, setRegulations] = useState([{FCIRegulationSymbolName}]);
+  const [positions, setPositions] = useState([{FCIPosition}]);
   const [excelData, setExcelData] = useState([]);
   const [excelFile, setExcelFile] = useState(null);
-  const [responseData, setResponseData] = useState({FCIPosition});
-  let [selectedFCISymbol, setSelectedFCISymbol] = useState('');
+  // const [responseData, setResponseData] = useState({FCIPosition});
+  const [selectedFCISymbol, setSelectedFCISymbol] = useState('');
 
   /** FCI Regulations - Symbol and Name */
   useEffect(() => {
-    fetch('http://localhost:8098/api/v1/fci/symbol-name')
-      .then((response) => response.json())
-      .then((json) => setFcireg(json))
-      .then((json) => {
-        console.log("fcireg", fcireg);
-        console.log("fcireg[0].fcisymbol", fcireg[0].fciSymbol);
-        // console.log("Json = ", json);
-        // var d = JSON.stringify(json);
-        // console.log("d = ", d);
-      })
-      // .then((response) => console.log("fcireg[0].fciSymbol2 = ", fcireg[0].fciSymbol))
-      // .then(response => selectFciSymbol(fcireg[0].fciSymbol))
-  }, []);
+    const fetchRegulations = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/symbol-name');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
 
-  // useEffect(() => {
-  //   selectFciSymbol(fcireg.at(0).fciSymbol)
-  //   },[]);
+    const fetchPositions = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
 
-  /** FCI Positions bound to selected FCI Regulation */
-  const selectFciSymbol = (symbol) => {
-    if (symbol !== undefined) {
-      setSelectedFCISymbol(symbol);
-      fetch('http://localhost:8098/api/v1/fci/' + symbol + '/position')
-        .then((response) => response.json())
-        .then((json) => setData(json));
+    const setFetchedData = async () => {
+      const tempLoadedRegulations = await fetchRegulations();
+      const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
+      setRegulations(tempLoadedRegulations);
+      setPositions(tempLoadedPositions);
+      setSelectedFCISymbol(tempLoadedRegulations[0].fciSymbol);
+    };
+    setFetchedData();
+  }, []); 
+
+ /** Create a new Position */
+  const createFCIPosition = () => {
+    if(excelData.length > 0) {
+      setFetchedData();
+    };
+  };
+
+  const setFetchedData = async () => {
+    const tempLoadedCreatedPosition = await fetchCreatedPosition();
+    setPositions([tempLoadedCreatedPosition, ...positions]);
+  };
+
+  const fetchCreatedPosition = async () => {
+    try {
+      const body = "{\"position\":" + JSON.stringify(excelData, null, 1) + "}";
+      const responseData = await axios.post('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position', body,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+      return responseData.data;
+    } catch (error) {
+      console.error('Error sending data to the backend:', error);
     }
   };
+
+  /** FCI Positions bound to selected FCI Regulation */
+  const selectFciSymbol = async (fciSymbol) => {
+    const fetchPositionWithFciSymbol = async (fciSymbol) => {
+      if (fciSymbol !== undefined) {
+        setSelectedFCISymbol(fciSymbol);
+        try {
+          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
+          return responseData.data;
+        } catch (error) {
+          console.error('Error sending data to the backend:', error);
+        }
+      }
+  };
+  
+  const setFetchedData = async () => {
+    const tempLoadedPositions = await fetchPositionWithFciSymbol(fciSymbol);
+    setPositions(tempLoadedPositions);
+  } 
+  return setFetchedData;
+}; 
+  // const selectFciSymbol = (symbol) => {
+  //   if (symbol !== undefined) {
+  //     setSelectedFCISymbol(symbol);
+  //     fetch('http://localhost:8098/api/v1/fci/' + symbol + '/position')
+  //       .then((response) => response.json())
+  //       .then((json) => setPositions(json));
+  //   }
+  // };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -100,26 +158,24 @@ function FCIRegulationPosition() {
     XLSX.writeFile(workbook, "Position_" + fciSymbol + "_" + timestamp + ".xlsx");
   };
 
-  const createFCIPosition = () => {
-    if(excelData.length > 0) {
-    console.log("position: " + JSON.stringify(excelData, null, 1))
-    fetch('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: "{\"position\":" + JSON.stringify(excelData, null, 1) + "}",
-    })
-      .then((response) => response.json())
-      .then((responseData) => {
-          setData([ ...data, responseData]);
-        console.log("responseData! = " + JSON.stringify(responseData));
-      })    
-      .catch((error) => {
-        console.error('Error sending data to the backend:', error);
-      });
-    }
-  };
+  //   console.log("position: " + JSON.stringify(excelData, null, 1))
+  //   fetch('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position', {
+  //     method: 'POST',
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //     body: "{\"position\":" + JSON.stringify(excelData, null, 1) + "}",
+  //   })
+  //     .then((response) => response.json())
+  //     .then((responseData) => {
+  //         setPositions([ ...positions, responseData]);
+  //       console.log("responseData! = " + JSON.stringify(responseData));
+  //     })    
+  //     .catch((error) => {
+  //       console.error('Error sending data to the backend:', error);
+  //     });
+  //   }
+  // };
 
   const deletePosition = () => {
 
@@ -135,13 +191,13 @@ function FCIRegulationPosition() {
       .then((response) => response.json())
       .then((responseData) => {
         var d = JSON.parse(JSON.stringify(responseData));
-        const newState = data.map(obj => {
+        const newState = positions.map(obj => {
           if (obj.id === positionId) {
             return {...obj, overview: d.overview, updatedMarketPosition: d.updatedMarketPosition};
           }
           return obj;
         });
-        setData(newState);
+        setPositions(newState);
       })    
       .catch((error) => {
         console.error('Error sending data to the backend:', error);
@@ -160,12 +216,13 @@ function FCIRegulationPosition() {
               <table>
                <thead>
                   <tr className="text-medium-emphasis">
-                    <td width="16%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
+                    <td width="20%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
                     <td width="80%">
                       <select className="text-medium-emphasis large" onChange={(e) => selectFciSymbol(e.target.value)}>
-                        {fcireg?.map((fcireg) => 
-                          <React.Fragment key={fcireg.id}>
-                          <option value={fcireg.fciSymbol}>{fcireg.fciSymbol} - {fcireg.fciName}&nbsp;&nbsp;&nbsp;</option>
+                        {/* <option value="">&nbsp;&nbsp;&nbsp;</option> */}
+                        {regulations?.map((regulation) => 
+                          <React.Fragment key={regulation.id}>
+                          <option value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
                           </React.Fragment>
                         )}
                       </select>
@@ -213,8 +270,30 @@ function FCIRegulationPosition() {
               <strong>FCI Regulation Positions</strong>
             </CCardHeader>
             <CCardBody>
-              <p className="text-medium-emphasis small">
-                 <code>&lt;FCI Regulation Position List&gt;</code>
+              <p>
+                <table>
+                  <tr>
+                    <td width="12%">Position Identifier</td>
+                    <td>
+                    <select className="text-medium-emphasis large">
+                        {positions !== undefined && positions.map((fciPosition) => 
+                          <React.Fragment key={fciPosition.id}>
+                          <option value={fciPosition.id}>#{fciPosition.id} - {fciPosition.timestamp}&nbsp;&nbsp;&nbsp;</option>
+                          </React.Fragment>
+                        )}
+                      </select>
+                    </td>
+                    <td>
+                      <CPagination align="end" size="sm" className="text-medium-emphasis small">
+                          <CPaginationItem disabled>Previous</CPaginationItem>
+                          <CPaginationItem className="text-medium-emphasis small">1</CPaginationItem>
+                          <CPaginationItem className="text-medium-emphasis small">2</CPaginationItem>
+                          <CPaginationItem>3</CPaginationItem>
+                          <CPaginationItem className="text-medium-emphasis small">Next</CPaginationItem>
+                        </CPagination>
+                    </td>
+                  </tr>
+                </table>
               </p>
               <table>
                 <thead>
@@ -228,7 +307,7 @@ function FCIRegulationPosition() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data?.map((item) => 
+                  {Object.prototype.toString.call(positions) === '[object Array]' && positions?.map((item) => 
                     <React.Fragment key={item.id}>
                     <tr>
                       <td width="5%">{item.id}</td>

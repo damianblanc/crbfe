@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import './FCIRegulationTable.css';
 
-import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton} from '@coreui/react'
+import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilPencil, cilTrash, cilTransfer, cilMediaSkipBackward } from '@coreui/icons';
+import { cilPencil, cilTrash, cilTransfer, cilMediaSkipBackward, cilFile } from '@coreui/icons';
+
+import { CChartBar, CChartPie} from '@coreui/react-chartjs'
+
+import Popup from 'reactjs-popup';
+import 'reactjs-popup/dist/index.css';
+
+import axios from 'axios';
+
+import { CModal } from '@coreui/react';
 
 
 class FCIRegulation {
@@ -42,7 +51,9 @@ function FCIRegulationTable() {
   const [validationEditErrors, setValidationEditErrors] = useState({});
   const tableDataToSend = JSON.stringify(data, null, 2);
   const [specieTypes, setSpecieTypes] = useState([{fciSpecieTypeId: '', name: '', description: ''}]);
+  const [regulationPercentages, setRegulationPercentages] = useState([]);
   // const [sum, setSum] = useState(0);
+  const [visible, setVisible] = useState(false);
 
 
   const validateNewRow = (row) => {
@@ -114,23 +125,32 @@ function FCIRegulationTable() {
   }
 
   useEffect(() => {
-    fetch('http://localhost:8098/api/v1/fci')
-      .then((response) => response.json())
-      .then((json) => { 
-        setData(json);
-        console.table(JSON.stringify(json));
-      });
-  }, []);
+    const fetchRegulations = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
 
-  /** Specie Types retrieving */
-  useEffect(() => {
-    fetch('http://localhost:8098/api/v1/component/specie-type')
-      .then((response) => response.json())
-      .then((json) => {
-        setSpecieTypes(json);
-        console.table(JSON.stringify(json));
-      })
-  }, []);
+    const fetchSpecieTypes = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    const setFetchedData = async () => {
+      const tempLoadedRegulations = await fetchRegulations();
+      const tempLoadedSpecieTypes = await fetchSpecieTypes(tempLoadedRegulations[0].fciSymbol);
+      setData(tempLoadedRegulations);
+      setSpecieTypes(tempLoadedSpecieTypes);
+    };
+    setFetchedData();
+  }, []); 
 
   const clearNewRow = (() => {
     setNewRow({ ...newRow, symbol: '', name: '', description: '', composition: '' });
@@ -159,7 +179,7 @@ function FCIRegulationTable() {
       .then((response) => response.json())
       .then((responseData) => {
         console.log('Backend response:', responseData);
-        setData([ ...data, responseData]);
+        setData([ responseData, ...data]);
         clearNewRow();
       })    
       .catch((error) => {
@@ -233,6 +253,19 @@ function FCIRegulationTable() {
       return element.name === name;
     })
   }
+
+  const listFCIRegulationPercentages = async (fciSymbol) => {
+    setVisible(!visible);
+    console.log("I'm into getFCIRegulationPercentages");
+    try {
+      const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/regulation-percentages')
+      setRegulationPercentages(responseData.data);
+      console.log("responseData.data = " + responseData.data);
+      console.log("regulationPercentageData = " + regulationPercentages);
+    } catch (error) {
+      console.error('Error sending data to the backend:', error);
+    }
+  };
 
   return (
        <CRow>
@@ -329,7 +362,7 @@ function FCIRegulationTable() {
                       </tr>
                       <tr>
                         <td className='FCIRegulationTable'><b>Composition</b></td>
-                        <td colSpan="4">
+                        <td colSpan="3">
                           {editRowId === row.id ? (
                             <input
                               type="text"
@@ -340,8 +373,103 @@ function FCIRegulationTable() {
                               }
                             />
                           ) : (
-                            row.composition.map((c) => c.fciSpecieTypeId !== undefined && findSpecieTypeById(c.fciSpecieTypeId).name + ": " + c.percentage + "% ").join('- ')
-                          )}
+                            row.composition.map((c) => c.fciSpecieTypeId !== undefined && findSpecieTypeById(c.fciSpecieTypeId).name + ": " + c.percentage + "% ").join('- '))
+                          }
+                        </td>
+                        <td>
+                        {/* <CButton onClick={() => setVisible(!visible)}>Launch demo modal</CButton> */}
+                          <CButton shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages(row.symbol)}>
+                            <CIcon icon={cilFile} size="xl"/>
+                        </CButton>
+                        <div>{() => listFCIRegulationPercentages(row.symbol)}</div>
+                        <CModal
+                          visible={visible}
+                          alignment="center"
+                          size = "xl"
+                          onClose={() => setVisible(false)}
+                          aria-labelledby="ScrollingLongContentExampleLabel"
+                          scrollable="true"
+                        >
+                        {<CRow>
+                          <CCol xs={18}>
+                            <CCard>
+                              <CCardHeader>
+                                <strong className="text-medium-emphasis small">FCI Regulation Composion - {row.symbol}</strong>
+                              </CCardHeader>
+                              <CCardBody>
+                              <CRow>
+                              <CCol xs={4}>
+                                  <CCard className="mb-4">
+                                    <CCardHeader>Expected FCI Regulation Definition</CCardHeader>
+                                    <CCardBody>
+                                      <CChartPie
+                                        data={{
+                                          labels: regulationPercentages?.map((p) => p.specieType),
+                                          datasets: [
+                                            {
+                                              data: regulationPercentages?.map((p) => p.percentage),
+                                              backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
+                                              hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
+                                            },
+                                          ],
+                                        }}
+                                      />
+                                    </CCardBody>
+                                  </CCard>
+                                </CCol>
+                                <CCol xs={8}>
+                                <CCard className="mb-4">
+                                    <CCardHeader>FCI Regulation Composition</CCardHeader>
+                                    <CCardBody>
+                                        <table  className="text-medium-emphasis">
+                                        <thead>
+                                            <tr className="text-medium-emphasis">
+                                              <th>Specie Type</th>
+                                              <th>Percentage</th>
+                                            </tr>  
+                                          </thead>  
+                                          <tbody>
+                                            {regulationPercentages?.map((p) => 
+                                             <React.Fragment key={p.id}>
+                                              <tr className="text-medium-emphasis">
+                                                <td>{p.specieType}</td>
+                                                <td>{p.percentage}</td>
+                                              </tr>
+                                             </React.Fragment> 
+                                            )}                                       
+                                          </tbody>
+                                        </table>
+                                    </CCardBody>
+                                  </CCard>
+                                </CCol>
+
+                                {/* <CCol xs={7}>
+                                    <CCard className="mb-4">
+                                      <CCardHeader>Expected FCI Regulation Definition</CCardHeader>
+                                      <CCardBody>
+                                        <CChartBar
+                                          data={{
+                                            labels: regulationPercentages?.map((p) =>p.specieType),
+                                            datasets: [
+                                              {
+                                                label: 'FCI Regulation Composition',
+                                                backgroundColor: '#f87979',
+                                                data: regulationPercentages?.map((p) => p.percentage),
+                                              },
+                                            ],
+                                          }}
+                                          labels="Percentages"
+                                        />
+                                      </CCardBody>
+                                    </CCard>
+                                  </CCol> */}
+                               </CRow>   
+                            </CCardBody>
+                            </CCard> 
+                          </CCol>
+                         </CRow>  }
+                         </CModal>
+                      {/* </Popup>} */}
                         </td>
                       </tr>
                     </React.Fragment>

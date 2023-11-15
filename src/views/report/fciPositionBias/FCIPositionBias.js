@@ -19,6 +19,9 @@ import {
 } from '@coreui/react-chartjs'
 import { DocsCallout } from 'src/components'
 
+import { NumericFormat } from 'react-number-format';
+import { PatternFormat } from 'react-number-format';
+
 import './FCIRegulationTable.css';
 
 class FCIPercentage {
@@ -67,18 +70,19 @@ function FCIPositionBias() {
   //const [regulationPercentageData, setRegulationPercentageData] = useState({percentages: [FCIPercentage]});
   const [regulationPercentages, setRegulationPercentages] = useState([]);
   // const [positionPercentageData, setPositionPercentageData] = useState({ percentages: [FCIPercentage]});
-  const [positionPercentageData, setPositionPercentageData] = useState([]);
-  const [positionValueData, setPositionValueData] = useState({ values: [FCIValue]});
-  
+  const [positionPercentages, setPositionPercentages] = useState([]);
+  const [positionValueData, setPositionValueData] = useState({ values: [FCIValue]});  
   const [regulationValueData, setRegulationValueData] = useState({ values: [FCIValue]});
   const [queryRow, setQueryRow] = useState({ fci: '', position: ''});
   const [regulations, setRegulations] = useState([{FCIRegulationSymbolName}]);
   const [positions, setPositions] = useState([{FCIPositionIdCreatedOn}]);
   const [currentPositionData, setCurrentPositionData] = useState([{FCIPosition}]);
-  const [selectedFCISymbol, setSelectedFCISymbol] = useState('');
   const [reportTypes, setReportTypes] = useState([]);
   const [selectReportType, setSelectedReportType] = useState('');
   const [reportTypeData, setReportTypeData] = useState([]);
+  const [currentPositionId, setCurrentPositionId] = useState('');
+  const [currentFCISymbol, setCurrentFCISymbol] = useState('');
+  const [positionOverview, setPositionOverview] = useState([]);
 
   useEffect(() => {
     /** FCI Regulations - Symbol and Name */
@@ -114,7 +118,17 @@ function FCIPositionBias() {
     /** FCI Component - Report Types */
     const fetchReportTypes = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/component/report')
+        const responseData = await axios.get('http://localhost:8098/api/v1/component/report')
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    /** FCI Position Overview */
+    const fetchFCIPositionPercentagesValued = async (fciSymbol, positionId) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/percentage-valued/refresh/true');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -126,11 +140,14 @@ function FCIPositionBias() {
       const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
       const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
       const tempLoadedReportTypes = await fetchReportTypes();
+      const tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
       setRegulations(tempLoadedRegulations);
       setPositions(tempLoadedPositions);
       setRegulationPercentages(tempLoadedPercentages);
-      setSelectedFCISymbol(tempLoadedRegulations[0].fciSymbol);
+      setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
       setReportTypes(tempLoadedReportTypes);
+      setCurrentPositionId(tempLoadedPositions[0].id);
+      setPositionPercentages(tempLoadedPercentagesValued);
     };
     setFetchedData();
   }, []); 
@@ -171,18 +188,80 @@ function FCIPositionBias() {
     // http://localhost:8098/api/v1/calculate-bias/fci/BTH58/position/1/valued
     // http://localhost:8098/api/v1/calculate-bias/fci/BTH58/position/1/percentages
 
-    const getFCIPositionPercentages = (fciSymbol, positionId) => {
-    fetch('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/percentages/refresh/true', {
+  //   const getFCIPositionOverview = () => {
+  //     fetch('http://localhost:8098/api/v1/calculate-bias/fci/' + selectedFCISymbol + '/position/' + currentPositionId + '/refresh/true', {
+  //     method: 'GET',
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //   })
+  //     .then((response) => response.json())
+  //     .then((data) => {
+  //       console.log('Backend response:', data);
+  //       setPositionOverview(data);
+  //       console.log("positionOverview = " + positionOverview);
+  //     })    
+  //     .catch((error) => {
+  //       console.error('Error sending data to the backend:', error);
+  //     });
+  // };
+
+  // useEffect(() => {
+  // const getFCIPositionOverview = async (link) => {
+  //     try {
+  //       const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + selectedFCISymbol + '/position/' + currentPositionId + '/refresh/true')
+  //       setPositionOverview(responseData.data);
+  //     } catch (error) {
+  //       console.error('Error sending data to the backend:', error);
+  //     }
+  //   };
+  // });
+    
+  //   const setFetchedPositionOverviewData = async () => {
+  //     const tempLoadedPositionOverview = await reportPositionOverview(link);
+  //     setPositionOverview(tempLoadedPositionOverview);
+  //   };
+  // }
+
+  const getFCIPositionOverview = async (link) => {
+    const reportPositionOverview = async (link) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + currentFCISymbol + '/position/' + currentPositionId + '/refresh/true')
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+  }
+
+  useEffect(() => {
+    const setFetchedPositionOverviewData = async () => {
+      const reportPositionOverviewInner = async (link) => {
+        try {
+          const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + currentFCISymbol + '/position/' + currentPositionId + '/refresh/true')
+          return responseData.data;
+        } catch (error) {
+          console.error('Error sending data to the backend:', error);
+        }
+      };
+
+      const tempLoadedPositionOverview = await reportPositionOverviewInner("");
+      setPositionOverview(tempLoadedPositionOverview);
+    };
+  }, []);
+
+    const fetchFCIPositionPercentageValued = async () => {
+    fetch('http://localhost:8098/api/v1/calculate-bias/fci/' + currentFCISymbol + '/position/' + currentPositionId + '/percentage-valued/refresh/true', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     })
       .then((response) => response.json())
-      .then((data) => {
-        console.log('Backend response:', data);
-        setPositionPercentageData(data);
-        console.log("responseData! = " + JSON.stringify(positionPercentageData));
+      .then((percentages) => {
+        console.log('Backend response:', percentages);
+        setPositionPercentages(percentages);
+        console.log("responseData! = " + JSON.stringify(positionPercentages));
       })    
       .catch((error) => {
         console.error('Error sending data to the backend:', error);
@@ -210,8 +289,8 @@ function FCIPositionBias() {
   const listFCIRegulationPercentages = async () => {
     console.log("I'm into getFCIRegulationPercentages");
     try {
-      console.log("selectedFCISymbol = " + selectedFCISymbol);
-      const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/regulation-percentages')
+      console.log("selectedFCISymbol = " + currentFCISymbol);
+      const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + currentFCISymbol + '/regulation-percentages')
       setRegulationPercentages(responseData.data);
       console.log("responseData.data = " + responseData.data);
       console.log("regulationPercentageData = " + regulationPercentages);
@@ -274,7 +353,7 @@ function FCIPositionBias() {
                   <tr className="text-medium-emphasis">
                     <td width="17%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
                     <td width="25%">
-                      <select className="text-medium-emphasis large" onChange={(e) => setSelectedFCISymbol(e.target.value)}>
+                      <select className="text-medium-emphasis large" onChange={(e) => setCurrentFCISymbol(e.target.value)}>
                         {regulations?.map((regulation) => 
                           <React.Fragment key={regulation.id}>
                           <option value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
@@ -302,7 +381,7 @@ function FCIPositionBias() {
                           <CCol xs={12}>
                             <CCard>
                               <CCardHeader>
-                                <strong className="text-medium-emphasis small">FCI Regulation Composion - {selectedFCISymbol}</strong>
+                                <strong className="text-medium-emphasis small">FCI Regulation Composion - {currentFCISymbol}</strong>
                               </CCardHeader>
                               <CCardBody>
                               <CRow>
@@ -396,7 +475,7 @@ function FCIPositionBias() {
           <CCardBody>
               {regulationPercentages?.length > 0 ? (
                 <CRow>
-                <CCol xs={12}>
+                <CCol xs={20}>
                   <CCard>
                     <CCardHeader>
                       <table>
@@ -405,13 +484,140 @@ function FCIPositionBias() {
                             <strong className="text-medium-emphasis small">Report & Analysis</strong>
                           </td>
                           <td>
-                            <select className="text-medium-emphasis large" onChange={(e) => processReportType(e.target.value)}>
+                            <select className="text-medium-emphasis large" onChange={(e) => fetchFCIPositionPercentageValued(e.target.value)}>
                               {reportTypes?.map((reportType) => 
                                 <React.Fragment key={reportType.id}>
                                 <option value={reportType.link}>{reportType.name}&nbsp;&nbsp;&nbsp;</option>
                                 </React.Fragment>
                               )}
                       </select>
+                        </td>
+                        <td>
+                        {<Popup trigger={
+                        <CButton shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages()}>
+                            <CIcon icon={cilFile} size="xl"/>
+                        </CButton>} position="right center" modal lockScroll="false">
+                        {
+                          <CRow>
+                          <CCol xs={12}>
+                            <CCard>
+                              <CCardHeader>
+                                <strong className="text-medium-emphasis small">FCI {currentFCISymbol} - Current Position Biases</strong>
+                              </CCardHeader>
+                              <CCardBody>
+                              <CRow>
+                              <CCol>
+                                <CCard className="mb-8">
+                                  <CCardHeader>Current Position Biases</CCardHeader>
+                                  <CCardBody>
+                                      <CCol xs={2}>
+                                            <CChartBar
+                                              data={{
+                                                labels: positionPercentages?.map((p) => p.specieType),
+                                                datasets: [
+                                                  {
+                                                    label: 'FCI Position Biases',
+                                                    backgroundColor: '#f87979',
+                                                    data: positionPercentages?.map((p) => p.rpercentage),
+                                                  },
+                                                ],
+                                              }}
+                                              labels="Percentages"
+                                            />
+
+<table  className="text-medium-emphasis">
+                                <thead>
+                                    <tr className="text-medium-emphasis">
+                                      <th>Specie Type</th>
+                                      <th>Bias Percentage</th>
+                                      <th>Bias Valued</th>
+                                    </tr>  
+                                  </thead>  
+                                  <tbody>
+                                    {positionPercentages !== undefined 
+                                    && Object.prototype.toString.call(positionPercentages) === '[object Array]' 
+                                    && positionPercentages.map((p) => 
+                                      <React.Fragment key={p.fciSpecieTypeId}>
+                                      <tr className="text-medium-emphasis">
+                                        <td>{p.specieType}</td>
+                                        <td>{p.rpercentage}%</td>
+                                        <td>$ {p.rvalued}</td>
+                                      </tr>
+                                      </React.Fragment> 
+                                    )}                                       
+                                  </tbody>
+                                </table>
+                                      </CCol>
+                                  </CCardBody>
+                                </CCard>
+                              </CCol>
+                            </CRow>   
+                            </CCardBody>
+                          </CCard> 
+
+                          <CCard className="mb-4">
+                            <CCardHeader>FCI Position Overview - Total Position $ {positionPercentages.reduce((acc, currentValue) => acc + currentValue)}</CCardHeader>
+                            <CCardBody>
+                                <table  className="text-medium-emphasis">
+                                <thead>
+                                    <tr className="text-medium-emphasis">
+                                      <th>Specie Type</th>
+                                      <th>Bias Percentage</th>
+                                      <th>Bias Valued</th>
+                                    </tr>  
+                                  </thead>  
+                                  <tbody>
+                                    {positionPercentages !== undefined 
+                                    && Object.prototype.toString.call(positionPercentages) === '[object Array]' 
+                                    && positionPercentages.map((p) => 
+                                      <React.Fragment key={p.fciSpecieTypeId}>
+                                      <tr className="text-medium-emphasis">
+                                        <td>{p.specieType}</td>
+                                        <td>{p.rpercentage}%</td>
+                                        <td>$ {p.rvalued}</td>
+                                      </tr>
+                                      </React.Fragment> 
+                                    )}                                       
+                                  </tbody>
+                                </table>
+                            </CCardBody>
+                          </CCard>
+
+                          </CCol>
+
+                          <CRow>&nbsp;</CRow>
+
+                          <CCol xs={6}>
+                        <CCard className="mb-4">
+                            <CCardHeader>FCI Position Overview - Total Position $ {positionPercentages.reduce((acc, currentValue) => acc + currentValue)}</CCardHeader>
+                            <CCardBody>
+                                <table  className="text-medium-emphasis">
+                                <thead>
+                                    <tr className="text-medium-emphasis">
+                                      <th>Specie Type</th>
+                                      <th>Bias Percentage</th>
+                                      <th>Bias Valued</th>
+                                    </tr>  
+                                  </thead>  
+                                  <tbody>
+                                    {positionPercentages !== undefined 
+                                    && Object.prototype.toString.call(positionPercentages) === '[object Array]' 
+                                    && positionPercentages.map((p) => 
+                                      <React.Fragment key={p.fciSpecieTypeId}>
+                                      <tr className="text-medium-emphasis">
+                                        <td>{p.specieType}</td>
+                                        <td>{p.rpercentage}%</td>
+                                        <td>$ {p.rvalued}</td>
+                                      </tr>
+                                      </React.Fragment> 
+                                    )}                                       
+                                  </tbody>
+                                </table>
+                            </CCardBody>
+                          </CCard>
+                        </CCol>
+                        </CRow>  }
+                        </Popup>}
                         </td>
                       </tr>
                       </table>
@@ -420,16 +626,16 @@ function FCIPositionBias() {
                     <CRow>
                     <CCol xs={3}>
                         <CCard className="mb-4">
-                          <CCardHeader>Expected FCI Regulation Definition</CCardHeader>
+                          <CCardHeader>Current Position - Distribution</CCardHeader>
                           <CCardBody>
                             {<CChartPie
                               data={{
-                                labels: regulationPercentages?.map((p) => p.specieType),
+                                labels: positionPercentages?.map((p) => p.specieType),
                                 datasets: [
                                   {
-                                    data: regulationPercentages?.map((p) => p.percentage),
+                                    data: positionPercentages?.map((p) => p.percentage),
                                     backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
-                                              hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
+                                    hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
                                   },
                                 ],
                               }}
@@ -437,10 +643,88 @@ function FCIPositionBias() {
                           </CCardBody>
                         </CCard>
                       </CCol>
+
+                      <CCol>
+                        <CCard className="mb-4">
+                            <CCardHeader>FCI Position Overview - Total Position: $&nbsp; 
+                            <NumericFormat displayType="text" value={positionPercentages.reduce((previousValue, p, index) => previousValue +  Number(p.valued) , 0).toFixed(2)} thousandSeparator="." decimalSeparator=','/>
+                              </CCardHeader>
+                            <CCardBody>
+                                <table  className="text-medium-emphasis">
+                                <thead>
+                                    <tr className="text-medium-emphasis">
+                                      <th>Specie Type</th>
+                                      <th>Percentage</th>
+                                      <th>Valued</th>
+                                      <th>Bias Percentage</th>
+                                      <th>Bias Valued</th>
+                                    </tr>  
+                                  </thead>  
+                                  <tbody>
+                                    {positionPercentages !== undefined 
+                                    && Object.prototype.toString.call(positionPercentages) === '[object Array]' 
+                                    && positionPercentages.map((p) => 
+                                      <React.Fragment key={p.fciSpecieTypeId}>
+                                      <tr className="text-medium-emphasis">
+                                        <td>{p.specieType}</td>
+                                        <td>{p.percentage}%</td>
+                                        <td>
+                                          $ <NumericFormat displayType="text" value={p.valued} thousandSeparator="." decimalSeparator=','/></td>
+                                        <td>
+                                          {p.rvalued < 0 ? (
+                                            <div style={{ color: '#FF6384' }}>
+                                            {p.rpercentage}%
+                                            </div>) : (
+                                              <div>{p.rpercentage}%</div>
+                                          )}
+                                        </td>
+                                        <td>{p.rvalued < 0 ? (
+                                            <div style={{ color: '#FF6384' }}>
+                                              $ <NumericFormat displayType="text" value={p.rvalued} thousandSeparator="." decimalSeparator=','/>
+                                            </div>) : (
+                                              <div>
+                                              $ <NumericFormat displayType="text" value={p.rvalued} thousandSeparator="." decimalSeparator=','/>
+                                              </div>
+                                            )}
+                                        </td>
+                                      </tr>
+                                      </React.Fragment> 
+                                    )}                                       
+                                  </tbody>
+                                </table>
+                            </CCardBody>
+                          </CCard>
+                        </CCol>
+
+                        {/* <CCol xs={3}>
+                        <CCard className="mb-4">
+                          <CCardHeader>Current Position Biases</CCardHeader>
+                          <CCardBody>
+                              <CCol xs={14}>
+                                    <CChartBar
+                                      data={{
+                                        labels: positionPercentages?.map((p) => p.specieType),
+                                        datasets: [
+                                          {
+                                            label: 'FCI Position Biases',
+                                            backgroundColor: '#f87979',
+                                            data: positionPercentages?.map((p) => p.rpercentage),
+                                          },
+                                        ],
+                                      }}
+                                      labels="Percentages"
+                                    />
+                              </CCol>
+                          </CCardBody>
+                        </CCard>
+                      </CCol> */}
+
                     </CRow> 
                   </CCardBody>
                 </CCard>
               </CCol>
+
+                    
               </CRow>   
               ) :  null}
         </CCardBody>

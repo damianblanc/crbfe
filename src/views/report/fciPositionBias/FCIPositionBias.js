@@ -510,7 +510,7 @@ function FCIPositionBias() {
                                 <CCard className="mb-8">
                                   <CCardHeader>Current Position Biases</CCardHeader>
                                   <CCardBody>
-                                      <CCol xs={2}>
+                                      <CCol xs={12}>
                                             <CChartBar
                                               data={{
                                                 labels: positionPercentages?.map((p) => p.specieType),
@@ -518,35 +518,20 @@ function FCIPositionBias() {
                                                   {
                                                     label: 'FCI Position Biases',
                                                     backgroundColor: '#f87979',
+                                                    hoverBackgroundColor: "#f87969",
+                                                    // hoverBorderColor: '#36A2EB',
+                                                    // hoverBorderWidth: 5,
+                                                    indexAxis: 'y',
+                                                    // borderColor: "rgba(220, 220, 220, 1)",
+                                                    // pointBackgroundColor: "rgba(220, 220, 220, 1)",
+                                                    // pointBorderColor: "#fff",
                                                     data: positionPercentages?.map((p) => p.rpercentage),
+                                                    // data : [10, 20, 30]
                                                   },
                                                 ],
                                               }}
                                               labels="Percentages"
                                             />
-
-<table  className="text-medium-emphasis">
-                                <thead>
-                                    <tr className="text-medium-emphasis">
-                                      <th>Specie Type</th>
-                                      <th>Bias Percentage</th>
-                                      <th>Bias Valued</th>
-                                    </tr>  
-                                  </thead>  
-                                  <tbody>
-                                    {positionPercentages !== undefined 
-                                    && Object.prototype.toString.call(positionPercentages) === '[object Array]' 
-                                    && positionPercentages.map((p) => 
-                                      <React.Fragment key={p.fciSpecieTypeId}>
-                                      <tr className="text-medium-emphasis">
-                                        <td>{p.specieType}</td>
-                                        <td>{p.rpercentage}%</td>
-                                        <td>$ {p.rvalued}</td>
-                                      </tr>
-                                      </React.Fragment> 
-                                    )}                                       
-                                  </tbody>
-                                </table>
                                       </CCol>
                                   </CCardBody>
                                 </CCard>
@@ -555,7 +540,7 @@ function FCIPositionBias() {
                             </CCardBody>
                           </CCard> 
 
-                          <CCard className="mb-4">
+                          {/* <CCard className="mb-4">
                             <CCardHeader>FCI Position Overview - Total Position $ {positionPercentages.reduce((acc, currentValue) => acc + currentValue)}</CCardHeader>
                             <CCardBody>
                                 <table  className="text-medium-emphasis">
@@ -581,13 +566,13 @@ function FCIPositionBias() {
                                   </tbody>
                                 </table>
                             </CCardBody>
-                          </CCard>
+                          </CCard> */}
 
                           </CCol>
 
                           <CRow>&nbsp;</CRow>
 
-                          <CCol xs={6}>
+                          {/* <CCol xs={6}>
                         <CCard className="mb-4">
                             <CCardHeader>FCI Position Overview - Total Position $ {positionPercentages.reduce((acc, currentValue) => acc + currentValue)}</CCardHeader>
                             <CCardBody>
@@ -615,7 +600,7 @@ function FCIPositionBias() {
                                 </table>
                             </CCardBody>
                           </CCard>
-                        </CCol>
+                        </CCol> */}
                         </CRow>  }
                         </Popup>}
                         </td>
@@ -658,6 +643,8 @@ function FCIPositionBias() {
                                       <th>Valued</th>
                                       <th>Bias Percentage</th>
                                       <th>Bias Valued</th>
+                                      <th>FCI Percentage</th>
+                                      <th>FCI Valued</th>
                                     </tr>  
                                   </thead>  
                                   <tbody>
@@ -684,6 +671,23 @@ function FCIPositionBias() {
                                             </div>) : (
                                               <div>
                                               $ <NumericFormat displayType="text" value={p.rvalued} thousandSeparator="." decimalSeparator=','/>
+                                              </div>
+                                            )}
+                                        </td>
+                                        <td>
+                                          {p.fvalued < 0 ? (
+                                            <div style={{ color: '#FF6384' }}>
+                                            {p.fpercentage}%
+                                            </div>) : (
+                                              <div>{p.fpercentage}%</div>
+                                          )}
+                                        </td>
+                                        <td>{p.fvalued < 0 ? (
+                                            <div style={{ color: '#FF6384' }}>
+                                              $ <NumericFormat displayType="text" value={p.fvalued} thousandSeparator="." decimalSeparator=','/>
+                                            </div>) : (
+                                              <div>
+                                              $ <NumericFormat displayType="text" value={p.fvalued} thousandSeparator="." decimalSeparator=','/>
                                               </div>
                                             )}
                                         </td>

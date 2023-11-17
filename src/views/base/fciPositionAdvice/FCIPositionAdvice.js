@@ -75,7 +75,7 @@ function FCIPositionAdvice() {
       }
     };
 
-    /** FCI Component - Report Types */
+    /** FCI Position - Advices */
     const fetchAdvices = async (fciSymbol, positionId) => {
       try {
         const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/advice/criteria/price_uniformly_distribution')
@@ -99,7 +99,7 @@ function FCIPositionAdvice() {
       const tempLoadedRegulations = await fetchRegulations();
       const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
       const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
-      const tempLoadedAdvices = await fetchAdvices();
+      const tempLoadedAdvices = await fetchAdvices(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
       const tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
       setRegulations(tempLoadedRegulations);
       setPositions(tempLoadedPositions);
@@ -239,7 +239,7 @@ function FCIPositionAdvice() {
                           <th>Name</th>
                           <th>Operation Advice</th>
                           <th>Quantity</th>
-                          <th>Current Market Price</th>
+                          <th>Market Price</th>
                         </tr>
                       </thead>
                       <tbody>

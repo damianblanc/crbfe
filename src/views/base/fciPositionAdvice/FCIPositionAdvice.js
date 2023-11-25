@@ -97,17 +97,19 @@ function FCIPositionAdvice() {
 
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
-      const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
-      const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
-      const tempLoadedAdvices = await fetchAdvices(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
-      const tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
-      setRegulations(tempLoadedRegulations);
-      setPositions(tempLoadedPositions);
-      setRegulationPercentages(tempLoadedPercentages);
-      setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
-      setAdvices(tempLoadedAdvices);
-      setCurrentPositionId(tempLoadedPositions[0].id);
-      setPositionPercentages(tempLoadedPercentagesValued);
+      if (tempLoadedRegulations.size > 0) {
+        const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
+        const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
+        const tempLoadedAdvices = await fetchAdvices(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+        const tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+        setRegulations(tempLoadedRegulations);
+        setPositions(tempLoadedPositions);
+        setRegulationPercentages(tempLoadedPercentages);
+        setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
+        setAdvices(tempLoadedAdvices);
+        setCurrentPositionId(tempLoadedPositions[0].id);
+        setPositionPercentages(tempLoadedPercentagesValued);
+      }
     };
     setFetchedData();
   }, []); 

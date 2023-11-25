@@ -22,7 +22,11 @@ const Tooltips = React.lazy(() => import('./views/base/tooltips/Tooltips'))
 const FCIRegulationManager = React.lazy(() => import('./views/base/fciRegulationManager/FCIRegulationManager'))
 const FCIRegulationPosition = React.lazy(() => import('./views/base/fciRegulationPosition/FCIRegulationPosition'))
 const FCIPositionAdvice = React.lazy(() => import('./views/base/fciPositionAdvice/FCIPositionAdvice'))
+const FCIAdviceManager = React.lazy(() => import('./views/base/fciPositionAdvice/FCIAdviceManager'))
 const FCIPositionBias = React.lazy(() => import('./views/report/fciPositionBias/FCIPositionBias'))
+const FCIGroupManager = React.lazy(() => import('./views/base/configuration/FCIGroupManager'))
+const SpecieTypeManager = React.lazy(() => import('./views/base/configuration/SpecieTypeManager'))
+
 
 // Buttons
 const Buttons = React.lazy(() => import('./views/buttons/buttons/Buttons'))
@@ -102,7 +106,11 @@ const routes = [
   { path: '/base/fciRegulationManager', name: 'FCIRegulationManager', element: FCIRegulationManager },
   { path: '/base/fciRegulationPosition', name: 'FCIRegulationPosition', element: FCIRegulationPosition },
   { path: '/base/fciPositionAdvice', name: 'FCIPositionAdvice', element: FCIPositionAdvice },
-  { path: '/report/fciPositionBias', name: 'FCIPositionBias', element: FCIPositionBias }
+  { path: '/base/fciPositionAdvice', name: 'FCIAdviceManager', element: FCIAdviceManager },
+  { path: '/report/fciPositionBias', name: 'FCIPositionBias', element: FCIPositionBias },
+  { path: '/base/configuration', name: 'FCIGroupManager', element: FCIGroupManager },
+  { path: '/base/configuration', name: 'SpecieTypeManager', element: SpecieTypeManager },
+  
 ]
 
 export default routes

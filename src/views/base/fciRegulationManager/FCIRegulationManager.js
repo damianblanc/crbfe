@@ -145,9 +145,11 @@ function FCIRegulationTable() {
 
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
-      const tempLoadedSpecieTypes = await fetchSpecieTypes(tempLoadedRegulations[0].fciSymbol);
-      setData(tempLoadedRegulations);
-      setSpecieTypes(tempLoadedSpecieTypes);
+      if (tempLoadedRegulations.size > 0) {
+        const tempLoadedSpecieTypes = await fetchSpecieTypes(tempLoadedRegulations[0].fciSymbol);
+        setData(tempLoadedRegulations);
+        setSpecieTypes(tempLoadedSpecieTypes);
+      }
     };
     setFetchedData();
   }, []); 
@@ -308,7 +310,7 @@ function FCIRegulationTable() {
                   </tr>
                 </thead>
                 <tbody>
-                  {dataAsc.map((row) => (
+                  {Object.prototype.toString.call(dataAsc) === '[object Array]' && dataAsc.map((row) => (
                     <React.Fragment key={row.id}>
                       <tr>
                         <td>{row.id}</td>

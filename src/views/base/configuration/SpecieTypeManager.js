@@ -33,7 +33,7 @@ class FCIRegulationSymbolName {
   }
 }
 
-function FCIRegulationPosition() {
+function SpecieTypeManager() {
   const [regulations, setRegulations] = useState([{FCIRegulationSymbolName}]);
   const [positions, setPositions] = useState([{FCIPosition}]);
   const [excelData, setExcelData] = useState([]);
@@ -63,12 +63,10 @@ function FCIRegulationPosition() {
 
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
-      if (tempLoadedRegulations.size > 0) {
-        const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
-        setRegulations(tempLoadedRegulations);
-        setPositions(tempLoadedPositions);
-        setSelectedFCISymbol(tempLoadedRegulations[0].fciSymbol);
-      }
+      const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
+      setRegulations(tempLoadedRegulations);
+      setPositions(tempLoadedPositions);
+      setSelectedFCISymbol(tempLoadedRegulations[0].fciSymbol);
     };
     setFetchedData();
   }, []); 
@@ -386,4 +384,4 @@ function FCIRegulationPosition() {
   );
 }
 
-export default FCIRegulationPosition;
+export default SpecieTypeManager;

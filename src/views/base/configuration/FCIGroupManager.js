@@ -22,11 +22,20 @@ class SpecieTypeGroup {
     }
 }
 
+class SpecieType {
+    constructor(id, name, description, updatable) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.updatable = updatable;
+    }
+}
+
 function FCIGroupManager() {
   const [specieTypeGroups, setSpecieTypeGroups] = useState([]);
   const [specieTypes, setSpecieTypes] = useState([]);
   const [currentGroup, setCurrentGroup] = useState({SpecieTypeGroup});
-  const [newSpecieType, setNewSpecieType] = useState({ name: '', description: ''});
+  const [newSpecieType, setNewSpecieType] = useState({ id: '', name: '', description: '', updatable: ''});
 
   /** SpecieType Groups */
   useEffect(() => {
@@ -48,33 +57,6 @@ function FCIGroupManager() {
     setFetchedData();
   }, []); 
 
- /** Create a new Position */
-//   const createFCIPosition = () => {
-//     if(excelData.length > 0) {
-//       setFetchedData();
-//     };
-//   };
-
-//   const setFetchedData = async () => {
-//     const tempLoadedCreatedPosition = await fetchCreatedPosition();
-//     setPositions([tempLoadedCreatedPosition, ...positions]);
-//   };
-
-//   const fetchCreatedPosition = async () => {
-//     try {
-//       const body = "{\"position\":" + JSON.stringify(excelData, null, 1) + "}";
-//       const responseData = await axios.post('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position', body,
-//         {
-//           headers: {
-//             'Content-Type': 'application/json',
-//           }
-//         });
-//       return responseData.data;
-//     } catch (error) {
-//       console.error('Error sending data to the backend:', error);
-//     }
-//   };
-
   /** Specie Type Group */
   const selectSpecieTypeGroup = async (specieTypeGroupName) => {
     const fetchSpecieTypeGroup = async (specieTypeGroupName) => {
@@ -93,11 +75,44 @@ function FCIGroupManager() {
       }
       setFetchedData(specieTypeGroupName);
   };
-  
 
-  const addSpecieType = () => {
-
+  const validateNewSpecieTypeRow = (newSpecieType) => {
+    const errors = {};
+    if (!newSpecieType.name || !newSpecieType.description) {
+        errors.name = "Fields are not defined";
+    }
+    return errors;
   }
+  
+  const addSpecieType = async () => {
+    const errors = validateNewSpecieTypeRow(newSpecieType);
+    if (Object.keys(errors).length === 0) {
+        const fetchCreatedSpecieType = async () => {
+        
+                try {
+                    const body = new SpecieType(null, newSpecieType.name, newSpecieType.description, newSpecieType.updatable);
+                    newSpecieType.fciSpecieTypeId = specieTypes.length + 1;
+                    const responseData = await axios.post('http://localhost:8098/api/v1/component/specie-type-group/' + currentGroup.name + '/specie-type', body,
+                    {
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    return responseData.data;
+                } catch (error) {
+                    console.error('Error sending data to the backend:', error);
+                }
+                
+        }
+        fetchCreatedSpecieType();
+        setSpecieTypes([newSpecieType, ...specieTypes]);
+        clearNewSpecieType();
+    }
+  }
+
+  const clearNewSpecieType = (() => {
+    setNewSpecieType({ ...newSpecieType, fciSpecieTypeId: '', name: '', description: '', updatable: '' });
+  })
 
   const deleteSpecieType = () => {
 
@@ -132,7 +147,15 @@ function FCIGroupManager() {
                   </tr>
                 </thead>
                 <tbody></tbody>
-               </table> 
+               </table>
+               <br/>
+               <table className="text-medium-emphasis small"> 
+               <tr>
+                  <p>
+                    &nbsp;<code>*&nbsp;</code>Updatable property refers to the ability to take current prices from market and apply them to a position
+                  </p>
+                  </tr>
+                </table>
               </CCardBody>
             </CCard>
         </CCol>

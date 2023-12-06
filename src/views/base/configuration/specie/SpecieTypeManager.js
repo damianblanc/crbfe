@@ -8,8 +8,6 @@ import CIcon from '@coreui/icons-react'
 import './FCIRegulationTable.css';
 import './Popup.css';
 
-import {CChartPie} from '@coreui/react-chartjs'
-
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
 
@@ -25,21 +23,30 @@ class SpecieTypeGroup {
 }
 
 class SpecieType {
-    constructor(id, name, description, updatable, specieQuantity) {
+    constructor(id, name, description, updatable) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.updatable = updatable;
-        this.specieQuantity = specieQuantity;
     }
 }
 
-function FCIGroupManager() {
+class Specie {
+    constructor(id, specieSymbol, fciSpecieTypeId, specieTypeName) {
+        this.id = id;
+        this.specieSymbol = specieSymbol;
+        this.fciSpecieTypeId = fciSpecieTypeId;
+        this.specieTypeName = specieTypeName;
+    }
+}
+
+function SpecieTypeManager() {
   const [specieTypeGroups, setSpecieTypeGroups] = useState([]);
   const [specieTypes, setSpecieTypes] = useState([]);
   const [currentGroup, setCurrentGroup] = useState({SpecieTypeGroup});
+  const [currentSpecieTypeName, setCurrentSpecieTypeName] = useState('');
   const [newSpecieType, setNewSpecieType] = useState({ id: '', name: '', description: '', updatable: ''});
-  const [visible, setVisible] = useState(false);
+  const [species, setSpecies] = useState([Specie]);
 
   /** SpecieType Groups */
   useEffect(() => {
@@ -52,11 +59,23 @@ function FCIGroupManager() {
       }
     };
 
+    const fetchSpecies = async (specieTypeGroupName, specieTypeName) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/bind');
+        return responseData.data;
+      } catch (error) {
+        console.error('#1 - Error receiving specieTypeGroups:', error);
+      }
+    };
+
     const setFetchedData = async () => {
       const tempLoadedSpecieTypeGroups = await fetchSpecieTypeGroups();
+      const tempLoadedSpecies = await fetchSpecies(tempLoadedSpecieTypeGroups[0].name, tempLoadedSpecieTypeGroups[0].fciSpecieTypes[0].name);
       setSpecieTypeGroups(tempLoadedSpecieTypeGroups);
       setCurrentGroup(tempLoadedSpecieTypeGroups[0]);
       setSpecieTypes(tempLoadedSpecieTypeGroups[0].fciSpecieTypes);
+      console.log(tempLoadedSpecies)
+      setSpecies(tempLoadedSpecies);
     };
     setFetchedData();
   }, []); 
@@ -71,14 +90,45 @@ function FCIGroupManager() {
           console.error('#1 - Error receiving specieTypeGroups:', error);
         }
       };
-   
+    
+    const fetchSpecies = async (specieTypeGroupName, specieTypeName) => {
+        try {
+          const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/specie-type/' + specieTypeName + '/bind');
+          return responseData.data;
+        } catch (error) {
+          console.error('#1 - Error receiving specieTypeGroups:', error);
+        }
+      };
+      
       const setFetchedData = async (specieTypeGroupName) => {
         const tempLoadedSpecieTypeGroup = await fetchSpecieTypeGroup(specieTypeGroupName);
+        const tempLoadedSpecies = await fetchSpecies(specieTypeGroupName, tempLoadedSpecieTypeGroup.fciSpecieTypes[0].name)
         setCurrentGroup(tempLoadedSpecieTypeGroup);
         setSpecieTypes(tempLoadedSpecieTypeGroup.fciSpecieTypes);
+        setSpecies(tempLoadedSpecies);
       }
       setFetchedData(specieTypeGroupName);
   };
+
+  const setCurrentSpecieTypeSelected = (specieTypeName) => {
+    setCurrentSpecieTypeName(specieTypeName);
+  }
+
+  const upsertSpecieToSpecieTypeAssociation = (specieTypeGroupName, specieTypeName, specieName) => {
+    const upsertSpecie = async (specieTypeGroupName, specieTypeName, specieName) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/specie-type/' + specieTypeName + '/specie/' + specieName + '/bind');
+        return responseData.data;
+      } catch (error) {
+        console.error('#2 - Error upserting association:', error);
+      }
+    };
+
+    const upsertData = async (specieTypeGroupName, specieTypeName, specieName) => {
+      const upsertedSpecie = await upsertSpecie(specieTypeGroupName, specieTypeName, specieName);
+    }
+    upsertData(specieTypeGroupName, specieTypeName, specieName);
+  }
 
   const validateNewSpecieTypeRow = (newSpecieType) => {
     const errors = {};
@@ -145,9 +195,6 @@ function FCIGroupManager() {
                       </select>
                       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{currentGroup.description}
                     </td>
-                    <td>{currentGroup.updatable? (<strong><code>Updatable</code></strong>) 
-                                               : (<strong><code>Not Updatable</code></strong>)}
-                    </td>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -155,11 +202,11 @@ function FCIGroupManager() {
                <br/>
                <table className="text-medium-emphasis small"> 
                <tr>
-               {currentGroup.updatable? (
-                  <p>
-                    &nbsp;<code>*&nbsp;</code>Updatable property refers to the ability to take current prices from market and apply them to a position
-                  </p>
-               ) : (null)}
+                  {currentGroup.updatable? (
+                      <p>
+                        &nbsp;<code>*&nbsp;</code>Updatable property refers to the ability to take current prices from market and apply them to a position
+                      </p>
+                  ) : (null)}
                   </tr>
                 </table>
               </CCardBody>
@@ -173,55 +220,38 @@ function FCIGroupManager() {
           <CCard>
             <CCardHeader className="text-medium-emphasis small">
               <strong>Specie Types in Group &nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong>
-              <Popup trigger={
-                <CButton shape='rounded' size='xxl' color='string'>
-                    <CIcon icon={cilClipboard} size="xl"/>
-                </CButton>} position="right">
-                    {<CRow>
-                        <CCol xs={24}>
-                        <CCard>
-                            <CCard className="mb-6">
-                            <CCardHeader><strong className="text-medium-emphasis small">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Group &nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong></CCardHeader>
-                            <CCardBody>
-                                <CChartPie
-                                data={{
-                                    labels: specieTypes?.map((st) => st.name),
-                                    datasets: [
-                                    {
-                                        data: specieTypes?.map((st) => st.specieQuantity),
-                                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
-                                        hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
-                                    },
-                                    ],
-                                }}
-                                />
-                            </CCardBody>
-                            </CCard>
-                        </CCard> 
-                        </CCol>
-                        </CRow>  }
-                        </Popup>
             </CCardHeader>
             <CCardBody>
               <table>
                 <thead>
                   <tr className="text-medium-emphasis">
-                    <th width="5%">#</th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th># Species</th>
+                    <th>#</th>
+                    <th>Specie Symbol</th>
+                    <th>Specie Type</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.prototype.toString.call(specieTypes) === '[object Array]' && specieTypes?.map((item) => 
+                  {Object.prototype.toString.call(species) === '[object Array]' && species?.map((item) => 
                     <React.Fragment key={item.id}>
                     <tr>
-                      <td width="5%">{item.fciSpecieTypeId}</td>
-                      <td width="5%">{item.name}</td>
-                      <td width="30%">{item.description}</td>
-                      <td>{item.specieQuantity}</td>
-                      <td>
+                    <td width="5%">{item.id}</td>
+                      <td width="5%">{item.specieSymbol}</td>
+                      <td width="30%">
+                      <select className="text-medium-emphasis large" onChange={(e) => setCurrentSpecieTypeSelected(e.target.value)}>
+                        <option>&nbsp;&nbsp;&nbsp;</option> 
+                        {Object.prototype.toString.call(specieTypes) === '[object Array]' && specieTypes?.map((specietype) => 
+                          <React.Fragment key={specietype.id}>
+                           
+                          <option value={specietype.name} selected={item.specieTypeName === specietype.name}>{specietype.name}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
+                          </React.Fragment>
+                        )}
+                      </select>
+                    </td>
+                    <td>
+                      <CButton component="a" color="string" role="button" size='sm' onClick={() => upsertSpecieToSpecieTypeAssociation(currentGroup.name, currentSpecieTypeName, item.specieSymbol)}>
+                            <CIcon icon={cilTransfer} size="xl"/>
+                        </CButton>
                         <CButton component="a" color="string" role="button" size='sm' onClick={() => deleteSpecieType()}>
                             <CIcon icon={cilTrash} size="xl"/>
                         </CButton>
@@ -293,4 +323,5 @@ function FCIGroupManager() {
   );
 }
 
-export default FCIGroupManager;
+
+export default SpecieTypeManager;

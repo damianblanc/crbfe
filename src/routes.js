@@ -25,7 +25,7 @@ const FCIPositionAdvice = React.lazy(() => import('./views/base/fciPositionAdvic
 const FCIAdviceManager = React.lazy(() => import('./views/base/fciPositionAdvice/FCIAdviceManager'))
 const FCIPositionBias = React.lazy(() => import('./views/report/fciPositionBias/FCIPositionBias'))
 const FCIGroupManager = React.lazy(() => import('./views/base/configuration/FCIGroupManager'))
-const SpecieTypeManager = React.lazy(() => import('./views/base/configuration/SpecieTypeManager'))
+const SpecieTypeManager = React.lazy(() => import('./views/base/configuration/specie/SpecieTypeManager'))
 
 
 // Buttons
@@ -109,7 +109,7 @@ const routes = [
   { path: '/base/fciPositionAdvice', name: 'FCIAdviceManager', element: FCIAdviceManager },
   { path: '/report/fciPositionBias', name: 'FCIPositionBias', element: FCIPositionBias },
   { path: '/base/configuration', name: 'FCIGroupManager', element: FCIGroupManager },
-  { path: '/base/configuration', name: 'SpecieTypeManager', element: SpecieTypeManager },
+  { path: '/base/configuration/specie', name: 'SpecieTypeManager', element: SpecieTypeManager },
   
 ]
 

@@ -86,7 +86,7 @@ const _nav = [
       {
         component: CNavItem,
         name: 'FCI Specie Type Manager',
-        to: '/base/configuration',
+        to: '/base/configuration/specie',
       }
   // {
   //   component: CNavGroup,

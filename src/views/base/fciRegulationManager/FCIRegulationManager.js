@@ -471,7 +471,6 @@ function FCIRegulationTable() {
                           </CCol>
                          </CRow>  }
                          </CModal>
-                      {/* </Popup>} */}
                         </td>
                       </tr>
                     </React.Fragment>

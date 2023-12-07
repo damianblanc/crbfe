@@ -137,7 +137,7 @@ function FCIPositionBias() {
 
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
-      if (tempLoadedRegulations.size > 0) {
+      if (tempLoadedRegulations.length > 0) {
         const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
         const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
         const tempLoadedReportTypes = await fetchReportTypes();

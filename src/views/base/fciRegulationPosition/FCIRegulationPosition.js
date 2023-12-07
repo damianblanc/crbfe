@@ -63,7 +63,7 @@ function FCIRegulationPosition() {
 
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
-      if (tempLoadedRegulations.size > 0) {
+      if (tempLoadedRegulations.length > 0) {
         const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
         setRegulations(tempLoadedRegulations);
         setPositions(tempLoadedPositions);

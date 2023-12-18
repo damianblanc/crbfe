@@ -14,16 +14,29 @@ import 'reactjs-popup/dist/index.css';
 
 import axios from 'axios';
 
-class FCIPosition {
-  constructor(id, fciSymbol, timestamp, overview, jsonPosition, updatedMarketPosition) {
+class FCIPositionCompositionVO {
+  constructor(id, specieGroup, specieType, specieName, specieSymbol, marketPrice, quantity) {
     this.id = id;
-    this.fciSymbol = fciSymbol;
-    this.jsonPosition = jsonPosition;
-    this.updatedMarketPosition = updatedMarketPosition;
-    this.overview = overview;
-    this.timestamp = timestamp;
+    this.specieGroup = specieGroup;
+    this.specieType = specieType;
+    this.specieName = specieName;
+    this.specieSymbol = specieSymbol;
+    this.marketPrice = marketPrice;
+    this.quantity = quantity;
   }
 }
+
+// class FCIPosition {
+//   constructor(id, fciSymbol, timestamp, overview, jsonPosition, updatedMarketPosition, [FCIPositionCompositionVO]) {
+//     this.id = id;
+//     this.fciSymbol = fciSymbol;
+//     this.jsonPosition = jsonPosition;
+//     this.updatedMarketPosition = updatedMarketPosition;
+//     this.overview = overview;
+//     this.composition = composition;
+//     this.timestamp = timestamp;
+//   }
+// }
 
 class FCIRegulationSymbolName {
   constructor(id, fciSymbol, fciName) {
@@ -35,11 +48,13 @@ class FCIRegulationSymbolName {
 
 function FCIRegulationPosition() {
   const [regulations, setRegulations] = useState([{FCIRegulationSymbolName}]);
-  const [positions, setPositions] = useState([{FCIPosition}]);
+  const [positions, setPositions] = useState([{id : '', fciSymbol: '', jsonPosition : '', updatedMarketPosition: '', overview: '', composition: [FCIPositionCompositionVO]}]);
   const [excelData, setExcelData] = useState([]);
   const [excelFile, setExcelFile] = useState(null);
   // const [responseData, setResponseData] = useState({FCIPosition});
   const [selectedFCISymbol, setSelectedFCISymbol] = useState('');
+  const [species, setSpecies] = useState([]);
+  const [visible, setVisible] = useState(false);
 
   /** FCI Regulations - Symbol and Name */
   useEffect(() => {
@@ -120,6 +135,7 @@ function FCIRegulationPosition() {
   } 
   return setFetchedData;
 }; 
+
   // const selectFciSymbol = (symbol) => {
   //   if (symbol !== undefined) {
   //     setSelectedFCISymbol(symbol);
@@ -160,25 +176,6 @@ function FCIRegulationPosition() {
     XLSX.writeFile(workbook, "Position_" + fciSymbol + "_" + timestamp + ".xlsx");
   };
 
-  //   console.log("position: " + JSON.stringify(excelData, null, 1))
-  //   fetch('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position', {
-  //     method: 'POST',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //     body: "{\"position\":" + JSON.stringify(excelData, null, 1) + "}",
-  //   })
-  //     .then((response) => response.json())
-  //     .then((responseData) => {
-  //         setPositions([ ...positions, responseData]);
-  //       console.log("responseData! = " + JSON.stringify(responseData));
-  //     })    
-  //     .catch((error) => {
-  //       console.error('Error sending data to the backend:', error);
-  //     });
-  //   }
-  // };
-
   const deletePosition = () => {
 
   }
@@ -205,6 +202,18 @@ function FCIRegulationPosition() {
         console.error('Error sending data to the backend:', error);
       });
   };
+
+  const describePosition = (composition) => {
+    // const fetchPosition = async () => {
+    //   try {
+    //     const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/' + positionId);
+    //     return responseData.data;
+    //   } catch (error) {
+    //     console.error('Error sending data to the backend:', error);
+    //   }
+    // }
+    setVisible(!visible);
+}
 
   return (
     <div>
@@ -319,9 +328,9 @@ function FCIRegulationPosition() {
                       <td>
                         <>
                           <Popup trigger={
-                              <CButton shape='rounded' size='sm' color='string' onClick={() => deletePosition()}>
+                              <CButton shape='rounded' size='sm' color='string' onClick={() => describePosition(item.composition)}>
                                     <CIcon icon={cilClipboard} size="xl"/>
-                              </CButton>} position="left center" modal>
+                              </CButton>} position="left center" modal  visible={visible}>
                           <CRow>
                             <CCol xs={12}>
                               <CCard>
@@ -343,7 +352,31 @@ function FCIRegulationPosition() {
                                             <strong className="text-medium-emphasis small">{item.fciSymbol} - {item.timestamp} - {item.overview}</strong>
                                           </CCardHeader>
                                           <CCardBody>
-                                            {item.updatedMarketPosition}
+                                            <table>
+                                              <thead>
+                                                <tr>
+                                                  <th>Specie Group</th>
+                                                  <th>Specie Type</th>
+                                                  <th>Specie Name</th>
+                                                  <th>Symbol</th>
+                                                  <th>Quantity</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                {Object.prototype.toString.call(item.composition) === '[object Array]' && item.composition?.map((specie) => 
+                                                <React.Fragment key={specie.id}>
+                                                     <tr>
+                                                      <td>{specie.specieGroup}</td>
+                                                      <td>{specie.specieType}</td>
+                                                      <td>{specie.specieName}</td>
+                                                      <td>{specie.specieSymbol}</td>
+                                                      <td>{specie.quantity}</td>
+                                                      </tr> 
+                                                </React.Fragment>
+                                                )}
+                                              </tbody>
+                                            </table>
+                                                
                                             </CCardBody>
                                         </CCard>
                                         </CCol>

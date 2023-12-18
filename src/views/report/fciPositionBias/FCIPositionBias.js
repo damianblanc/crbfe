@@ -141,13 +141,16 @@ function FCIPositionBias() {
         const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
         const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
         const tempLoadedReportTypes = await fetchReportTypes();
-        const tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+        let tempLoadedPercentagesValued = [];
+        if (tempLoadedPositions.length > 0) {
+           tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+           setCurrentPositionId(tempLoadedPositions[0].id);
+        }
         setRegulations(tempLoadedRegulations);
         setPositions(tempLoadedPositions);
         setRegulationPercentages(tempLoadedPercentages);
         setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
-        setReportTypes(tempLoadedReportTypes);
-        setCurrentPositionId(tempLoadedPositions[0].id);
+        setReportTypes(tempLoadedReportTypes);    
         setPositionPercentages(tempLoadedPercentagesValued);
       }
     };
@@ -523,7 +526,7 @@ function FCIPositionBias() {
                                                     hoverBackgroundColor: "#f87969",
                                                     // hoverBorderColor: '#36A2EB',
                                                     // hoverBorderWidth: 5,
-                                                    indexAxis: 'y',
+                                                    indexAxis: 'x',
                                                     // borderColor: "rgba(220, 220, 220, 1)",
                                                     // pointBackgroundColor: "rgba(220, 220, 220, 1)",
                                                     // pointBorderColor: "#fff",

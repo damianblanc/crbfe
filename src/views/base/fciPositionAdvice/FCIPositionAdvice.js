@@ -5,15 +5,18 @@ import { CCard, CCardBody, CCardHeader, CCol, CRow} from '@coreui/react'
 
 import axios from 'axios';
 
+import { NumericFormat } from 'react-number-format';
+
 import './FCIRegulationTable.css';
 
 class Advice {
-  constructor(id, specieName, operationAdvice, quantity, price) {
+  constructor(id, specieName, operationAdvice, quantity, price, value) {
     this.id = id;
     this.specieName = specieName;
     this.operationAdvice = operationAdvice;
     this.quantity = quantity;
     this.price = price;
+    this.value = value;
   }
 }
 
@@ -35,7 +38,7 @@ class FCIPositionIdCreatedOn {
 function FCIPositionAdvice() {
   const [excelData, setExcelData] = useState([]);
   const [excelFile, setExcelFile] = useState(null);
-  const [responseData, setResponseData] = useState([{ id: '', specieType: '', operationAdvices: [Advice] }]);
+  const [responseData, setResponseData] = useState([{ id: '', specieTypeGroup: '', specieType: '', operationAdvices: [Advice] }]);
   const [regulations, setRegulations] = useState([{FCIRegulationSymbolName}]);
   const [positions, setPositions] = useState([{FCIPositionIdCreatedOn}]);
   const [currentFCISymbol, setCurrentFCISymbol] = useState('');
@@ -100,14 +103,18 @@ function FCIPositionAdvice() {
       if (tempLoadedRegulations.length > 0) {
         const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
         const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
-        const tempLoadedAdvices = await fetchAdvices(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
-        const tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+        setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
+        let tempLoadedAdvices = [];
+        let tempLoadedPercentagesValued = [];
+        if (tempLoadedPositions.length > 0) {
+          tempLoadedAdvices = await fetchAdvices(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+          tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+          setCurrentPositionId(tempLoadedPositions[0].id);
+        }
         setRegulations(tempLoadedRegulations);
         setPositions(tempLoadedPositions);
         setRegulationPercentages(tempLoadedPercentages);
-        setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
         setAdvices(tempLoadedAdvices);
-        setCurrentPositionId(tempLoadedPositions[0].id);
         setPositionPercentages(tempLoadedPercentagesValued);
       }
     };
@@ -221,7 +228,8 @@ function FCIPositionAdvice() {
               <table>
                 <thead>
                   <tr>
-                    <th>Specie</th>
+                    <th>Specie Group</th>
+                    <th>Specie Type</th>
                     {/* <tr>
                           <th>Name</th>
                           <th>Advice</th>
@@ -234,14 +242,17 @@ function FCIPositionAdvice() {
                   {advices.map((item) => 
                     <React.Fragment key={item.id}>
                     <tr>
+                    <td width={"3%"}>{item.specieTypeGroup}</td>
                     <td>{item.specieType}</td>
                     <table>
                       <thead>
                         <tr>
                           <th>Name</th>
                           <th>Operation Advice</th>
-                          <th>Quantity</th>
+                          <th>Relative Quantity</th>
+                          <th>Absolute Quantity</th>
                           <th>Market Price</th>
+                          <th>Value</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -250,8 +261,28 @@ function FCIPositionAdvice() {
                                 <tr>
                                   <td>{advice.specieName}</td> 
                                   <td>{advice.operationAdvice}</td> 
-                                  <td>{advice.quantity}</td> 
-                                  <td>{advice.price}</td> 
+                                  <td>{Math.floor(advice.quantity)}</td> 
+                                  <td>
+                                    {(typeof advice.quantity === 'number')? (
+                                    <div>
+                                        <NumericFormat displayType="text" value={parseFloat(advice.quantity.toFixed(2))} decimalSeparator=','/>
+                                    </div>
+                                    ) : null}
+                                  </td> 
+                                  <td>
+                                  {(typeof advice.price === 'number')? (
+                                    <div>
+                                        $ <NumericFormat displayType="text" value={parseFloat(advice.price.toPrecision(2))} thousandSeparator="." decimalSeparator=','/>
+                                    </div>
+                                    ) : null}
+                                  </td> 
+                                  <td>
+                                    {(typeof advice.value === 'number')? (
+                                    <div>
+                                        $ <NumericFormat displayType="text" value={parseFloat(advice.value.toPrecision(2))} thousandSeparator="." decimalSeparator=','/>
+                                    </div>
+                                    ) : null}
+                                  </td> 
                                 </tr>
                               </React.Fragment> )}
                       </tbody>

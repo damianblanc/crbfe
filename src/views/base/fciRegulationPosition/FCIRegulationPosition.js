@@ -359,6 +359,7 @@ function FCIRegulationPosition() {
                                                   <th>Specie Type</th>
                                                   <th>Specie Name</th>
                                                   <th>Symbol</th>
+                                                  <th>Market Price</th>
                                                   <th>Quantity</th>
                                                 </tr>
                                               </thead>
@@ -370,6 +371,7 @@ function FCIRegulationPosition() {
                                                       <td>{specie.specieType}</td>
                                                       <td>{specie.specieName}</td>
                                                       <td>{specie.specieSymbol}</td>
+                                                      <td>{specie.marketPrice}</td>
                                                       <td>{specie.quantity}</td>
                                                       </tr> 
                                                 </React.Fragment>

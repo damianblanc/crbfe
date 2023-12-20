@@ -14,8 +14,10 @@ import 'reactjs-popup/dist/index.css';
 
 import axios from 'axios';
 
+import { NumericFormat } from 'react-number-format';
+
 class FCIPositionCompositionVO {
-  constructor(id, specieGroup, specieType, specieName, specieSymbol, marketPrice, quantity) {
+  constructor(id, specieGroup, specieType, specieName, specieSymbol, marketPrice, quantity, valued) {
     this.id = id;
     this.specieGroup = specieGroup;
     this.specieType = specieType;
@@ -23,20 +25,9 @@ class FCIPositionCompositionVO {
     this.specieSymbol = specieSymbol;
     this.marketPrice = marketPrice;
     this.quantity = quantity;
+    this.valued = valued;
   }
 }
-
-// class FCIPosition {
-//   constructor(id, fciSymbol, timestamp, overview, jsonPosition, updatedMarketPosition, [FCIPositionCompositionVO]) {
-//     this.id = id;
-//     this.fciSymbol = fciSymbol;
-//     this.jsonPosition = jsonPosition;
-//     this.updatedMarketPosition = updatedMarketPosition;
-//     this.overview = overview;
-//     this.composition = composition;
-//     this.timestamp = timestamp;
-//   }
-// }
 
 class FCIRegulationSymbolName {
   constructor(id, fciSymbol, fciName) {
@@ -51,7 +42,6 @@ function FCIRegulationPosition() {
   const [positions, setPositions] = useState([{id : '', fciSymbol: '', jsonPosition : '', updatedMarketPosition: '', overview: '', composition: [FCIPositionCompositionVO]}]);
   const [excelData, setExcelData] = useState([]);
   const [excelFile, setExcelFile] = useState(null);
-  // const [responseData, setResponseData] = useState({FCIPosition});
   const [selectedFCISymbol, setSelectedFCISymbol] = useState('');
   const [visible, setVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -346,10 +336,10 @@ function FCIRegulationPosition() {
                 <thead>
                   <tr className="text-medium-emphasis">
                     <th>#</th>
+                    <th>Position</th>
                     <th>FCI</th>
                     <th>Date</th>
                     <th>Overview</th>
-                    <th>Position</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -358,20 +348,19 @@ function FCIRegulationPosition() {
                     <React.Fragment key={item.id}>
                     <tr>
                       <td width="5%">{item.id}</td>
-                      <td width="5%">{item.fciSymbol}</td>
-                      <td width="15%">{item.timestamp}</td>
-                      <td width="30%">{item.overview}</td>
                       <td>
                         <>
-                          <Popup trigger={
+                          <Popup 
+                            position="left center" visible={visible}
+                            trigger={
                               <CButton shape='rounded' size='sm' color='string' onClick={() => describePosition(item.composition)}>
                                     <CIcon icon={cilClipboard} size="xl"/>
-                              </CButton>} position="left center" modal  visible={visible}>
+                              </CButton>}>
                           <CRow>
                             <CCol xs={12}>
                               <CCard>
                                 <CCardHeader>
-                                  <strong className="text-medium-emphasis small"><code>#{item.id} - Position Details</code></strong>
+                                  <strong className="text-medium-emphasis small"><code>#{item.id} - Position</code></strong>
                                 </CCardHeader>
                                 <CCardBody>
                                 <table>
@@ -397,19 +386,29 @@ function FCIRegulationPosition() {
                                                   <th>Symbol</th>
                                                   <th>Market Price</th>
                                                   <th>Quantity</th>
+                                                  <th>Valued</th>
                                                 </tr>
                                               </thead>
                                               <tbody>
                                                 {Object.prototype.toString.call(item.composition) === '[object Array]' && item.composition?.map((specie) => 
                                                 <React.Fragment key={specie.id}>
-                                                     <tr>
+                                                    <tr>
                                                       <td>{specie.specieGroup}</td>
                                                       <td>{specie.specieType}</td>
                                                       <td>{specie.specieName}</td>
                                                       <td>{specie.specieSymbol}</td>
-                                                      <td>{specie.marketPrice}</td>
+                                                      <td>
+                                                        <div>
+                                                          $ <NumericFormat displayType="text" value={Number(specie.marketPrice).toFixed(2)} thousandSeparator="." decimalSeparator=','/>
+                                                        </div>
+                                                      </td>
                                                       <td>{specie.quantity}</td>
-                                                      </tr> 
+                                                      <td>
+                                                        <div>
+                                                          $ <NumericFormat displayType="text" value={Number(specie.valued).toFixed(2)} thousandSeparator="." decimalSeparator=','/>
+                                                        </div>
+                                                      </td>
+                                                    </tr> 
                                                 </React.Fragment>
                                                 )}
                                               </tbody>
@@ -433,6 +432,9 @@ function FCIRegulationPosition() {
                           </CButton>
                         </>
                       </td>
+                      <td width="5%">{item.fciSymbol}</td>
+                      <td width="15%">{item.timestamp}</td>
+                      <td width="30%">{item.overview}</td>
                       <td>
                         <>
                           <CButton shape='rounded' size='sm' color='string' onClick={() => deletePosition()}>

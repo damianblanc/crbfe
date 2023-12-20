@@ -78,3 +78,7 @@ button:hover {
   color: palevioletred;
   vertical-align: top;
 }
+
+.pop-up {
+  width: 20%;
+}

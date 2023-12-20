@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
-import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer } from '@coreui/icons';
+import { cilTrash, cilTransfer } from '@coreui/icons';
 
 import CIcon from '@coreui/icons-react'
 
 import './FCIRegulationTable.css';
 import './Popup.css';
 
-import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
 
 import axios from 'axios';
@@ -47,6 +46,9 @@ function SpecieTypeManager() {
   const [currentSpecieTypeName, setCurrentSpecieTypeName] = useState('');
   const [newSpecieType, setNewSpecieType] = useState({ id: '', name: '', description: '', updatable: ''});
   const [species, setSpecies] = useState([Specie]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalSpecies, setTotalSpecies] = useState(1);
+  const speciesPerPage = 15;
 
   /** SpecieType Groups */
   useEffect(() => {
@@ -59,7 +61,16 @@ function SpecieTypeManager() {
       }
     };
 
-    const fetchSpecies = async (specieTypeGroupName, specieTypeName) => {
+    const fetchSpecies = async (specieTypeGroupName, pageNumber) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/bind/page/' + pageNumber);
+        return responseData.data;
+      } catch (error) {
+        console.error('#1 - Error receiving specieTypeGroups:', error);
+      }
+    };
+
+    const fetchTotalSpecies = async (specieTypeGroupName) => {
       try {
         const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/bind');
         return responseData.data;
@@ -70,15 +81,32 @@ function SpecieTypeManager() {
 
     const setFetchedData = async () => {
       const tempLoadedSpecieTypeGroups = await fetchSpecieTypeGroups();
-      const tempLoadedSpecies = await fetchSpecies(tempLoadedSpecieTypeGroups[0].name, tempLoadedSpecieTypeGroups[0].fciSpecieTypes[0].name);
+      const tempLoadedSpecies = await fetchSpecies(tempLoadedSpecieTypeGroups[0].name, 0);
+      const tempLoadedTotalSpecies = await fetchTotalSpecies(tempLoadedSpecieTypeGroups[0].name);
       setSpecieTypeGroups(tempLoadedSpecieTypeGroups);
       setCurrentGroup(tempLoadedSpecieTypeGroups[0]);
       setSpecieTypes(tempLoadedSpecieTypeGroups[0].fciSpecieTypes);
-      console.log(tempLoadedSpecies)
+      setTotalSpecies(tempLoadedTotalSpecies.length);
       setSpecies(tempLoadedSpecies);
     };
     setFetchedData();
   }, []); 
+
+  const handlePageChange = async (pageNumber) => {
+    setCurrentPage(pageNumber);
+    let pPage = pageNumber - 1;
+    console.log("url: http://localhost:8098/api/v1/component/specie-type-group/" +  currentGroup.name + '/bind/page/' + pPage);
+    const fetchSpecies = async (pageNumber) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  currentGroup.name + '/bind/page/' + pPage);
+        return responseData.data;
+      } catch (error) {
+        console.error('#1 - Error receiving specieTypeAssociation:', error);
+      }
+    };
+    const tempLoadedSpecies = await fetchSpecies(pageNumber);
+    setSpecies(tempLoadedSpecies);
+  };
 
   /** Specie Type Group */
   const selectSpecieTypeGroup = async (specieTypeGroupName) => {
@@ -93,7 +121,7 @@ function SpecieTypeManager() {
     
     const fetchSpecies = async (specieTypeGroupName, specieTypeName) => {
         try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/specie-type/' + specieTypeName + '/bind');
+          const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/specie-type/' + specieTypeName + '/bind/page/0');
           return responseData.data;
         } catch (error) {
           console.error('#1 - Error receiving specieTypeGroups:', error);
@@ -219,7 +247,25 @@ function SpecieTypeManager() {
         <CCol xs={12}>
           <CCard>
             <CCardHeader className="text-medium-emphasis small">
-              <strong>Specie Types in Group &nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong>
+              <tr>
+                <td>
+                   <strong>Specie Types in Group &nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong>
+                </td>
+                <td width="82%">
+                    <CPagination align="end" size="sm" className="text-medium-emphasis small"
+                    activePage = {currentPage}
+                    pages = {Math.floor(totalSpecies / speciesPerPage)}
+                    onActivePageChange={handlePageChange}>
+                      {currentPage === 1? (
+                        <CPaginationItem disabled>«</CPaginationItem> ) 
+                      : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
+                      <CPaginationItem active className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
+                      {currentPage === Math.ceil(totalSpecies / speciesPerPage)? (
+                        <CPaginationItem disabled>»</CPaginationItem>) 
+                      : (<CPaginationItem className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage + 1)}>»</CPaginationItem>)}
+                    </CPagination>
+                </td>
+              </tr>
             </CCardHeader>
             <CCardBody>
               <table>

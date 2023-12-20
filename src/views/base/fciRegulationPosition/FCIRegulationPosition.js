@@ -53,8 +53,10 @@ function FCIRegulationPosition() {
   const [excelFile, setExcelFile] = useState(null);
   // const [responseData, setResponseData] = useState({FCIPosition});
   const [selectedFCISymbol, setSelectedFCISymbol] = useState('');
-  const [species, setSpecies] = useState([]);
   const [visible, setVisible] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPositions, setTotalPositions] = useState(1);
+  const positionsPerPage = 15;
 
   /** FCI Regulations - Symbol and Name */
   useEffect(() => {
@@ -67,7 +69,16 @@ function FCIRegulationPosition() {
       }
     };
 
-    const fetchPositions = async (fciSymbol) => {
+    const fetchPositions = async (fciSymbol, pageNumber) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/page/' + pageNumber);
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    const fetchTotalPositions = async (fciSymbol) => {
       try {
         const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
         return responseData.data;
@@ -79,10 +90,12 @@ function FCIRegulationPosition() {
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
       if (tempLoadedRegulations.length > 0) {
-        const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
+        const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol, 0);
+        const tempLoadedTotalPositions = await fetchTotalPositions(tempLoadedRegulations[0].fciSymbol);
         setRegulations(tempLoadedRegulations);
         setPositions(tempLoadedPositions);
         setSelectedFCISymbol(tempLoadedRegulations[0].fciSymbol);
+        setTotalPositions(tempLoadedTotalPositions.length);
       }
     };
     setFetchedData();
@@ -93,6 +106,22 @@ function FCIRegulationPosition() {
     if(excelData.length > 0) {
       setFetchedData();
     };
+  };
+
+  const handlePageChange = async (pageNumber) => {
+    setCurrentPage(pageNumber);
+    let pPage = pageNumber - 1;
+    console.log("url: http://localhost:8098/api/v1/fci/" + selectedFCISymbol + "/position/page/" + pPage);
+    const fetchPositions = async (pageNumber) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/page/' + pPage);
+        return responseData.data;
+      } catch (error) {
+        console.error('#1 - Error receiving specieTypeAssociation:', error);
+      }
+    };
+    const tempLoadedPositions = await fetchPositions(pageNumber);
+    setPositions(tempLoadedPositions);
   };
 
   const setFetchedData = async () => {
@@ -294,15 +323,22 @@ function FCIRegulationPosition() {
                         )}
                       </select>
                     </td>
-                    <td>
-                      <CPagination align="end" size="sm" className="text-medium-emphasis small">
-                          <CPaginationItem disabled>Previous</CPaginationItem>
-                          <CPaginationItem className="text-medium-emphasis small">1</CPaginationItem>
-                          <CPaginationItem className="text-medium-emphasis small">2</CPaginationItem>
-                          <CPaginationItem>3</CPaginationItem>
-                          <CPaginationItem className="text-medium-emphasis small">Next</CPaginationItem>
-                        </CPagination>
-                    </td>
+                    <td width="82%">
+                    <CPagination align="end" size="sm" className="text-medium-emphasis small"
+                    activePage = {currentPage}
+                    pages = {Math.floor(totalPositions / positionsPerPage)}
+                    onActivePageChange={handlePageChange}>
+                      {currentPage === 1? (
+                        <CPaginationItem disabled>«</CPaginationItem> ) 
+                      : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
+                     
+                      <CPaginationItem active className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
+                     
+                      {currentPage === Math.ceil(totalPositions / positionsPerPage) ? (
+                        <CPaginationItem disabled>»</CPaginationItem>) 
+                      : (<CPaginationItem className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage + 1)}>»</CPaginationItem>)}
+                    </CPagination>
+                </td>
                   </tr>
                 </table>
               </p>

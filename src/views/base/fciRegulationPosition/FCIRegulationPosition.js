@@ -46,6 +46,7 @@ function FCIRegulationPosition() {
   const [visible, setVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPositions, setTotalPositions] = useState(1);
+  const [searchFiltered, setSearchFiltered] = useState(false);
   const positionsPerPage = 5;
   
   const [searchCurrentPositionId, setSearchCurrentPositionId] = useState(1);
@@ -65,7 +66,7 @@ function FCIRegulationPosition() {
 
     const fetchPositions = async (fciSymbol, pageNumber) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/page/' + pageNumber);
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/page/' + pageNumber + '/page_size/' + positionsPerPage);
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -105,10 +106,10 @@ function FCIRegulationPosition() {
   const handlePageChange = async (pageNumber) => {
     setCurrentPage(pageNumber);
     let pPage = pageNumber - 1;
-    console.log("url: http://localhost:8098/api/v1/fci/" + selectedFCISymbol + "/position/page/" + pPage);
+    console.log("url: http://localhost:8098/api/v1/fci/" + selectedFCISymbol + "/position/page/" + pPage + '/page_size/' + positionsPerPage);
     const fetchPositions = async (pageNumber) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/page/' + pPage);
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/page/' + pPage + '/page_size/' + positionsPerPage);
         return responseData.data;
       } catch (error) {
         console.error('#1 - Error receiving specieTypeAssociation:', error);
@@ -240,6 +241,7 @@ function FCIRegulationPosition() {
 
   const handleSearchPositionIdChange = (positionId) => {
     setSearchCurrentPositionId(positionId);
+    setSearchFiltered(!searchFiltered);
     console.log("searchCurrentPositionId = " + searchCurrentPositionId);
   }
 
@@ -258,7 +260,7 @@ function FCIRegulationPosition() {
           const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + searchCurrentPositionId + '/filtered');
           return responseData.data;
         } else {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/page/' + 0);
+          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/page/' + 0 + '/page_size/' + positionsPerPage);
           return responseData.data;
         }
       } catch (error) {
@@ -378,7 +380,7 @@ function FCIRegulationPosition() {
                      
                       <CPaginationItem active className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
                      
-                      {currentPage === Math.ceil(totalPositions / positionsPerPage) ? (
+                      {currentPage === Math.ceil(totalPositions / positionsPerPage) || searchFiltered ? (
                         <CPaginationItem disabled>»</CPaginationItem>) 
                       : (<CPaginationItem className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage + 1)}>»</CPaginationItem>)}
                     </CPagination>

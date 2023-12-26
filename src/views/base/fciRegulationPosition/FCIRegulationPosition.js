@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
-import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer } from '@coreui/icons';
+import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter } from '@coreui/icons';
 
 import CIcon from '@coreui/icons-react'
 
@@ -46,7 +46,11 @@ function FCIRegulationPosition() {
   const [visible, setVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPositions, setTotalPositions] = useState(1);
-  const positionsPerPage = 15;
+  const positionsPerPage = 5;
+  
+  const [searchCurrentPositionId, setSearchCurrentPositionId] = useState(1);
+  const [searchCurrentFromDate, setSearchCurrentFromDate] = useState('');
+  const [searchCurrentToDate, setSearchCurrentToDate] = useState('');
 
   /** FCI Regulations - Symbol and Name */
   useEffect(() => {
@@ -234,6 +238,37 @@ function FCIRegulationPosition() {
     setVisible(!visible);
 }
 
+  const handleSearchPositionIdChange = (positionId) => {
+    setSearchCurrentPositionId(positionId);
+    console.log("searchCurrentPositionId = " + searchCurrentPositionId);
+  }
+
+  const handleSearchDateFromChange = (fromDate) => {
+    setSearchCurrentFromDate(fromDate);
+  }
+
+  const handleSearchDateToChange = (fromDate) => {
+    setSearchCurrentToDate(fromDate);
+  }
+
+  const filterPositionList = async () => {
+    const fetchFilteredPosition = async () => {
+      try {
+        if (searchCurrentPositionId !== "") {
+          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + searchCurrentPositionId + '/filtered');
+          return responseData.data;
+        } else {
+          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/page/' + 0);
+          return responseData.data;
+        }
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    }
+    const tempLoadedPositions = await fetchFilteredPosition();
+    setPositions(tempLoadedPositions);
+  };
+
   return (
     <div>
        <CRow>
@@ -303,17 +338,36 @@ function FCIRegulationPosition() {
               <p>
                 <table>
                   <tr>
-                    <td width="12%">Position Identifier</td>
-                    <td>
-                    <select className="text-medium-emphasis large">
+                    <td width="12%">Position Identifier #</td>
+                    <td width="20%">
+                    {/* <select className="text-medium-emphasis large">
                         {positions !== undefined && positions.map((fciPosition) => 
                           <React.Fragment key={fciPosition.id}>
                           <option value={fciPosition.id}>#{fciPosition.id} - {fciPosition.timestamp}&nbsp;&nbsp;&nbsp;</option>
                           </React.Fragment>
                         )}
-                      </select>
+                      </select> */}
+                       <input type="number" min="1"
+                          onChange={(e) => handleSearchPositionIdChange(e.target.value)}/>
+                          <CButton shape='rounded' size='sm' color='string' onClick={() => filterPositionList()}>
+                            <CIcon icon={cilListFilter} size="xl"/>
+                      </CButton>
                     </td>
-                    <td width="82%">
+                    {/* <td width="5%"></td>
+                    <td width="20%">Date From</td>
+                    <td>
+                      <input type="text" className="text-medium-emphasis small"
+                          onChange={(e) => handleSearchDateFromChange(e.target.value)}/>
+                    </td>
+                    <td width="5%"></td>
+                    <td width="20%">Date To</td>
+                    <td width="10%"> */}
+                      {/* <CDateRangePicker startDate="2022/08/03" endDate="2022/08/17" label="Date range" locale="en-US" /> */}
+                    {/* </td> */}
+                      {/* <input type="text" className="text-medium-emphasis small"
+                          onChange={(e) => handleSearchDateToChange(e.target.value)}/> */}
+                  
+                    <td>
                     <CPagination align="end" size="sm" className="text-medium-emphasis small"
                     activePage = {currentPage}
                     pages = {Math.floor(totalPositions / positionsPerPage)}

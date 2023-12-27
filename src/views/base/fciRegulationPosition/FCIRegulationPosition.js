@@ -45,13 +45,15 @@ function FCIRegulationPosition() {
   const [selectedFCISymbol, setSelectedFCISymbol] = useState('');
   const [visible, setVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPositions, setTotalPositions] = useState(1);
+  const [totalPositions, setTotalPositions] = useState(0);
   const [searchFiltered, setSearchFiltered] = useState(false);
   const positionsPerPage = 5;
   
   const [searchCurrentPositionId, setSearchCurrentPositionId] = useState(1);
   const [searchCurrentFromDate, setSearchCurrentFromDate] = useState('');
   const [searchCurrentToDate, setSearchCurrentToDate] = useState('');
+
+  const [validationError, setValidationError] = useState('');
 
   /** FCI Regulations - Symbol and Name */
   useEffect(() => {
@@ -121,21 +123,24 @@ function FCIRegulationPosition() {
 
   const setFetchedData = async () => {
     const tempLoadedCreatedPosition = await fetchCreatedPosition();
-    setPositions([tempLoadedCreatedPosition, ...positions]);
+    if (validationError === 0) {
+      setPositions([tempLoadedCreatedPosition, ...positions]);
+    }
   };
 
   const fetchCreatedPosition = async () => {
     try {
       const body = "{\"position\":" + JSON.stringify(excelData, null, 1) + "}";
-      const responseData = await axios.post('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position', body,
+      const response = await axios.post('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position', body,
         {
           headers: {
             'Content-Type': 'application/json',
           }
         });
-      return responseData.data;
+      return response.data;
     } catch (error) {
       console.error('Error sending data to the backend:', error);
+      setValidationError(error.response.data.message);
     }
   };
 
@@ -329,6 +334,21 @@ function FCIRegulationPosition() {
         </CCol>
       </CRow> 
       <br/>
+
+      {(validationError) !== '' ? 
+            <CCard>
+              <CCardHeader>
+                <strong className="text-medium-emphasis small">There are some errors in uploaded Position</strong>
+              </CCardHeader>
+              <CCardBody>
+                  <div className="validation-errors">
+                    <code>&#187;&nbsp;{validationError}</code>
+                  </div>
+              </CCardBody>
+            </CCard>
+        : null}
+
+      <br/>
       <div>
         <CRow>
         <CCol xs={12}>
@@ -339,6 +359,7 @@ function FCIRegulationPosition() {
             <CCardBody>
               <p>
                 <table>
+                {totalPositions > 0? (
                   <tr>
                     <td width="12%">Position Identifier #</td>
                     <td width="20%">
@@ -386,6 +407,7 @@ function FCIRegulationPosition() {
                     </CPagination>
                 </td>
                   </tr>
+                  ) : null}
                 </table>
               </p>
               <table>
@@ -401,9 +423,10 @@ function FCIRegulationPosition() {
                 </thead>
                 <tbody>
                   {Object.prototype.toString.call(positions) === '[object Array]' && positions?.map((item) => 
-                    <React.Fragment key={item.id}>
+                    item !== 'undefined'? (
+                    <React.Fragment key={item.fciSymbol}>
                     <tr>
-                      <td width="5%">{item.id}</td>
+                      {item.id? (<td width="5%">{item.id}</td>) : (null)}
                       <td>
                         <>
                           <Popup 
@@ -503,8 +526,9 @@ function FCIRegulationPosition() {
                       </td>
                     </tr>
                     </React.Fragment>
+                    ) : null
                   )}
-                </tbody>
+                </tbody> 
               </table>
           </CCardBody>
          </CCard>

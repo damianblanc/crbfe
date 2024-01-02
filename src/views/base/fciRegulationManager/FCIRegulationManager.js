@@ -71,13 +71,13 @@ function FCIRegulationTable() {
     var w = String(newRow.composition).replace(/\s/g, '').replace(/%/g, '').split(";");
     if (w.length === 1) {
       var sp = w.at(0).split(":").at(0);
-      if (!specieTypes.find(element => element.name === sp)) {
+      if (!specieTypes.find(element => element.name.toLowerCase() === sp.toLowerCase())) {
         errors.composition3 = 'Composition [' + sp + '] is not a recognized specie type';
       }
     } else {
       w.map((specie) => {
         var sp = specie.split(":").at(0);
-        if (!specieTypes.find(element => element.name === sp)) {
+        if (!specieTypes.find(element => element.name.toLowerCase() === sp.toLowerCase())) {
           errors.composition4 = 'Composition [' + sp + '] is not a recognized specie type';
         }
       });
@@ -86,7 +86,7 @@ function FCIRegulationTable() {
     if (findAndSumNumbers(newRow.composition) !== 100) {
       errors.composition5 = 'Composition Percentage must close to 100%';
     };
-
+//TODO:VALIDATE CASH EXIST!!
     return errors;
   };
 
@@ -149,6 +149,8 @@ function FCIRegulationTable() {
         const tempLoadedSpecieTypes = await fetchSpecieTypes(tempLoadedRegulations[0].fciSymbol);
         setData(tempLoadedRegulations);
         setSpecieTypes(tempLoadedSpecieTypes);
+      } else {
+        setData([]);
       }
     };
     setFetchedData();
@@ -252,18 +254,15 @@ function FCIRegulationTable() {
   function findSpecieTypeByName(name) {
     if(name === undefined) {return}
     return specieTypes.find((element) => {
-      return element.name === name;
+      return element.name.toLowerCase() === name.toLowerCase();
     })
   }
 
   const listFCIRegulationPercentages = async (fciSymbol) => {
     setVisible(!visible);
-    console.log("I'm into getFCIRegulationPercentages");
     try {
       const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/regulation-percentages')
       setRegulationPercentages(responseData.data);
-      console.log("responseData.data = " + responseData.data);
-      console.log("regulationPercentageData = " + regulationPercentages);
     } catch (error) {
       console.error('Error sending data to the backend:', error);
     }
@@ -310,7 +309,7 @@ function FCIRegulationTable() {
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.prototype.toString.call(dataAsc) === '[object Array]' && dataAsc.map((row) => (
+                  {Object.prototype.toString.call(dataAsc) === '[object Array]' && dataAsc.length > 0 && dataAsc.map((row) => (
                     <React.Fragment key={row.id}>
                       <tr>
                         <td>{row.id}</td>
@@ -375,7 +374,7 @@ function FCIRegulationTable() {
                               }
                             />
                           ) : (
-                            row.composition.map((c) => c.fciSpecieTypeId !== undefined && findSpecieTypeById(c.fciSpecieTypeId).name + ": " + c.percentage + "% ").join('- '))
+                           row.composition.map((c) => c.fciSpecieTypeId !== undefined && findSpecieTypeById(c.fciSpecieTypeId).name + ": " + c.percentage + "% ").join('- '))
                           }
                         </td>
                         <td>
@@ -497,7 +496,6 @@ function FCIRegulationTable() {
             </CCard>
         : null}
 
-        
          <CCard>
           <CCardHeader>
             <strong>Create a new FCI Regulation</strong>

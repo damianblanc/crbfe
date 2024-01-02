@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   CRow,
   CCol,
@@ -13,7 +13,33 @@ import { CChartBar, CChartLine } from '@coreui/react-chartjs'
 import CIcon from '@coreui/icons-react'
 import { cilArrowBottom, cilArrowTop, cilOptions } from '@coreui/icons'
 
+import axios from 'axios';
+
+
 const WidgetsDropdown = () => {
+  const [regulationQuantity, setRegulationQuantity] = useState(0);
+  const [positionQuantity, setPositionQuantity] = useState(0);
+  const [positionsPerMonth, setPositionsPerMonth] = useState([]);
+
+  useEffect(() => {
+    const fetchSummarization = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    const setFetchedData = async () => {
+      const tempLoadedSummarization = await fetchSummarization();
+      setRegulationQuantity(tempLoadedSummarization.fciRegulationQuantity);
+      setPositionQuantity(tempLoadedSummarization.fciPositionQuantity);
+      setPositionsPerMonth(tempLoadedSummarization.fciPositionsPerMothLastYear)
+    };
+    setFetchedData();
+  }, []); 
+
   return (
     <CRow>
       <CCol sm={6} lg={3}>
@@ -22,13 +48,13 @@ const WidgetsDropdown = () => {
           color="primary"
           value={
             <>
-              26K{' '}
+              {regulationQuantity}{' '}
               <span className="fs-6 fw-normal">
                 (-12.4% <CIcon icon={cilArrowBottom} />)
               </span>
             </>
           }
-          title="Users"
+          title="Regulations"
           action={
             <CDropdown alignment="end">
               <CDropdownToggle color="transparent" caret={false} className="p-0">
@@ -47,7 +73,7 @@ const WidgetsDropdown = () => {
               className="mt-3 mx-3"
               style={{ height: '70px' }}
               data={{
-                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+                labels: [{}, 'January', 'February', 'March', 'April', 'May', 'June', 'July'],
                 datasets: [
                   {
                     label: 'My First dataset',
@@ -109,13 +135,13 @@ const WidgetsDropdown = () => {
           color="info"
           value={
             <>
-              $6.200{' '}
+              {positionQuantity}{' '}
               <span className="fs-6 fw-normal">
                 (40.9% <CIcon icon={cilArrowTop} />)
               </span>
             </>
           }
-          title="Income"
+          title="Positions"
           action={
             <CDropdown alignment="end">
               <CDropdownToggle color="transparent" caret={false} className="p-0">
@@ -201,7 +227,7 @@ const WidgetsDropdown = () => {
               </span>
             </>
           }
-          title="Conversion Rate"
+          title="Reports"
           action={
             <CDropdown alignment="end">
               <CDropdownToggle color="transparent" caret={false} className="p-0">
@@ -274,7 +300,7 @@ const WidgetsDropdown = () => {
               </span>
             </>
           }
-          title="Sessions"
+          title="Advices"
           action={
             <CDropdown alignment="end">
               <CDropdownToggle color="transparent" caret={false} className="p-0">

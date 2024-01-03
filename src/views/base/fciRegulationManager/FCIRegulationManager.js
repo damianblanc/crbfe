@@ -13,6 +13,7 @@ import 'reactjs-popup/dist/index.css';
 import axios from 'axios';
 
 import { CModal } from '@coreui/react';
+import { element } from 'prop-types';
 
 
 class FCIRegulation {
@@ -68,27 +69,56 @@ function FCIRegulationTable() {
         errors.composition2 = 'Composition format should be "<Specie Type>:<Percentage Value> + %" separated by hyphens. I/E: Equity:40.5% - Bond:39.5% - Cash:20%';
     }
      
-    var w = String(newRow.composition).replace(/\s/g, '').replace(/%/g, '').split(";");
+    var w = String(newRow.composition).replace(/\s/g, '').replace(/%/g, '').split("-");
     if (w.length === 1) {
       var sp = w.at(0).split(":").at(0);
+      if (sp.toLowerCase() !== 'cash') {
+        errors.composition5 = 'Composition [Cash] is not defined';
+      }
       if (!specieTypes.find(element => element.name.toLowerCase() === sp.toLowerCase())) {
         errors.composition3 = 'Composition [' + sp + '] is not a recognized specie type';
       }
     } else {
+      let notCash = false;
       w.map((specie) => {
         var sp = specie.split(":").at(0);
         if (!specieTypes.find(element => element.name.toLowerCase() === sp.toLowerCase())) {
           errors.composition4 = 'Composition [' + sp + '] is not a recognized specie type';
         }
+        notCash = sp.toLowerCase() === 'cash';
       });
+      if (!notCash) {
+        errors.composition5 = 'Composition [Cash] is not defined';
+      }
+    }
+
+    const arry = [];
+    for(var i = 0; i < w.length; i++) {
+        arry[i] = w[i].split(":").at(0);
+    }
+    const duplicatedElements = toFindDuplicates(arry);
+    if (duplicatedElements.length > 0) {
+      errors.composition6 = 'Composition has duplicated [' + duplicatedElements + '] specie types defined';
     }
 
     if (findAndSumNumbers(newRow.composition) !== 100) {
-      errors.composition5 = 'Composition Percentage must close to 100%';
+      errors.composition7 = 'Composition Percentage must close to 100%';
     };
-//TODO:VALIDATE CASH EXIST!!
     return errors;
   };
+
+  function toFindDuplicates(arry) {
+    const uniqueElements = new Set(arry);
+    const filteredElements = arry.filter(item => {
+        if (uniqueElements.has(item)) {
+            uniqueElements.delete(item);
+        } else {
+            return item;
+        }
+    });
+
+    return [...new Set(filteredElements)]
+  } 
 
   const validateEditRow = () => {
     const regex = /^(?:[^:]+:\d+(\.\d+)?%)(?:-[^:]+:\d+(\.\d+)?%)*$/;
@@ -97,25 +127,42 @@ function FCIRegulationTable() {
     if (!editRow.name) errors.name = 'Name is required';
     if (!editRow.description) errors.description = 'Description is required';
     if (!editRow.composition) { 
-        errors.composition = 'Composition is required';
+        errors.composition1 = 'Composition is required';
     } else if (!regex.test(String(editRow.composition).replace(/\s/g, ''))) {
-        errors.composition1 = 'Composition format should be "<Specie Type>:<Percentage Value> + %" separated by hyphens. I/E: Equity:40.5% - Bond:39.5% - Cash:20%';
+        errors.composition2 = 'Composition format should be "<Specie Type>:<Percentage Value> + %" separated by hyphens. I/E: Equity:40.5% - Bond:39.5% - Cash:20%';
     }
      
-    var w = String(editRow.composition).replace(/\s/g, '').replace(/%/g, '').split(";");
+    var w = String(editRow.composition).replace(/\s/g, '').replace(/%/g, '').split("-");
     if (w.length === 1) {
       var sp = w.at(0).split(":").at(0);
-      if (!specieTypes.find(element => element.name === sp)) {
-        errors.composition2 = 'Composition [' + sp + '] is not a recognized specie type';
+      if (sp.toLowerCase() !== 'cash') {
+        errors.composition5 = 'Composition [Cash] is not defined';
+      }
+      if (!specieTypes.find(element => element.name.toLowerCase() === sp.toLowerCase())) {
+        errors.composition3 = 'Composition [' + sp + '] is not a recognized specie type';
       }
     } else {
+      let notCash = false;
       w.map((specie) => {
       var sp = specie.split(":").at(0);
       if (!specieTypes.find(element => element.name === sp)) {
         errors.composition3 = 'Composition [' + sp + '] is not a recognized specie type';
       }
+      notCash = sp.toLowerCase() === 'cash';
       })
+      if (!notCash) {
+        errors.composition5 = 'Composition [Cash] is not defined';
+      }
     };
+
+    const arry = [];
+    for(var i = 0; i < w.length; i++) {
+        arry[i] = w[i].split(":").at(0);
+    }
+    const duplicatedElements = toFindDuplicates(arry);
+    if (duplicatedElements.length > 0) {
+      errors.composition6 = 'Composition has duplicated [' + duplicatedElements + '] specie types defined';
+    }
 
     if (findAndSumNumbers(editRow.composition) !== 100) {
       errors.composition4 = 'Composition Percentage must close to 100%';

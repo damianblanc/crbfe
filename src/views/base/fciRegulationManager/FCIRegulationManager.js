@@ -3,7 +3,7 @@ import './FCIRegulationTable.css';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilPencil, cilTrash, cilTransfer, cilMediaSkipBackward, cilFile } from '@coreui/icons';
+import { cilPencil, cilTrash, cilTransfer, cilMediaSkipBackward, cilFile, cilListFilter } from '@coreui/icons';
 
 import { CChartBar, CChartPie} from '@coreui/react-chartjs'
 
@@ -14,7 +14,14 @@ import axios from 'axios';
 
 import { CModal } from '@coreui/react';
 import { element } from 'prop-types';
+import { NumericFormat } from 'react-number-format';
 
+
+//TODO: Pagination for FCI Regulations
+//TODO: See some pagination issue
+//TODO: Filtering by Id for FCI Regulation
+//TODO: Analyze filtering scenarios
+//TODO: Verify creation is working
 
 class FCIRegulation {
   constructor(id, symbol, name, description, composition = [FCIComposition]) {
@@ -27,9 +34,9 @@ class FCIRegulation {
 }
 
 class FCIComposition {
-  constructor(fciCompositionId, fciSpecieTypeId, percentage) {
-    this.fciCompositionId = fciCompositionId;
-    this.fciSpecieTypeId = fciSpecieTypeId;
+  constructor(id, specieType, percentage) {
+    this.id = id;
+    this.specieType = specieType;
     this.percentage = percentage;
   }
 }
@@ -42,20 +49,25 @@ function findAndSumNumbers (inputString) {
 };
 
 function FCIRegulationTable() {
-  const [data, setData] = useState([{ id: '', symbol: '', name: '', description: '', composition: [FCIComposition]}]);
+  const [regulations, setRegulations] = useState([{ id: '', symbol: '', name: '', description: '', composition: [FCIComposition]}]);
   const [newRow, setNewRow] = useState({ id: '', symbol: '', name: '', description: '', composition: '' });
   const [editRow, setEditRow] = useState({ id: '', symbol: '', name: '', description: '', composition: '', compositionWithId: '' });
   const [editRowId, setEditRowId] = useState(null);
-  const dataAsc = [...data].sort((a, b) => a.id - b.id);
+  // const dataDesc = [...regulations].sort((a, b) => b.id - a.id);
   // const specieTypeAsc = [...data].sort((a, b) => a.specieType > b.specieType ? 1 : -1);
   const [validationErrors, setValidationErrors] = useState({});
   const [validationEditErrors, setValidationEditErrors] = useState({});
-  const tableDataToSend = JSON.stringify(data, null, 2);
+  const tableDataToSend = JSON.stringify(regulations, null, 2);
   const [specieTypes, setSpecieTypes] = useState([{fciSpecieTypeId: '', name: '', description: ''}]);
   const [regulationPercentages, setRegulationPercentages] = useState([]);
   // const [sum, setSum] = useState(0);
   const [visible, setVisible] = useState(false);
-
+  const [searchFiltered, setSearchFiltered] = useState(false);
+  const [totalRegulations, setTotalRegulations] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchCurrentRegulationSymbol, setSearchCurrentRegulationSymbol] = useState('');
+  const regulationsPerPage = 5;
+  
 
   const validateNewRow = (row) => {
     const regex = /^(?:[^:]+:\d+(\.\d+)?%)(?:-[^:]+:\d+(\.\d+)?%)*$/;
@@ -85,7 +97,7 @@ function FCIRegulationTable() {
         if (!specieTypes.find(element => element.name.toLowerCase() === sp.toLowerCase())) {
           errors.composition4 = 'Composition [' + sp + '] is not a recognized specie type';
         }
-        notCash = sp.toLowerCase() === 'cash';
+        notCash = notCash || sp.toLowerCase() === 'cash';
       });
       if (!notCash) {
         errors.composition5 = 'Composition [Cash] is not defined';
@@ -148,7 +160,7 @@ function FCIRegulationTable() {
       if (!specieTypes.find(element => element.name === sp)) {
         errors.composition3 = 'Composition [' + sp + '] is not a recognized specie type';
       }
-      notCash = sp.toLowerCase() === 'cash';
+      notCash = notCash || sp.toLowerCase() === 'cash';
       })
       if (!notCash) {
         errors.composition5 = 'Composition [Cash] is not defined';
@@ -174,7 +186,7 @@ function FCIRegulationTable() {
   useEffect(() => {
     const fetchRegulations = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci');
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/page/0/page_size/' + regulationsPerPage);
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -190,21 +202,32 @@ function FCIRegulationTable() {
       }
     };
 
+    const fetchTotalRegulations = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
       if (tempLoadedRegulations.length > 0) {
         const tempLoadedSpecieTypes = await fetchSpecieTypes(tempLoadedRegulations[0].fciSymbol);
-        setData(tempLoadedRegulations);
+        const tempLoadedTotalRegulations = await fetchTotalRegulations();
+        setRegulations(tempLoadedRegulations);
         setSpecieTypes(tempLoadedSpecieTypes);
+        setTotalRegulations(tempLoadedTotalRegulations.length);
       } else {
-        setData([]);
+        setRegulations([]);
       }
     };
     setFetchedData();
   }, []); 
 
   const clearNewRow = (() => {
-    setNewRow({ ...newRow, symbol: '', name: '', description: '', composition: '' });
+    setNewRow({ ...newRow, fciSymbol: '', name: '', description: '', composition: '' });
   })
 
   const handleNewRow = () => {
@@ -230,7 +253,7 @@ function FCIRegulationTable() {
       .then((response) => response.json())
       .then((responseData) => {
         console.log('Backend response:', responseData);
-        setData([ responseData, ...data]);
+        setRegulations([ responseData, ...regulations]);
         clearNewRow();
       })    
       .catch((error) => {
@@ -247,16 +270,17 @@ function FCIRegulationTable() {
     fetch(`http://localhost:8098/api/v1/fci/${symbol}`, {
       method: 'DELETE',
     }).then(() => {
-      const updatedData = data.filter((row) => row.id !== id);
-      setData(updatedData);
+      const updatedData = regulations.filter((row) => row.id !== id);
+      setRegulations(updatedData);
     });
   };
 
   const handleEditRowForward = (row) => {
     setEditRowId(row.id)
-    setEditRow({ ...editRow, id: row.id, symbol: row.symbol, name: row.name, description: row.description,
-      composition: row.composition.map((c) => c !== undefined && findSpecieTypeById(c.fciSpecieTypeId).name + ": " + c.percentage + "%").join(' - '),
-      compositionWithId : row.composition.map((c) => c.id + ":" + c.specieType).join(';')});
+    setEditRow({ ...editRow, id: row.id, symbol: row.fciSymbol, name: row.name, description: row.description,
+      composition: row.composition.map((c) => c !== undefined && findSpecieTypeById(c.id + 1).name + ": " + c.percentage + "%").join(' - '),
+      compositionWithId : row.composition.map((c) => c.id + ":" + c.specieType).join(' - ')});
+      setValidationEditErrors({});  
   }
 
   const handleEditRowBack = (id) => {
@@ -264,7 +288,7 @@ function FCIRegulationTable() {
   }
 
   const handleEditRow = () => {
-    const errors = validateEditRow(data.filter((r) => r.id !== editRow.id));
+    const errors = validateEditRow(regulations.filter((r) => r.id !== editRow.id));
     if (Object.keys(errors).length === 0) {
       const f = new FCIRegulation(editRow.id, editRow.symbol, editRow.name, editRow.description, 
         editRow.composition.replace(/\s/g, '').replace(/%/g, '').split("-") 
@@ -283,7 +307,7 @@ function FCIRegulationTable() {
         setEditRowId(0);
         fetch('http://localhost:8098/api/v1/fci')
           .then((response) => response.json())
-          .then((json) => setData(json));
+          .then((json) => setRegulations(json));
       });
       setValidationEditErrors({});
     } else {
@@ -310,6 +334,61 @@ function FCIRegulationTable() {
     try {
       const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/regulation-percentages')
       setRegulationPercentages(responseData.data);
+    } catch (error) {
+      console.error('Error sending data to the backend:', error);
+    }
+  };
+
+  const handlePageChange = async (pageNumber) => {
+    setCurrentPage(pageNumber);
+    let pPage = pageNumber - 1;
+    console.log("url: http://localhost:8098/api/v1/fci/page/" + pPage + '/page_size/' + regulationsPerPage);
+    const fetchPositions = async (pageNumber) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/page/' + pPage + '/page_size/' + regulationsPerPage);
+        return responseData.data;
+      } catch (error) {
+        console.error('#1 - Error receiving specieTypeAssociation:', error);
+      }
+    };
+    const tempLoadedPositions = await fetchPositions(pageNumber);
+    setRegulations(tempLoadedPositions);
+  };
+
+  const handleSearchRegulationSymbolChange = (fciSymbol) => {
+    setSearchCurrentRegulationSymbol(fciSymbol);
+    setSearchFiltered(!searchFiltered);
+  }
+
+  const filterRegulationList = async () => {
+    const fetchFilteredPosition = async () => {
+      try {
+        if (searchCurrentRegulationSymbol !== "") {
+          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + searchCurrentRegulationSymbol + '/filtered');
+          return responseData.data;
+        } else {
+          const responseData = await axios.get('http://localhost:8098/api/v1/fci/page/' + 0 + '/page_size/' + regulationsPerPage);
+          return responseData.data;
+        }
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    }
+    const tempLoadedRegulations = await fetchFilteredPosition();
+    setRegulations(tempLoadedRegulations);
+    if (searchCurrentRegulationSymbol !== "") {  
+      setTotalRegulations(tempLoadedRegulations.length);
+    } else {
+      const tempLoadedTotalRegulations = await fetchTotalRegulations();
+      setTotalRegulations(tempLoadedTotalRegulations.length);
+      
+    }
+  };
+
+  const fetchTotalRegulations = async (fciSymbol) => {
+    try {
+      const responseData = await axios.get('http://localhost:8098/api/v1/fci');
+      return responseData.data;
     } catch (error) {
       console.error('Error sending data to the backend:', error);
     }
@@ -345,6 +424,57 @@ function FCIRegulationTable() {
                 Refers to a <code>&lt;FCI Regulation List&gt;</code> to performs operations beforehand bias process running
                 including their composition
               </p>
+             
+              <p>
+                <table style={{border: 'none'}}>
+                {totalRegulations > 0? (
+                  <tr>
+                    <td width="20%">Regulation Symbol #</td>
+                    <td width="20%">
+                       <input type="text"
+                          style={{width: "100%"}}
+                          onChange={(e) => handleSearchRegulationSymbolChange(e.target.value)}/>
+                    </td>
+                    <td>
+                    <CButton shape='rounded' size='sm' color='string' onClick={() => filterRegulationList()}>
+                            <CIcon icon={cilListFilter} size="xl"/>
+                      </CButton>
+                    </td>
+                    {/* <td width="5%"></td>
+                    <td width="20%">Date From</td>
+                    <td>
+                      <input type="text" className="text-medium-emphasis small"
+                          onChange={(e) => handleSearchDateFromChange(e.target.value)}/>
+                    </td>
+                    <td width="5%"></td>
+                    <td width="20%">Date To</td>
+                    <td width="10%"> */}
+                      {/* <CDateRangePicker startDate="2022/08/03" endDate="2022/08/17" label="Date range" locale="en-US" /> */}
+                    {/* </td> */}
+                      {/* <input type="text" className="text-medium-emphasis small"
+                          onChange={(e) => handleSearchDateToChange(e.target.value)}/> */}
+                  
+                    <td>
+                    <CPagination align="end" size="sm" className="text-medium-emphasis small"
+                    activePage = {currentPage}
+                    pages = {Math.floor(totalRegulations / regulationsPerPage)}
+                    onActivePageChange={handlePageChange}>
+                      {currentPage === 1? (
+                        <CPaginationItem disabled>«</CPaginationItem> ) 
+                      : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
+                     
+                      <CPaginationItem active className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
+                     
+                      {currentPage === Math.ceil(totalRegulations / regulationsPerPage) || searchFiltered ? (
+                        <CPaginationItem disabled>»</CPaginationItem>) 
+                      : (<CPaginationItem className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage + 1)}>»</CPaginationItem>)}
+                    </CPagination>
+                </td>
+                  </tr>
+                  ) : null}
+                </table>
+              </p>
+
               <table>
                 <thead>
                   <tr>
@@ -356,15 +486,16 @@ function FCIRegulationTable() {
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.prototype.toString.call(dataAsc) === '[object Array]' && dataAsc.length > 0 && dataAsc.map((row) => (
+                  {Object.prototype.toString.call(regulations) === '[object Array]' && regulations.length > 0 && regulations.map((row) => (
                     <React.Fragment key={row.id}>
                       <tr>
                         <td>{row.id}</td>
-                        <td>{row.symbol}</td>
+                        <td><code>{row.fciSymbol}</code></td>
                         <td>
                           {editRowId === row.id ? (
                             <input
                               type="text"
+                              style={{width: "100%"}}
                               placeholder={row.name}
                               value={editRow.name}
                               onChange={(e) => setEditRow({ ...editRow, name: e.target.value })}
@@ -377,6 +508,7 @@ function FCIRegulationTable() {
                           {editRowId === row.id ? (
                             <input
                               type="text"
+                              style={{width: "100%"}}
                               placeholder={row.description}
                               value={editRow.description}
                               onChange={(e) => setEditRow({ ...editRow, description: e.target.value })}
@@ -414,6 +546,7 @@ function FCIRegulationTable() {
                           {editRowId === row.id ? (
                             <input
                               type="text"
+                              style={{width: "100%"}}
                               placeholder={row.composition.map((c) =>  + ": " + c.percentage + "% ").join('- ')}
                               value={editRow.composition}
                               onChange={(e) =>
@@ -421,15 +554,22 @@ function FCIRegulationTable() {
                               }
                             />
                           ) : (
-                           row.composition.map((c) => c.fciSpecieTypeId !== undefined && findSpecieTypeById(c.fciSpecieTypeId).name + ": " + c.percentage + "% ").join('- '))
-                          }
+                            row.composition.map((c) => c.id !== undefined &&
+                              <React.Fragment key={c.id}>
+                                {findSpecieTypeById(c.id + 1).name}{": "}
+                                <b>
+                                <NumericFormat displayType="text" value={Number(c.percentage).toFixed(2)} suffix="%"/>
+                                </b>
+                                {' - '}
+                            </React.Fragment>
+                            ))}
                         </td>
                         <td>
                         {/* <CButton onClick={() => setVisible(!visible)}>Launch demo modal</CButton> */}
-                          <CButton shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages(row.symbol)}>
+                          <CButton shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages(row.fciSymbol)}>
                             <CIcon icon={cilFile} size="xl"/>
                         </CButton>
-                        <div>{() => listFCIRegulationPercentages(row.symbol)}</div>
+                        <div>{() => listFCIRegulationPercentages(row.fciSymbol)}</div>
                         <CModal
                           visible={visible}
                           alignment="center"
@@ -442,7 +582,7 @@ function FCIRegulationTable() {
                           <CCol xs={18}>
                             <CCard>
                               <CCardHeader>
-                                <strong className="text-medium-emphasis small">FCI Regulation Composion - {row.symbol}</strong>
+                                <strong className="text-medium-emphasis small">FCI Regulation Composion - {row.fciSymbol}</strong>
                               </CCardHeader>
                               <CCardBody>
                               <CRow>
@@ -567,6 +707,7 @@ function FCIRegulationTable() {
                        <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
                           <input
                             type="text" value={newRow.symbol}
+                            style={{width: "100%"}}
                             onChange={(e) => setNewRow({ ...newRow, symbol: e.target.value })}/>
                         </h4>
                     </td>   
@@ -574,6 +715,7 @@ function FCIRegulationTable() {
                         <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
                           <input
                             type="text" 
+                            style={{width: "100%"}}
                             value={newRow.name}
                             onChange={(e) => setNewRow({ ...newRow, name: e.target.value })}
                           />
@@ -596,6 +738,7 @@ function FCIRegulationTable() {
                     <td colSpan="4">
                       <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
                         <input type="text" aria-label="Description"
+                         style={{width: "100%"}}
                           value={newRow.description}
                           onChange={(e) => setNewRow({ ...newRow, description: e.target.value })}/>
                       </h4>
@@ -607,6 +750,7 @@ function FCIRegulationTable() {
                       <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
                         <input
                           type="text"
+                          style={{width: "100%"}}
                           value={newRow.composition}
                           onChange={(e) => setNewRow({ ...newRow, composition: e.target.value })}/>
                        </h4>   

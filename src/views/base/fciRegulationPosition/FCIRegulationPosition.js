@@ -146,6 +146,7 @@ function FCIRegulationPosition() {
 
   /** FCI Positions bound to selected FCI Regulation */
   const selectFciSymbol = async (fciSymbol) => {
+    setValidationError('');
     const fetchPositionWithFciSymbol = async (fciSymbol) => {
       if (fciSymbol !== undefined) {
         setSelectedFCISymbol(fciSymbol);
@@ -371,8 +372,11 @@ function FCIRegulationPosition() {
                         )}
                       </select> */}
                        <input type="number" min="1"
+                          style={{width: "100%"}}
                           onChange={(e) => handleSearchPositionIdChange(e.target.value)}/>
-                          <CButton shape='rounded' size='sm' color='string' onClick={() => filterPositionList()}>
+                    </td>
+                    <td>
+                      <CButton shape='rounded' size='sm' color='string' onClick={() => filterPositionList()}>
                             <CIcon icon={cilListFilter} size="xl"/>
                       </CButton>
                     </td>

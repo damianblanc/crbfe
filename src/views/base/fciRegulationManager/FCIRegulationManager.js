@@ -17,12 +17,6 @@ import { element } from 'prop-types';
 import { NumericFormat } from 'react-number-format';
 
 
-//TODO: Pagination for FCI Regulations
-//TODO: See some pagination issue
-//TODO: Filtering by Id for FCI Regulation
-//TODO: Analyze filtering scenarios
-//TODO: Verify creation is working
-
 class FCIRegulation {
   constructor(id, symbol, name, description, composition = [FCIComposition]) {
     this.id = id;
@@ -36,7 +30,7 @@ class FCIRegulation {
 class FCIComposition {
   constructor(id, specieType, percentage) {
     this.id = id;
-    this.specieType = specieType;
+    this.fciSpecieTypeId = specieType;
     this.percentage = percentage;
   }
 }
@@ -375,13 +369,16 @@ function FCIRegulationTable() {
       }
     }
     const tempLoadedRegulations = await fetchFilteredPosition();
-    setRegulations(tempLoadedRegulations);
     if (searchCurrentRegulationSymbol !== "") {  
-      setTotalRegulations(tempLoadedRegulations.length);
+      if (tempLoadedRegulations.length > 0) {
+        setRegulations(tempLoadedRegulations);
+        setTotalRegulations(tempLoadedRegulations.length);
+      } else {
+        const tempLoadedTotalRegulations = await fetchTotalRegulations();
+        setTotalRegulations(tempLoadedTotalRegulations.length);
+      }
     } else {
-      const tempLoadedTotalRegulations = await fetchTotalRegulations();
-      setTotalRegulations(tempLoadedTotalRegulations.length);
-      
+      setRegulations(tempLoadedRegulations);
     }
   };
 
@@ -425,7 +422,6 @@ function FCIRegulationTable() {
                 including their composition
               </p>
              
-              <p>
                 <table style={{border: 'none'}}>
                 {totalRegulations > 0? (
                   <tr>
@@ -472,8 +468,7 @@ function FCIRegulationTable() {
                 </td>
                   </tr>
                   ) : null}
-                </table>
-              </p>
+              </table>
 
               <table>
                 <thead>
@@ -576,7 +571,6 @@ function FCIRegulationTable() {
                           size = "xl"
                           onClose={() => setVisible(false)}
                           aria-labelledby="ScrollingLongContentExampleLabel"
-                          scrollable="true"
                         >
                         {<CRow>
                           <CCol xs={18}>

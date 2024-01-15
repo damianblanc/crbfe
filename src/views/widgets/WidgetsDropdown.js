@@ -20,6 +20,7 @@ const WidgetsDropdown = () => {
   const [regulationQuantity, setRegulationQuantity] = useState(0);
   const [positionQuantity, setPositionQuantity] = useState(0);
   const [positionsPerMonth, setPositionsPerMonth] = useState([]);
+  const [posPerMonthGrowth, setPosPerMonthGrowth] = useState(0);
 
   useEffect(() => {
     const fetchSummarization = async () => {
@@ -31,14 +32,29 @@ const WidgetsDropdown = () => {
       }
     };
 
+    const fetchPositionsPerMonth = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
     const setFetchedData = async () => {
       const tempLoadedSummarization = await fetchSummarization();
+      const tempLoadedPositionsPerMonth = await fetchPositionsPerMonth();
       setRegulationQuantity(tempLoadedSummarization.fciRegulationQuantity);
       setPositionQuantity(tempLoadedSummarization.fciPositionQuantity);
-      setPositionsPerMonth(tempLoadedSummarization.fciPositionsPerMothLastYear)
+      setPositionsPerMonth(tempLoadedPositionsPerMonth);
+      setPosPerMonthGrowth((tempLoadedPositionsPerMonth.at(0).quantity / tempLoadedSummarization.fciPositionQuantity) * 100);
     };
     setFetchedData();
   }, []); 
+
+  // const posPerMonthPercentageGrowth = () => {
+  //   return (positionsPerMonth.at(0).quantity / positionQuantity) * 100;
+  // }
 
   return (
     <CRow>
@@ -137,7 +153,7 @@ const WidgetsDropdown = () => {
             <>
               {positionQuantity}{' '}
               <span className="fs-6 fw-normal">
-                (40.9% <CIcon icon={cilArrowTop} />)
+                ({posPerMonthGrowth}% <CIcon icon={cilArrowTop} />)
               </span>
             </>
           }
@@ -160,14 +176,14 @@ const WidgetsDropdown = () => {
               className="mt-3 mx-3"
               style={{ height: '70px' }}
               data={{
-                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+                labels: positionsPerMonth?.reverse().map((e) => e.month),
                 datasets: [
                   {
-                    label: 'My First dataset',
-                    backgroundColor: 'transparent',
+                    label: 'Positions per Month',
+                    backgroundColor: 'blue',
                     borderColor: 'rgba(255,255,255,.55)',
                     pointBackgroundColor: getStyle('--cui-info'),
-                    data: [1, 18, 9, 17, 34, 22, 11],
+                    data: positionsPerMonth?.map((e) => e.quantity),
                   },
                 ],
               }}

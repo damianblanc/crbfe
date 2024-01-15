@@ -123,8 +123,10 @@ function FCIRegulationPosition() {
 
   const setFetchedData = async () => {
     const tempLoadedCreatedPosition = await fetchCreatedPosition();
-    if (validationError === 0) {
+    if (tempLoadedCreatedPosition !== undefined && (validationError === false || validationError === "" || validationError.length === 0)) {
       setPositions([tempLoadedCreatedPosition, ...positions]);
+    } else {
+      setValidationError(validationError);
     }
   };
 
@@ -144,36 +146,39 @@ function FCIRegulationPosition() {
     }
   };
 
+  const deletePosition = async (fciPositionId) => {
+    const tempDeletedPositionId = await fetchDeletedPosition(fciPositionId);
+    if (tempDeletedPositionId === fciPositionId) {
+      let filteredArray = positions.filter(item => item.id !== fciPositionId)
+      setPositions(filteredArray);
+    }
+  };
+
+  const fetchDeletedPosition = async (fciPositionId) => {
+    try {
+      const response = await axios.delete('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + fciPositionId);
+      return response.data;
+    } catch (error) {
+      console.error('Error sending data to the backend:', error);
+      setValidationError(error.response.data.message);
+    }
+  };
+
   /** FCI Positions bound to selected FCI Regulation */
   const selectFciSymbol = async (fciSymbol) => {
+    setPositions([]);
     setValidationError('');
-    const fetchPositionWithFciSymbol = async (fciSymbol) => {
-      if (fciSymbol !== undefined) {
-        setSelectedFCISymbol(fciSymbol);
-        try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
-          return responseData.data;
-        } catch (error) {
-          console.error('Error sending data to the backend:', error);
-        }
-      }
-  };
-  
-  const setFetchedData = async () => {
-    const tempLoadedPositions = await fetchPositionWithFciSymbol(fciSymbol);
-    setPositions(tempLoadedPositions);
-  } 
-  return setFetchedData;
-}; 
-
-  // const selectFciSymbol = (symbol) => {
-  //   if (symbol !== undefined) {
-  //     setSelectedFCISymbol(symbol);
-  //     fetch('http://localhost:8098/api/v1/fci/' + symbol + '/position')
-  //       .then((response) => response.json())
-  //       .then((json) => setPositions(json));
-  //   }
-  // };
+    setExcelFile(null);
+    setSelectedFCISymbol(fciSymbol);
+   
+    try {
+      const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/page/' + 0 + '/page_size/' + positionsPerPage);
+      setPositions(responseData.data);
+    } catch (error) {
+      console.error('Error sending data to the backend:', error);
+      setValidationError(error.response.data.message);
+    }
+  }
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -206,10 +211,6 @@ function FCIRegulationPosition() {
     XLSX.writeFile(workbook, "Position_" + fciSymbol + "_" + timestamp + ".xlsx");
   };
 
-  const deletePosition = () => {
-
-  }
-
   const refreshPosition = (fciSymbol, positionId) => {
     fetch('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/' + positionId + '/refresh', {
       method: 'GET',
@@ -232,18 +233,6 @@ function FCIRegulationPosition() {
         console.error('Error sending data to the backend:', error);
       });
   };
-
-  const describePosition = (composition) => {
-    // const fetchPosition = async () => {
-    //   try {
-    //     const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/' + positionId);
-    //     return responseData.data;
-    //   } catch (error) {
-    //     console.error('Error sending data to the backend:', error);
-    //   }
-    // }
-    setVisible(!visible);
-}
 
   const handleSearchPositionIdChange = (positionId) => {
     setSearchCurrentPositionId(positionId);
@@ -336,7 +325,7 @@ function FCIRegulationPosition() {
       </CRow> 
       <br/>
 
-      {(validationError) !== '' ? 
+      {(validationError !== '') ? 
             <CCard>
               <CCardHeader>
                 <strong className="text-medium-emphasis small">There are some errors in uploaded Position</strong>
@@ -436,7 +425,8 @@ function FCIRegulationPosition() {
                           <Popup 
                             position="left center" visible={visible}
                             trigger={
-                              <CButton shape='rounded' size='sm' color='string' onClick={() => describePosition(item.composition)}>
+            
+                              <CButton shape='rounded' size='sm' color='string' >
                                     <CIcon icon={cilClipboard} size="xl"/>
                               </CButton>}>
                           <CRow>
@@ -520,7 +510,7 @@ function FCIRegulationPosition() {
                       <td width="30%">{item.overview}</td>
                       <td>
                         <>
-                          <CButton shape='rounded' size='sm' color='string' onClick={() => deletePosition()}>
+                          <CButton shape='rounded' size='sm' color='string' onClick={() => deletePosition(item.id)}>
                                 <CIcon icon={cilTrash} size="xl"/>
                           </CButton>
                           <CButton shape='rounded' size='sm' color='string' onClick={() => downloadExcel(item.fciSymbol, item.timestamp, item.updatedMarketPosition) }>

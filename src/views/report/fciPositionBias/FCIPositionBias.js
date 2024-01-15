@@ -10,6 +10,7 @@ import 'reactjs-popup/dist/index.css';
 import axios from 'axios';
 
 import {
+  CChart,
   CChartBar,
   CChartDoughnut,
   CChartLine,
@@ -497,11 +498,13 @@ function FCIPositionBias() {
                               )}
                       </select>
                         </td>
+                        <td width="40%"></td>
                         <td>
+                          Position Biases Graph
                         {<Popup trigger={
                         <CButton shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages()}>
                             <CIcon icon={cilFile} size="xl"/>
-                        </CButton>} position="right center" modal lockScroll="false">
+                        </CButton>} position="right center" modal lockScroll="false" backgroundColor="rgba(75,192,192,0.4)">
                         {
                           <CRow>
                           <CCol xs={12}>
@@ -513,29 +516,77 @@ function FCIPositionBias() {
                               <CRow>
                               <CCol>
                                 <CCard className="mb-8">
-                                  <CCardHeader>Current Position Biases</CCardHeader>
+                                  <CCardHeader className="text-medium-emphasis" >Current Position Biases</CCardHeader>
                                   <CCardBody>
                                       <CCol xs={12}>
-                                            <CChartBar
+                                            <CChart
+                                              type="bar"
                                               data={{
-                                                labels: positionPercentages?.map((p) => p.specieType),
+                                                labels: positionPercentages?.map((p) => p.specieType + ": " + p.percentage + "%"),
                                                 datasets: [
                                                   {
-                                                    label: 'FCI Position Biases',
-                                                    backgroundColor: '#f87979',
-                                                    hoverBackgroundColor: "#f87969",
-                                                    // hoverBorderColor: '#36A2EB',
-                                                    // hoverBorderWidth: 5,
-                                                    indexAxis: 'x',
+                                                    label: 'FCI Position Biases Percentage',
+                                                    backgroundColor: '#f87999',
+                                                    hoverBackgroundColor: 'rgba(255,99,132,0.4)',
+                                                    hoverBorderColor: 'rgba(255,99,132,1)',
+                                                    borderCapStyle: 'square',
+                                                    borderColor: '#f87999',
+                                                    borderWidth: 0,
+                                                    borderDash: [0, 0],
+                                                    borderDashOffset: 0,
+                                                    order: 1,
+                                                    data: positionPercentages?.map((p) => p.rpercentage),
+                                                    // hoverBackgroundColor: "#f87995",
+                                                    // hoverBorderColor: '#f87995',
+                                                    // hoverBorderWidth: 1,
+                                                    // indexAxis: 'x',
+                                                    // fill: false,
                                                     // borderColor: "rgba(220, 220, 220, 1)",
                                                     // pointBackgroundColor: "rgba(220, 220, 220, 1)",
+                                                    // pointBackgroundColor: "#352c2c",
                                                     // pointBorderColor: "#fff",
-                                                    data: positionPercentages?.map((p) => p.rpercentage),
-                                                    // data : [10, 20, 30]
+                                                    // borderJoinStyle: 'miter',
+                                                    // borderCapStyle: 'butt',
+                                                    // pointBorderWidth: 1,
+                                                    // pointHoverRadius: 2,
+                                                    // pointHoverBackgroundColor: 'rgba(75,192,192,1)',
+                                                    // pointHoverBorderColor: 'rgba(220,220,220,1)',
+                                                    // pointHoverBorderWidth: 2,
+                                                    // pointRadius: 1,
+                                                    // pointHitRadius: 2,
+                                                    // lineTension: 0.1,
+                                                    // backgroundColor: 'rgba(75,192,192,0.4)',
+                                                    // borderColor: 'rgba(75,192,192,1)',
+                                                    // borderCapStyle: 'butt',
+                                                    //  borderDash: [50],
+                                                    // borderDashOffset: 0.0,
+                                                    // borderJoinStyle: 'miter',
+                                                    // pointBorderColor: 'rgba(75,192,192,1)',
+                                                    // pointBackgroundColor: '#0b0b0b',
+                                                    // order: 1,
+                                                    // data: positionPercentages?.map((p) => p.rpercentage),
                                                   },
+                                                  {
+                                                    label: 'FCI Position Biases Percentage',
+                                                    backgroundColor: 'grey', //'#352c2c',
+                                                    data: positionPercentages?.map((p) => p.rpercentage),
+                                                    type: "line",
+                                                    borderColor: "grey",
+                                                    fill: false,
+                                                    order: 0,
+                                                    borderWidth: 2,
+                                                    pointBackgroundColor: "#352c2c",
+                                                    lineTension: 0,
+                                                  }
                                                 ],
                                               }}
                                               labels="Percentages"
+                                              options={{
+                                                aspectRatio: 1.5,
+                                                tooltips: {
+                                                  enabled: true
+                                                }
+                                              }}
                                             />
                                       </CCol>
                                   </CCardBody>
@@ -629,6 +680,7 @@ function FCIPositionBias() {
                                   },
                                 ],
                               }}
+
                             />}
                           </CCardBody>
                         </CCard>

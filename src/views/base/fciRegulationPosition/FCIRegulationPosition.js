@@ -17,6 +17,9 @@ import axios from 'axios';
 
 import { NumericFormat } from 'react-number-format';
 
+import { isLoginTimestampValid } from '../../../utils/utils.js';
+import { useNavigate } from 'react-router-dom';
+
 import {
   CDropdown,
   CDropdownMenu,
@@ -71,9 +74,15 @@ function FCIRegulationPosition() {
   const [positionsPerMonth, setPositionsPerMonth] = useState([]);
   const [posPerMonthGrowth, setPosPerMonthGrowth] = useState(0);
   const [positionQuantity, setPositionQuantity] = useState(0);
+  const navigate = useNavigate();
 
   /** FCI Regulations - Symbol and Name */
   useEffect(() => {
+    const isValid = isLoginTimestampValid();
+    if (!isValid) {
+      navigate('/');
+    }
+
     const fetchRegulations = async () => {
       try {
         const responseData = await axios.get('http://localhost:8098/api/v1/fci/symbol-name');

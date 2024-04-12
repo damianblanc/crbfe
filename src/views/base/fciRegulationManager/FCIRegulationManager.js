@@ -15,6 +15,8 @@ import axios from 'axios';
 import { CModal } from '@coreui/react';
 import { element } from 'prop-types';
 import { NumericFormat } from 'react-number-format';
+import { isLoginTimestampValid } from '../../../utils/utils.js';
+import { useNavigate } from 'react-router-dom';
 
 
 class FCIRegulation {
@@ -61,7 +63,7 @@ function FCIRegulationTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchCurrentRegulationSymbol, setSearchCurrentRegulationSymbol] = useState('');
   const regulationsPerPage = 5;
-  
+  const navigate = useNavigate();
 
   const validateNewRow = (row) => {
     const regex = /^(?:[^:]+:\d+(\.\d+)?%)(?:-[^:]+:\d+(\.\d+)?%)*$/;
@@ -178,6 +180,14 @@ function FCIRegulationTable() {
   }
 
   useEffect(() => {
+    const isValid = isLoginTimestampValid();
+    if (!isValid) {
+      localStorage.removeItem("loginTimestamp");
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      navigate('/');
+    }
+
     const fetchRegulations = async () => {
       try {
         const responseData = await axios.get('http://localhost:8098/api/v1/fci/page/0/page_size/' + regulationsPerPage);

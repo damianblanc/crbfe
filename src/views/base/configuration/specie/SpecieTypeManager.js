@@ -12,6 +12,9 @@ import 'reactjs-popup/dist/index.css';
 
 import axios from 'axios';
 
+import { isLoginTimestampValid } from '../../../../utils/utils.js';
+import { useNavigate } from 'react-router-dom';
+
 class SpecieTypeGroup {
     constructor(id, name, description, updatable) {
         this.id = id;
@@ -49,9 +52,18 @@ function SpecieTypeManager() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalSpecies, setTotalSpecies] = useState(1);
   const speciesPerPage = 15;
+  const navigate = useNavigate();
 
   /** SpecieType Groups */
   useEffect(() => {
+    const isValid = isLoginTimestampValid();
+    if (!isValid) {
+      localStorage.removeItem("loginTimestamp");
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      navigate('/');
+    }
+  
     const fetchSpecieTypeGroups = async () => {
       try {
         const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group');

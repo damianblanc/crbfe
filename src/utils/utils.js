@@ -10,10 +10,10 @@ export function isLoginTimestampValid() {
     const loginDate = new Date(parseInt(loginTimestamp));
   
     // Calculate the difference in minutes between the current time and the login time
-    const timeDiffInMinutes = (Date.now() - loginDate.getTime()) / (1000);
+    const timeDiffInMinutes = (Date.now() - loginDate.getTime()) / (1000 * 60);
   
     // Check if the time difference is more than 30 minutes
-    if (timeDiffInMinutes > 1) {
+    if (timeDiffInMinutes > 30) {
       return false;
     }
   

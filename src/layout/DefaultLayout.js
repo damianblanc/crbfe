@@ -1,15 +1,18 @@
-import React from 'react'
+import { React, useEffect } from 'react'
 import { AppContent, AppSidebar, AppFooter, AppHeader } from '../components/index'
 import { isLoginTimestampValid } from '../utils/utils.js';
 import { useNavigate } from 'react-router-dom';
 
 const DefaultLayout = () => {
   const navigate = useNavigate();
-  const isValid = isLoginTimestampValid();
-  console.log("isValid=" + isValid);
-  if (!isValid) {
-    navigate('/login');
-  }
+ 
+  useEffect(() => {
+    const isValid = isLoginTimestampValid();
+    if (!isValid) {
+      navigate('/');
+    }
+  }, []);
+
   return (
     <div>
       <AppSidebar />

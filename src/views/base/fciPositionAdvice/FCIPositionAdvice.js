@@ -11,6 +11,9 @@ import { NumericFormat } from 'react-number-format';
 
 import './FCIRegulationTable.css';
 
+import { isLoginTimestampValid } from '../../../utils/utils.js';
+import { useNavigate } from 'react-router-dom';
+
 class Advice {
   constructor(id, specieName, operationAdvice, quantity, price, value) {
     this.id = id;
@@ -49,8 +52,17 @@ function FCIPositionAdvice() {
   const [flatAdvices, setFlatAdvices] = useState([]);
   const [currentPositionId, setCurrentPositionId] = useState('');
   const [positionPercentages, setPositionPercentages] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const isValid = isLoginTimestampValid();
+    if (!isValid) {
+      localStorage.removeItem("loginTimestamp");
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      navigate('/');
+    }
+
     /** FCI Regulations - Symbol and Name */
     const fetchRegulations = async () => {
       try {

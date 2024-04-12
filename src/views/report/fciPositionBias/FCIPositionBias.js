@@ -8,6 +8,8 @@ import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
 
 import axios from 'axios';
+import { isLoginTimestampValid } from '../../../utils/utils.js';
+import { useNavigate } from 'react-router-dom';
 
 import {
   CChart,
@@ -84,8 +86,13 @@ function FCIPositionBias() {
   const [currentPositionId, setCurrentPositionId] = useState('');
   const [currentFCISymbol, setCurrentFCISymbol] = useState('');
   const [positionOverview, setPositionOverview] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
+      const isValid = isLoginTimestampValid();
+      if (!isValid) {
+        navigate('/');
+      }
     /** FCI Regulations - Symbol and Name */
     const fetchRegulations = async () => {
       try {

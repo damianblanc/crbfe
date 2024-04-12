@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
-import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter } from '@coreui/icons';
+import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter, cilArrowTop, cilOptions } from '@coreui/icons';
+import { CChartLine } from '@coreui/react-chartjs'
 
 import CIcon from '@coreui/icons-react'
 
@@ -15,6 +16,16 @@ import 'reactjs-popup/dist/index.css';
 import axios from 'axios';
 
 import { NumericFormat } from 'react-number-format';
+
+import {
+  CDropdown,
+  CDropdownMenu,
+  CDropdownItem,
+  CDropdownToggle,
+  CWidgetStatsA,
+} from '@coreui/react'
+
+import { getStyle } from '@coreui/utils'
 
 class FCIPositionCompositionVO {
   constructor(id, specieGroup, specieType, specieName, specieSymbol, marketPrice, quantity, valued) {
@@ -54,6 +65,12 @@ function FCIRegulationPosition() {
   const [searchCurrentToDate, setSearchCurrentToDate] = useState('');
 
   const [validationError, setValidationError] = useState('');
+  const [positionIdentifier, setPositionIdentifier] = useState('');
+  const [regulationSymbol, setRegulationSymbol] = useState('');
+
+  const [positionsPerMonth, setPositionsPerMonth] = useState([]);
+  const [posPerMonthGrowth, setPosPerMonthGrowth] = useState(0);
+  const [positionQuantity, setPositionQuantity] = useState(0);
 
   /** FCI Regulations - Symbol and Name */
   useEffect(() => {
@@ -84,15 +101,29 @@ function FCIRegulationPosition() {
       }
     };
 
+    const fetchPositionsPerMonth = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month/fci/' + fciSymbol);
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
       if (tempLoadedRegulations.length > 0) {
         const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol, 0);
         const tempLoadedTotalPositions = await fetchTotalPositions(tempLoadedRegulations[0].fciSymbol);
+        const tempLoadedPositionsPerMonth = await fetchPositionsPerMonth(tempLoadedRegulations[0].fciSymbol);
         setRegulations(tempLoadedRegulations);
         setPositions(tempLoadedPositions);
         setSelectedFCISymbol(tempLoadedRegulations[0].fciSymbol);
         setTotalPositions(tempLoadedTotalPositions.length);
+        setPositionsPerMonth(tempLoadedPositionsPerMonth);
+        let totalPositions = tempLoadedPositionsPerMonth.reduce((accumulator, currentValue) => accumulator + currentValue.quantity, 0);
+        setPositionQuantity(totalPositions);
+        setPosPerMonthGrowth((tempLoadedPositionsPerMonth.at(0).quantity / totalPositions) * 100);
       }
     };
     setFetchedData();
@@ -122,9 +153,22 @@ function FCIRegulationPosition() {
   };
 
   const setFetchedData = async () => {
+    const fetchPositionsPerMonth = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month/fci/' + selectedFCISymbol);
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
     const tempLoadedCreatedPosition = await fetchCreatedPosition();
     if (tempLoadedCreatedPosition !== undefined && (validationError === false || validationError === "" || validationError.length === 0)) {
       setPositions([tempLoadedCreatedPosition, ...positions]);
+      const tempLoadedPositionsPerMonth = await fetchPositionsPerMonth();
+      setPositionsPerMonth(tempLoadedPositionsPerMonth);
+      let totalPositions = tempLoadedPositionsPerMonth.reduce((accumulator, currentValue) => accumulator + currentValue.quantity, 0);
+      setPositionQuantity(totalPositions);
     } else {
       setValidationError(validationError);
     }
@@ -147,10 +191,23 @@ function FCIRegulationPosition() {
   };
 
   const deletePosition = async (fciPositionId) => {
+    const fetchPositionsPerMonth = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month/fci/' + selectedFCISymbol);
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
     const tempDeletedPositionId = await fetchDeletedPosition(fciPositionId);
     if (tempDeletedPositionId === fciPositionId) {
       let filteredArray = positions.filter(item => item.id !== fciPositionId)
       setPositions(filteredArray);
+      const tempLoadedPositionsPerMonth = await fetchPositionsPerMonth();
+      setPositionsPerMonth(tempLoadedPositionsPerMonth);
+      let totalPositions = tempLoadedPositionsPerMonth.reduce((accumulator, currentValue) => accumulator + currentValue.quantity, 0);
+      setPositionQuantity(totalPositions);
     }
   };
 
@@ -170,15 +227,37 @@ function FCIRegulationPosition() {
     setValidationError('');
     setExcelFile(null);
     setSelectedFCISymbol(fciSymbol);
+    setPositionIdentifier('');
    
-    try {
-      const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/page/' + 0 + '/page_size/' + positionsPerPage);
-      setPositions(responseData.data);
-    } catch (error) {
-      console.error('Error sending data to the backend:', error);
-      setValidationError(error.response.data.message);
+    const fetchPositionsPerPage = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/page/' + 0 + '/page_size/' + positionsPerPage);
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+        setValidationError(error.response.data.message);
+      }
     }
-  }
+
+    const fetchPositionsPerMonth = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month/fci/' + fciSymbol);
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    const setFetchedData = async (fciPositionId) => {
+      const tempLoadedPositionsPerPage = await fetchPositionsPerPage(fciPositionId);
+      const tempLoadedPositionsPerMonth = await fetchPositionsPerMonth(fciSymbol);
+      setPositionsPerMonth(tempLoadedPositionsPerMonth);
+      let totalPositions = tempLoadedPositionsPerMonth.reduce((accumulator, currentValue) => accumulator + currentValue.quantity, 0);
+      setPositionQuantity(totalPositions);
+      setPositions(tempLoadedPositionsPerPage);
+    }
+   setFetchedData();
+  }  
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -235,6 +314,7 @@ function FCIRegulationPosition() {
   };
 
   const handleSearchPositionIdChange = (positionId) => {
+    setPositionIdentifier(positionId);
     setSearchCurrentPositionId(positionId);
     setSearchFiltered(!searchFiltered);
     console.log("searchCurrentPositionId = " + searchCurrentPositionId);
@@ -276,51 +356,150 @@ function FCIRegulationPosition() {
               </CCardHeader>
               <CCardBody>
               <table>
-               <thead>
-                  <tr className="text-medium-emphasis">
-                    <td width="20%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
-                    <td width="80%">
-                      <select className="text-medium-emphasis large" onChange={(e) => selectFciSymbol(e.target.value)}>
-                        {/* <option value="">&nbsp;&nbsp;&nbsp;</option> */}
-                        {regulations?.map((regulation) => 
-                          <React.Fragment key={regulation.id}>
-                          <option value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
-                          </React.Fragment>
-                        )}
-                      </select>
-                    </td>
-                  </tr>
-                </thead>
-                <tbody><tr>&nbsp;</tr></tbody>
-               </table> 
-              <table>
-              <thead>
-                  <tr className="text-medium-emphasis">
-                    <th>Format</th>
-                    <th>File</th>
-                    <th>Position</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
                 <tr>
-                  <td width="15%">Excel file (.xlsx format)</td>
-                  <td width="60%"><input type="file" onChange={handleFileChange}></input></td>
-                  <td> 
-                    <CButton shape='rounded' size='sm' color='string' onClick={() => processExcel()}>
-                      <CIcon icon={cilSync} size="xl"/>
-                    </CButton>
-                  </td>
                   <td>
-                  <CButton shape='rounded' size='sm' color='string' onClick={() => createFCIPosition()}>
-                      <CIcon icon={cilTransfer} size="xl"/>
-                  </CButton>
+                    <table className='table-head-1'>
+                      <tr>
+                        <td width="23%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
+                        <td width="35%">
+                          <select className="text-medium-emphasis large" 
+                            onChange={(e) => selectFciSymbol(e.target.value)} style={{width: "100%"}}>
+                              {regulations?.map((regulation) => 
+                                <React.Fragment key={regulation.id}>
+                                <option value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
+                                </React.Fragment>
+                              )}
+                          </select>
+                        </td>
+                        <td width="3%"></td>
+                        <td width="10%">FCI Symbol</td>
+                        <td width="12%">
+                          <input id="regulationSymbol" type="text" className="text-medium-emphasis small"
+                              style={{width: "100%"}}
+                              onChange={(e) => handleSearchPositionIdChange(e.target.value)} //TODO: Change FCI Symbol
+                              value={regulationSymbol}/>
+                        </td>
+                        <td>
+                          <CButton shape='rounded' size='sm' color='string' onClick={() => selectFciSymbol()}>
+                                <CIcon icon={cilListFilter} size="xl"/>
+                          </CButton>
+                        </td>
+                      </tr>
+                    </table>
+                    
+                    <table width="70%">
+                      <tr className="text-medium-emphasis">
+                        <td width="70%" >
+                          <table className='table-head'>
+                            <td width="5%"/>
+                              <thead>
+                                <th>Format</th>
+                                <th>File</th>
+                                <th>Position</th>
+                                <th>Actions</th>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td width="20%">Excel file (.xlsx format)</td>
+                                  <td width="50%"><input type="file" onChange={handleFileChange}></input></td>
+                                  <td> 
+                                    <CButton shape='rounded' size='sm' color='string' onClick={() => processExcel()}>
+                                      <CIcon icon={cilSync} size="xl"/>
+                                    </CButton>
+                                  </td>
+                                  <td>
+                                  <CButton shape='rounded' size='sm' color='string' onClick={() => createFCIPosition()}>
+                                      <CIcon icon={cilTransfer} size="xl"/>
+                                  </CButton>
+                                  </td>
+                                </tr>
+                              </tbody>
+                          </table>
+                        </td>
+                        <td width="2%"/>
+                      </tr>
+                    </table>
+                  </td>
+                  <td width="28%">
+                    <CCol sm={12} mb={6}>
+                      <CWidgetStatsA
+                        className="mb-6"
+                        color="secondary"
+                        style={{ height: '138px'}}
+                        value={
+                          <>
+                            {positionQuantity}{' '}
+                            <span className="fs-6 fw-small">
+                              ({posPerMonthGrowth}% <CIcon icon={cilArrowTop} />)
+                            </span>
+                          </>
+                        }
+                        title="Positions"
+                        chart={
+                          <CChartLine
+                            className="st-0 sx-0"
+                            style={{ height: '70px'}}
+                            data={{
+                              labels: positionsPerMonth?.reverse().map((e) => e.month),
+                              datasets: [
+                                {
+                                  label: 'Positions per Month',
+                                  backgroundColor: '#3A3B3C',
+                                  borderColor: '#3A3B3C',
+                                  pointBackgroundColor: getStyle('--cui-info'),
+                                  data: positionsPerMonth?.map((e) => e.quantity),
+                                },
+                              ],
+                            }}
+                            options={{
+                              plugins: {
+                                legend: {
+                                  display: false,
+                                },
+                              },
+                              maintainAspectRatio: false,
+                              scales: {
+                                x: {
+                                  grid: {
+                                    display: false,
+                                    drawBorder: false,
+                                  },
+                                  ticks: {
+                                    display: false,
+                                  },
+                                },
+                                y: {
+                                  min: -200,
+                                  max: 200,
+                                  display: false,
+                                  grid: {
+                                    display: false,
+                                  },
+                                  ticks: {
+                                    display: false,
+                                  },
+                                },
+                              },
+                              elements: {
+                                line: {
+                                  borderWidth: 1,
+                                },
+                                point: {
+                                  radius: 4,
+                                  hitRadius: 10,
+                                  hoverRadius: 10,
+                                },
+                              },
+                            }}
+                          />
+                        }
+                      />
+                    </CCol>
                   </td>
                 </tr>
-                </tbody>
-                </table>  
-              </CCardBody>
-            </CCard>
+              </table> 
+            </CCardBody>
+          </CCard>
         </CCol>
       </CRow> 
       <br/>
@@ -338,7 +517,6 @@ function FCIRegulationPosition() {
             </CCard>
         : null}
 
-      <br/>
       <div>
         <CRow>
         <CCol xs={12}>
@@ -360,9 +538,10 @@ function FCIRegulationPosition() {
                           </React.Fragment>
                         )}
                       </select> */}
-                       <input type="number" min="1"
+                       <input id="positionIdentifier" type="number" min="1"
                           style={{width: "100%"}}
-                          onChange={(e) => handleSearchPositionIdChange(e.target.value)}/>
+                          onChange={(e) => handleSearchPositionIdChange(e.target.value)}
+                          value={positionIdentifier}/>
                     </td>
                     <td>
                       <CButton shape='rounded' size='sm' color='string' onClick={() => filterPositionList()}>
@@ -392,7 +571,8 @@ function FCIRegulationPosition() {
                         <CPaginationItem disabled>«</CPaginationItem> ) 
                       : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
                      
-                      <CPaginationItem active className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
+                      <CPaginationItem active className="text-medium-emphasis small" 
+                          onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
                      
                       {currentPage === Math.ceil(totalPositions / positionsPerPage) || searchFiltered ? (
                         <CPaginationItem disabled>»</CPaginationItem>) 

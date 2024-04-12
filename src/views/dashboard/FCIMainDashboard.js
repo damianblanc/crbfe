@@ -1,4 +1,5 @@
 import React from 'react'
+import { isLoginTimestampValid } from 'utils/utils.js';
 
 import {
   CAvatar,
@@ -177,6 +178,9 @@ const FCIMainDashboard = () => {
       activity: 'Last week',
     },
   ]
+
+  const isValid = isLoginTimestampValid();
+  console.log("isValid=" + isValid);
 
   return (
     <>

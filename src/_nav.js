@@ -43,16 +43,11 @@ const _nav = [
         name: 'FCI Regulation Position',
         to: '/base/fciRegulationPosition',
       },
-      {
-        component: CNavItem,
-        name: 'FCI Position Advices',
-        to: '/base/fciPositionAdvice',
-      },
-      {
-        component: CNavItem,
-        name: 'FCI Advices Management',
-        to: '/base/fciPositionAdvice',
-      }
+      // {
+      //   component: CNavItem,
+      //   name: 'FCI Advices Management',
+      //   to: '/base/fciPositionAdvice',
+      // }
   ]},
   {
     component: CNavGroup,
@@ -69,6 +64,11 @@ const _nav = [
           component: CNavItem,
           name: 'FCI Position Bias',
           to: '/report/FCIPositionBias',
+        },
+        {
+          component: CNavItem,
+          name: 'FCI Position Advices',
+          to: '/base/fciPositionAdvice',
         },
       ],
   },

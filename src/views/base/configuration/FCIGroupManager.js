@@ -177,30 +177,30 @@ function FCIGroupManager() {
                 <CButton shape='rounded' size='xxl' color='string'>
                     <CIcon icon={cilClipboard} size="xl"/>
                 </CButton>} position="right">
-                    {<CRow>
-                        <CCol xs={24}>
-                        <CCard>
-                            <CCard className="mb-6">
-                            <CCardHeader><strong className="text-medium-emphasis small">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Group &nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong></CCardHeader>
-                            <CCardBody>
-                                <CChartPie
-                                data={{
-                                    labels: specieTypes?.map((st) => st.name),
-                                    datasets: [
-                                    {
-                                        data: specieTypes?.map((st) => st.specieQuantity),
-                                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
-                                        hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
-                                    },
-                                    ],
-                                }}
-                                />
-                            </CCardBody>
-                            </CCard>
-                        </CCard> 
-                        </CCol>
-                        </CRow>  }
-                        </Popup>
+                  {<CRow>
+                      <CCol xs={30}>
+                      <CCard>
+                          <CCard className="mb-6">
+                          <CCardHeader><strong className="text-medium-emphasis small">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Group &nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong></CCardHeader>
+                          <CCardBody>
+                              <CChartPie
+                              data={{
+                                  labels: specieTypes?.map((st) => st.name),
+                                  datasets: [
+                                  {
+                                      data: specieTypes?.map((st) => st.specieQuantity),
+                                      backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
+                                      hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
+                                  },
+                                  ],
+                              }}
+                              />
+                          </CCardBody>
+                          </CCard>
+                      </CCard> 
+                      </CCol>
+                    </CRow>}
+                </Popup>
             </CCardHeader>
             <CCardBody>
               <table>

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   CButton,
   CCard,
@@ -14,7 +14,46 @@ import {
 import CIcon from '@coreui/icons-react'
 import { cilLockLocked, cilUser } from '@coreui/icons'
 
-const Register = () => {
+import axios from 'axios';
+
+function Register() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+
+  const handleSubmit = async (e) => {
+    // e.preventDefault();
+
+    try {
+      const response = await axios.post('http://localhost:8098/api/v1/register', {
+        method: 'POST',
+        headers: {
+          // 'Content-Type': 'application/json',
+          // "Access-Control-Allow-Origin": "*",
+          // 'origin':'x-requested-with',
+          // 'Access-Control-Allow-Headers': 'POST, GET, PUT, DELETE, OPTIONS, HEAD, Authorization, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Access-Control-Allow-Origin',
+        },
+        body: JSON.stringify({ username, password, email }),
+      });
+
+      // localStorage.setItem("mytime", Date.now());
+      // localStorage.setItem("user", "damian");
+
+      if (response.ok) {
+        // Login successful
+        console.log('Login successful');
+        // Redirect or do something else as needed
+      } else {
+        // Login failed
+        console.error('Login failed');
+        // Handle error, e.g., show error message to user
+      }
+    } catch (error) {
+      console.error('Error occurred:', error);
+      // Handle error, e.g., show error message to user
+    }
+  };
+
   return (
     <div className="bg-light min-vh-100 d-flex flex-row align-items-center">
       <CContainer>
@@ -29,11 +68,13 @@ const Register = () => {
                     <CInputGroupText>
                       <CIcon icon={cilUser} />
                     </CInputGroupText>
-                    <CFormInput placeholder="Username" autoComplete="username" />
+                    <CFormInput placeholder="Username" autoComplete="username" 
+                    onChange={(e) => setUsername(e.target.value)}/>
                   </CInputGroup>
                   <CInputGroup className="mb-3">
                     <CInputGroupText>@</CInputGroupText>
-                    <CFormInput placeholder="Email" autoComplete="email" />
+                    <CFormInput placeholder="Email" autoComplete="email" 
+                    onChange={(e) => setEmail(e.target.value)}/>
                   </CInputGroup>
                   <CInputGroup className="mb-3">
                     <CInputGroupText>
@@ -43,6 +84,7 @@ const Register = () => {
                       type="password"
                       placeholder="Password"
                       autoComplete="new-password"
+                      onChange={(e) => setPassword(e.target.value)}
                     />
                   </CInputGroup>
                   <CInputGroup className="mb-4">
@@ -56,7 +98,7 @@ const Register = () => {
                     />
                   </CInputGroup>
                   <div className="d-grid">
-                    <CButton color="success">Create Account</CButton>
+                    <CButton color="primary" onClick={(e) => handleSubmit()}>Create Account</CButton>
                   </div>
                 </CForm>
               </CCardBody>
@@ -68,4 +110,4 @@ const Register = () => {
   )
 }
 
-export default Register
+export default Register;

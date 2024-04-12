@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 
-import { CCard, CCardBody, CCardHeader, CCol, CRow} from '@coreui/react'
+import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton} from '@coreui/react'
+import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter, cilArrowTop, cilOptions } from '@coreui/icons';
+import CIcon from '@coreui/icons-react'
 
 import axios from 'axios';
 
@@ -44,6 +46,7 @@ function FCIPositionAdvice() {
   const [currentFCISymbol, setCurrentFCISymbol] = useState('');
   const [regulationPercentages, setRegulationPercentages] = useState([]);
   const [advices, setAdvices] = useState([]);
+  const [flatAdvices, setFlatAdvices] = useState([]);
   const [currentPositionId, setCurrentPositionId] = useState('');
   const [positionPercentages, setPositionPercentages] = useState([]);
 
@@ -88,6 +91,15 @@ function FCIPositionAdvice() {
       }
     };
 
+    const fetchFlatAdvices = async (fciSymbol, positionId) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/advice/criteria/price_uniformly_distribution/flat')
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
     /** FCI Position Overview */
     const fetchFCIPositionPercentagesValued = async (fciSymbol, positionId) => {
       try {
@@ -105,9 +117,11 @@ function FCIPositionAdvice() {
         const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
         setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
         let tempLoadedAdvices = [];
+        let tempLoadedFlatAdvices = [];
         let tempLoadedPercentagesValued = [];
         if (tempLoadedPositions.length > 0) {
           tempLoadedAdvices = await fetchAdvices(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+          tempLoadedFlatAdvices = await fetchFlatAdvices(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
           tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
           setCurrentPositionId(tempLoadedPositions[0].id);
         }
@@ -115,6 +129,7 @@ function FCIPositionAdvice() {
         setPositions(tempLoadedPositions);
         setRegulationPercentages(tempLoadedPercentages);
         setAdvices(tempLoadedAdvices);
+        setFlatAdvices(tempLoadedFlatAdvices);
         setPositionPercentages(tempLoadedPercentagesValued);
       }
     };
@@ -141,23 +156,24 @@ function FCIPositionAdvice() {
     reader.readAsBinaryString(excelFile);
   };
 
-  const sendDataToBackend = () => {
-    fetch('http://localhost:8098/api/v1/calculate-disarrangement/fci/bth58/advice/criteria/price_uniformly_distribution', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: "{\"position\":" + JSON.stringify(excelData, null, 1) + "}",
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('Backend response:', data);
-        setResponseData(data);
-        console.log("responseData = " + JSON.stringify(responseData));
-      })    
-      .catch((error) => {
-        console.error('Error sending data to the backend:', error);
-      });
+  const downloadExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(flatAdvices);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Position");
+    let buffer = XLSX.write(workbook, { bookType: "xlsx", type: "buffer" });
+    XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+    XLSX.writeFile(workbook, "Advice_Position_" + currentFCISymbol + "_" + currentPositionId + "_" + calculateCurrentTimeStamp() + ".xlsx");
+  };
+
+  const calculateCurrentTimeStamp = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day}_${hours}:${minutes}:${seconds}`;
   };
 
   const selectPosition = (position) => {
@@ -224,6 +240,9 @@ function FCIPositionAdvice() {
             <CCardBody>
               <p className="text-medium-emphasis small">
                 Refers to a <code>&lt;FCI Regulation Position List&gt;</code> that advices operations based on positon detected biases
+                <CButton shape='rounded' size='sm' color='string' onClick={() => downloadExcel(advices) }>
+                      <CIcon icon={cilClipboard} size="xl"/>
+                </CButton>
               </p>
               <table>
                 <thead>

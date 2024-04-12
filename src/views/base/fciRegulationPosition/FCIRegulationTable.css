@@ -19,6 +19,15 @@ table {
   /* margin-top: 20px; */
 }
 
+.table-head {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #D3D3D3;
+  padding: 10px;
+  vertical-align: top;
+  /* margin-top: 20px; */
+}
+
 tableModal {
   width: 100%;
   border-collapse: collapse;
@@ -63,6 +72,10 @@ button {
 
 button:hover {
   background-color: #0056b3;
+}
+
+.table-head-1 {
+  margin-bottom: 10px;
 }
 
 .table-new-row {

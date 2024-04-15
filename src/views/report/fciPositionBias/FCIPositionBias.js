@@ -69,6 +69,13 @@ class FCIPosition {
   }
 }
 
+class FCIStatistic {
+  constructor(adviceQuantity, reportQuantity) {
+    this.adviceQuantity = adviceQuantity;
+    this.reportQuantity = reportQuantity;
+  }
+}
+
 function FCIPositionBias() {
   //const [regulationPercentageData, setRegulationPercentageData] = useState({percentages: [FCIPercentage]});
   const [regulationPercentages, setRegulationPercentages] = useState([]);
@@ -86,7 +93,7 @@ function FCIPositionBias() {
   const [currentPositionId, setCurrentPositionId] = useState('');
   const [currentFCISymbol, setCurrentFCISymbol] = useState('');
   const [positionOverview, setPositionOverview] = useState([]);
-  const [statistics, setStatistics] = useState([]);
+  const [statistics, setStatistics] = useState({FCIStatistic});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -147,7 +154,7 @@ function FCIPositionBias() {
     /** FCI Report Quantity */
     const fetchFCIStaticticsQuantity = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/statistics');
+        const responseData = await axios.get('http://localhost:8098/api/v1/statistic');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -203,6 +210,8 @@ function FCIPositionBias() {
 
   const selectPosition = (position) => {
     if (position !== undefined) {
+      console.log("statistics.reportQuantity", statistics.reportQuantity);
+      updateFCIReportQuantity();
       // setSelectedFCISymbol(position);
       // fetch('http://localhost:8098/api/v1/fci/' + symbol + '/position')
       //   .then((response) => response.json())
@@ -314,13 +323,9 @@ function FCIPositionBias() {
   // };
 
   const listFCIRegulationPercentages = async () => {
-    console.log("I'm into getFCIRegulationPercentages");
     try {
-      console.log("selectedFCISymbol = " + currentFCISymbol);
       const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + currentFCISymbol + '/regulation-percentages')
       setRegulationPercentages(responseData.data);
-      console.log("responseData.data = " + responseData.data);
-      console.log("regulationPercentageData = " + regulationPercentages);
     } catch (error) {
       console.error('Error sending data to the backend:', error);
     }
@@ -367,11 +372,15 @@ function FCIPositionBias() {
 //const random = () => Math.round(Math.random() * 100)
 
 const updateFCIReportQuantity = async () => {
-  let q = this.statistic.reportQuantity + 1;
-  setStatistics(statistic => ({ ...statistic, q}));
-  const s = JSON.stringify(statistics);
+  let q = statistics.reportQuantity + 1;
+  let st = new FCIStatistic(statistics.adviceQuantity, q);
+  setStatistics(prevStatistics => ({
+    ...prevStatistics,
+    reportQuantity: q
+  }));
+  const s = JSON.stringify(st);
   try {
-    const responseData = await axios.put('http://localhost:8098/api/v1/statistics', s,
+    const responseData = await axios.put('http://localhost:8098/api/v1/statistic/update', s,
     {
       headers: {
         'Content-Type': 'application/json',

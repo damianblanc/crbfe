@@ -19,13 +19,32 @@ import axios from 'axios';
 const WidgetsDropdown = () => {
   const [regulationQuantity, setRegulationQuantity] = useState(0);
   const [positionQuantity, setPositionQuantity] = useState(0);
+  const [reportsQuantity, setReportsQuantity] = useState(0);
+  const [advicesQuantity, setAdvicesQuantity] = useState(0);
+
+  const [regulationsPerMonth, setRegulationsPerMonth] = useState([]);
   const [positionsPerMonth, setPositionsPerMonth] = useState([]);
+  const [reportsPerMonth, setReportsPerMonth] = useState([]);
+  const [advicesPerMonth, setAdvicesPerMonth] = useState([]);
+  
+  const [regPerMonthGrowth, setRegPerMonthGrowth] = useState(0);
   const [posPerMonthGrowth, setPosPerMonthGrowth] = useState(0);
+  const [repPerMonthGrowth, setRepPerMonthGrowth] = useState(0);
+  const [advPerMonthGrowth, setAdvPerMonthGrowth] = useState(0);
 
   useEffect(() => {
     const fetchSummarization = async () => {
       try {
         const responseData = await axios.get('http://localhost:8098/api/v1/summarize');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    const fetchRegulationsPerMonth = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -41,13 +60,46 @@ const WidgetsDropdown = () => {
       }
     };
 
+    const fetchReportsPerMonth = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    const fetchAdvicesPerMonth = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
     const setFetchedData = async () => {
       const tempLoadedSummarization = await fetchSummarization();
+      
+      const tempLoadedRegulationsPerMonth = await fetchRegulationsPerMonth();
       const tempLoadedPositionsPerMonth = await fetchPositionsPerMonth();
+      const tempLoadedReportsPerMonth = await fetchReportsPerMonth();
+      const tempLoadedAdvicesPerMonth = await fetchAdvicesPerMonth();
+      
       setRegulationQuantity(tempLoadedSummarization.fciRegulationQuantity);
       setPositionQuantity(tempLoadedSummarization.fciPositionQuantity);
+      setReportsQuantity(tempLoadedSummarization.fciReportsQuantity);
+      setAdvicesQuantity(tempLoadedSummarization.fciAdvicesQuantity);
+      
+      setRegulationsPerMonth(tempLoadedPositionsPerMonth);
       setPositionsPerMonth(tempLoadedPositionsPerMonth);
+      setReportsPerMonth(tempLoadedReportsPerMonth);
+      setAdvicesPerMonth(tempLoadedAdvicesPerMonth);
+      
+      setRegPerMonthGrowth((tempLoadedRegulationsPerMonth.at(0).quantity / tempLoadedSummarization.fciRegulationQuantity) * 100);
       setPosPerMonthGrowth((tempLoadedPositionsPerMonth.at(0).quantity / tempLoadedSummarization.fciPositionQuantity) * 100);
+      setRepPerMonthGrowth((tempLoadedReportsPerMonth.at(0).quantity / tempLoadedSummarization.fciReportsQuantity) * 100);
+      setAdvPerMonthGrowth((tempLoadedAdvicesPerMonth.at(0).quantity / tempLoadedSummarization.fciAdvicesQuantity) * 100);
     };
     setFetchedData();
   }, []); 
@@ -66,7 +118,7 @@ const WidgetsDropdown = () => {
             <>
               {regulationQuantity}{' '}
               <span className="fs-6 fw-normal">
-                (-12.4% <CIcon icon={cilArrowBottom} />)
+                (-15.4% <CIcon icon={cilArrowBottom} />)
               </span>
             </>
           }
@@ -76,12 +128,12 @@ const WidgetsDropdown = () => {
               <CDropdownToggle color="transparent" caret={false} className="p-0">
                 <CIcon icon={cilOptions} className="text-high-emphasis-inverse" />
               </CDropdownToggle>
-              <CDropdownMenu>
+              {/* <CDropdownMenu>
                 <CDropdownItem>Action</CDropdownItem>
                 <CDropdownItem>Another action</CDropdownItem>
                 <CDropdownItem>Something else here...</CDropdownItem>
                 <CDropdownItem disabled>Disabled action</CDropdownItem>
-              </CDropdownMenu>
+              </CDropdownMenu> */}
             </CDropdown>
           }
           chart={
@@ -89,14 +141,14 @@ const WidgetsDropdown = () => {
               className="mt-3 mx-3"
               style={{ height: '70px' }}
               data={{
-                labels: [{}, 'January', 'February', 'March', 'April', 'May', 'June', 'July'],
+                labels: positionsPerMonth?.reverse().map((e) => e.month),
                 datasets: [
                   {
-                    label: 'My First dataset',
-                    backgroundColor: 'transparent',
+                    label: 'Regulations per Month',
+                    backgroundColor: 'blue',
                     borderColor: 'rgba(255,255,255,.55)',
-                    pointBackgroundColor: getStyle('--cui-primary'),
-                    data: [65, 59, 84, 84, 51, 55, 40],
+                    pointBackgroundColor: getStyle('--cui-info'),
+                    data: positionsPerMonth?.map((e) => e.quantity),
                   },
                 ],
               }}
@@ -118,8 +170,8 @@ const WidgetsDropdown = () => {
                     },
                   },
                   y: {
-                    min: 30,
-                    max: 89,
+                    min: -9,
+                    max: 39,
                     display: false,
                     grid: {
                       display: false,
@@ -132,7 +184,6 @@ const WidgetsDropdown = () => {
                 elements: {
                   line: {
                     borderWidth: 1,
-                    tension: 0.4,
                   },
                   point: {
                     radius: 4,
@@ -163,12 +214,12 @@ const WidgetsDropdown = () => {
               <CDropdownToggle color="transparent" caret={false} className="p-0">
                 <CIcon icon={cilOptions} className="text-high-emphasis-inverse" />
               </CDropdownToggle>
-              <CDropdownMenu>
+              {/* <CDropdownMenu>
                 <CDropdownItem>Action</CDropdownItem>
                 <CDropdownItem>Another action</CDropdownItem>
                 <CDropdownItem>Something else here...</CDropdownItem>
                 <CDropdownItem disabled>Disabled action</CDropdownItem>
-              </CDropdownMenu>
+              </CDropdownMenu> */}
             </CDropdown>
           }
           chart={
@@ -237,7 +288,7 @@ const WidgetsDropdown = () => {
           color="warning"
           value={
             <>
-              2.49{' '}
+              {reportsQuantity}{' '}
               <span className="fs-6 fw-normal">
                 (84.7% <CIcon icon={cilArrowTop} />)
               </span>
@@ -249,12 +300,12 @@ const WidgetsDropdown = () => {
               <CDropdownToggle color="transparent" caret={false} className="p-0">
                 <CIcon icon={cilOptions} className="text-high-emphasis-inverse" />
               </CDropdownToggle>
-              <CDropdownMenu>
+              {/* <CDropdownMenu>
                 <CDropdownItem>Action</CDropdownItem>
                 <CDropdownItem>Another action</CDropdownItem>
                 <CDropdownItem>Something else here...</CDropdownItem>
                 <CDropdownItem disabled>Disabled action</CDropdownItem>
-              </CDropdownMenu>
+              </CDropdownMenu> */}
             </CDropdown>
           }
           chart={
@@ -310,7 +361,7 @@ const WidgetsDropdown = () => {
           color="danger"
           value={
             <>
-              44K{' '}
+              {advicesQuantity}{' '}
               <span className="fs-6 fw-normal">
                 (-23.6% <CIcon icon={cilArrowBottom} />)
               </span>
@@ -322,12 +373,12 @@ const WidgetsDropdown = () => {
               <CDropdownToggle color="transparent" caret={false} className="p-0">
                 <CIcon icon={cilOptions} className="text-high-emphasis-inverse" />
               </CDropdownToggle>
-              <CDropdownMenu>
+              {/* <CDropdownMenu>
                 <CDropdownItem>Action</CDropdownItem>
                 <CDropdownItem>Another action</CDropdownItem>
                 <CDropdownItem>Something else here...</CDropdownItem>
                 <CDropdownItem disabled>Disabled action</CDropdownItem>
-              </CDropdownMenu>
+              </CDropdownMenu> */}
             </CDropdown>
           }
           chart={

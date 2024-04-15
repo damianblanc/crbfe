@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
@@ -25,10 +25,14 @@ import {
   CDropdownMenu,
   CDropdownItem,
   CDropdownToggle,
-  CWidgetStatsA,
+  CWidgetStatsA
 } from '@coreui/react'
 
+import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
+
 import { getStyle } from '@coreui/utils'
+
+import PropTypes from 'prop-types';
 
 class FCIPositionCompositionVO {
   constructor(id, specieGroup, specieType, specieName, specieSymbol, marketPrice, quantity, valued) {
@@ -75,6 +79,13 @@ function FCIRegulationPosition() {
   const [posPerMonthGrowth, setPosPerMonthGrowth] = useState(0);
   const [positionQuantity, setPositionQuantity] = useState(0);
   const navigate = useNavigate();
+
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const [toast, addToast] = useState(0)
+  const toaster = useRef()
+
+  const [showToast, setShowToast] = useState(false);
 
   /** FCI Regulations - Symbol and Name */
   useEffect(() => {
@@ -133,6 +144,7 @@ function FCIRegulationPosition() {
         let totalPositions = tempLoadedPositionsPerMonth.reduce((accumulator, currentValue) => accumulator + currentValue.quantity, 0);
         setPositionQuantity(totalPositions);
         setPosPerMonthGrowth((tempLoadedPositionsPerMonth.at(0).quantity / totalPositions) * 100);
+        setShowToast(false);
       }
     };
     setFetchedData();
@@ -192,10 +204,14 @@ function FCIRegulationPosition() {
             'Content-Type': 'application/json',
           }
         });
+      setShowToast(false);
       return response.data;
     } catch (error) {
-      console.error('Error sending data to the backend:', error);
-      setValidationError(error.response.data.message);
+      // console.error('Error sending data to the backend:', error);
+      setErrorMessage(error.response.data.message);
+      setShowToast(true);
+      console.log("showToast = ", showToast);
+      showToastMessage(error.response.data.message);
     }
   };
 
@@ -355,8 +371,44 @@ function FCIRegulationPosition() {
     setPositions(tempLoadedPositions);
   };
 
+  const showToastMessage = (message) => {
+    setErrorMessage(message)
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 10000);
+  }
+
+  const toggleToast = () => {
+    setShowToast(!showToast);
+  };
+  
   return (
+    <>
     <div>
+      {showToast === true?
+      <CToaster classname='p-3' placement='top-end' push={toast} ref={toaster}>
+        <CToast show={true} animation={true} autohide={true} 
+              fade={true} visible={true} onClose={toggleToast}>
+          <CToastHeader closeButton>
+            <svg
+              className="rounded me-2"
+              width="20"
+              height="20"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="xMidYMid slice"
+              focusable="false"
+              role="img"
+            >
+            <rect width="100%" height="100%" fill="#FF0000"></rect>
+            </svg>
+            <div className="fw-bold me-auto">Position Error Message</div>
+            <small>A second ago</small>
+          </CToastHeader>
+          <CToastBody>{errorMessage}</CToastBody>
+        </CToast>
+      </CToaster>
+      : null}
        <CRow>
           <CCol xs={12}>
             <CCard>
@@ -719,6 +771,7 @@ function FCIRegulationPosition() {
        </CRow> 
       </div>   
     </div>
+    </>
   );
 }
 

@@ -43,11 +43,6 @@ const _nav = [
         name: 'FCI Regulation Position',
         to: '/base/fciRegulationPosition',
       },
-      // {
-      //   component: CNavItem,
-      //   name: 'FCI Advices Management',
-      //   to: '/base/fciPositionAdvice',
-      // }
   ]},
   {
     component: CNavGroup,
@@ -55,11 +50,6 @@ const _nav = [
     to: '/report',
     icon: <CIcon icon={cilNotes} customClassName="nav-icon" />,
     items: [
-        // {
-        //   component: CNavItem,
-        //   name: 'Original Charts',
-        //   to: '/report/charts',
-        // },
         {
           component: CNavItem,
           name: 'FCI Position Bias',
@@ -70,6 +60,11 @@ const _nav = [
           name: 'FCI Position Advices',
           to: '/base/fciPositionAdvice',
         },
+        // {
+        //   component: CNavItem,
+        //   name: 'Toasts',
+        //   to: '/notification/toasts',
+        // },
       ],
   },
   {
@@ -88,98 +83,6 @@ const _nav = [
         name: 'FCI Specie Type Manager',
         to: '/base/configuration/specie',
       }
-  // {
-  //   component: CNavGroup,
-  //   name: 'Icons',
-  //   icon: <CIcon icon={cilStar} customClassName="nav-icon" />,
-  //   items: [
-  //     {
-  //       component: CNavItem,
-  //       name: 'CoreUI Free',
-  //       to: '/icons/coreui-icons',
-  //       badge: {
-  //         color: 'success',
-  //         text: 'NEW',
-  //       },
-  //     },
-  //     {
-  //       component: CNavItem,
-  //       name: 'CoreUI Flags',
-  //       to: '/icons/flags',
-  //     },
-  //     {
-  //       component: CNavItem,
-  //       name: 'CoreUI Brands',
-  //       to: '/icons/brands',
-  //     },
-  //   ],
-  // },
-  // {
-  //   component: CNavGroup,
-  //   name: 'Notifications',
-  //   icon: <CIcon icon={cilBell} customClassName="nav-icon" />,
-  //   items: [
-  //     {
-  //       component: CNavItem,
-  //       name: 'Alerts',
-  //       to: '/notifications/alerts',
-  //     },
-  //     {
-  //       component: CNavItem,
-  //       name: 'Badges',
-  //       to: '/notifications/badges',
-  //     },
-  //     {
-  //       component: CNavItem,
-  //       name: 'Modal',
-  //       to: '/notifications/modals',
-  //     },
-  //     {
-  //       component: CNavItem,
-  //       name: 'Toasts',
-  //       to: '/notifications/toasts',
-  //     },
-  //   ],
-  // },
-  // {
-  //   component: CNavItem,
-  //   name: 'Widgets',
-  //   to: '/widgets',
-  //   icon: <CIcon icon={cilCalculator} customClassName="nav-icon" />,
-  //   badge: {
-  //     color: 'info',
-  //     text: 'NEW',
-  //   },
-  // },
-  // {
-  //   component: CNavTitle,
-  //   name: 'Extras',
-  // },
-  // {
-  //   component: CNavGroup,
-  //   name: 'Pages',
-  //   icon: <CIcon icon={cilStar} customClassName="nav-icon" />,
-  //   items: [
-  //     {
-  //       component: CNavItem,
-  //       name: 'Login',
-  //       to: '/login',
-  //     },
-  //     {
-  //       component: CNavItem,
-  //       name: 'Register',
-  //       to: '/register',
-  //     },
-  //     {
-  //       component: CNavItem,
-  //       name: 'Error 404',
-  //       to: '/404',
-  //     },
-  //     {
-  //       component: CNavItem,
-  //       name: 'Error 500',
-  //       to: '/500',
-  //     },
     ],
   },
   {

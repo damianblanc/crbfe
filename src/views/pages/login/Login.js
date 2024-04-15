@@ -90,6 +90,7 @@ function Login() {
                 <CCardBody className="text-center">
                   <div>
                     <h2>Position Regulation Bias</h2>
+                    <br/>
                     <p>
                       Please validate user name and password
                     </p>

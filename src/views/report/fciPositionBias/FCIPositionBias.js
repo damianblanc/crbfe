@@ -86,6 +86,7 @@ function FCIPositionBias() {
   const [currentPositionId, setCurrentPositionId] = useState('');
   const [currentFCISymbol, setCurrentFCISymbol] = useState('');
   const [positionOverview, setPositionOverview] = useState([]);
+  const [statistics, setStatistics] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -143,6 +144,16 @@ function FCIPositionBias() {
       }
     };
 
+    /** FCI Report Quantity */
+    const fetchFCIStaticticsQuantity = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/statistics');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
       if (tempLoadedRegulations.length > 0) {
@@ -154,12 +165,15 @@ function FCIPositionBias() {
            tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
            setCurrentPositionId(tempLoadedPositions[0].id);
         }
+        const tempLoadedStatistics = await fetchFCIStaticticsQuantity();
+        
         setRegulations(tempLoadedRegulations);
         setPositions(tempLoadedPositions);
         setRegulationPercentages(tempLoadedPercentages);
         setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
         setReportTypes(tempLoadedReportTypes);    
         setPositionPercentages(tempLoadedPercentagesValued);
+        setStatistics(tempLoadedStatistics);
       }
     };
     setFetchedData();
@@ -351,6 +365,23 @@ function FCIPositionBias() {
 
 // const FCIPositionBias = () => {
 //const random = () => Math.round(Math.random() * 100)
+
+const updateFCIReportQuantity = async () => {
+  let q = this.statistic.reportQuantity + 1;
+  setStatistics(statistic => ({ ...statistic, q}));
+  const s = JSON.stringify(statistics);
+  try {
+    const responseData = await axios.put('http://localhost:8098/api/v1/statistics', s,
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    return responseData.data;
+  } catch (error) {
+    console.error('Error sending data to the backend:', error);
+  } 
+}
 
   return (
     <>

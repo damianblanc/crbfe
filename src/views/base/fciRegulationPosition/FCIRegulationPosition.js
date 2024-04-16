@@ -35,11 +35,10 @@ import { getStyle } from '@coreui/utils'
 import PropTypes from 'prop-types';
 
 class FCIPositionCompositionVO {
-  constructor(id, specieGroup, specieType, specieName, specieSymbol, marketPrice, quantity, valued) {
+  constructor(id, specieGroup, specieType, specieSymbol, marketPrice, quantity, valued) {
     this.id = id;
     this.specieGroup = specieGroup;
     this.specieType = specieType;
-    this.specieName = specieName;
     this.specieSymbol = specieSymbol;
     this.marketPrice = marketPrice;
     this.quantity = quantity;
@@ -696,7 +695,7 @@ function FCIRegulationPosition() {
                                                 <tr>
                                                   <th>Specie Group</th>
                                                   <th>Specie Type</th>
-                                                  <th>Specie Name</th>
+                                                  {/* <th>Specie Name</th> */}
                                                   <th>Symbol</th>
                                                   <th>Market Price</th>
                                                   <th>Quantity</th>
@@ -709,7 +708,7 @@ function FCIRegulationPosition() {
                                                     <tr>
                                                       <td>{specie.specieGroup}</td>
                                                       <td>{specie.specieType}</td>
-                                                      <td>{specie.specieName}</td>
+                                                      {/* <td>{specie.specieName}</td> */}
                                                       <td>{specie.specieSymbol}</td>
                                                       <td>
                                                         <div>

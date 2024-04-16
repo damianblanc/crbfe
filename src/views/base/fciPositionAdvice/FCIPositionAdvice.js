@@ -40,6 +40,13 @@ class FCIPositionIdCreatedOn {
   }
 }
 
+class FCIStatistic {
+  constructor(adviceQuantity, reportQuantity) {
+    this.adviceQuantity = adviceQuantity;
+    this.reportQuantity = reportQuantity;
+  }
+}
+
 function FCIPositionAdvice() {
   const [excelData, setExcelData] = useState([]);
   const [excelFile, setExcelFile] = useState(null);
@@ -52,6 +59,7 @@ function FCIPositionAdvice() {
   const [flatAdvices, setFlatAdvices] = useState([]);
   const [currentPositionId, setCurrentPositionId] = useState('');
   const [positionPercentages, setPositionPercentages] = useState([]);
+  const [statistics, setStatistics] = useState({FCIStatistic});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -122,6 +130,16 @@ function FCIPositionAdvice() {
       }
     };
 
+    /** FCI Advice Quantity */
+    const fetchFCIStaticticsQuantity = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/statistic');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
       if (tempLoadedRegulations.length > 0) {
@@ -137,12 +155,15 @@ function FCIPositionAdvice() {
           tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
           setCurrentPositionId(tempLoadedPositions[0].id);
         }
+        const tempLoadedStatistics = await fetchFCIStaticticsQuantity();
+
         setRegulations(tempLoadedRegulations);
         setPositions(tempLoadedPositions);
         setRegulationPercentages(tempLoadedPercentages);
         setAdvices(tempLoadedAdvices);
         setFlatAdvices(tempLoadedFlatAdvices);
         setPositionPercentages(tempLoadedPercentagesValued);
+        setStatistics(tempLoadedStatistics);
       }
     };
     setFetchedData();
@@ -190,12 +211,47 @@ function FCIPositionAdvice() {
 
   const selectPosition = (position) => {
     if (position !== undefined) {
-      // setSelectedFCISymbol(position);
-      // fetch('http://localhost:8098/api/v1/fci/' + symbol + '/position')
-      //   .then((response) => response.json())
-      //   .then((json) => setFciPositions(json));
+      /** FCI Position - Advices */
+      const fetchAdvices = async (fciSymbol, positionId) => {
+        try {
+          const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/advice/criteria/price_uniformly_distribution')
+          return responseData.data;
+        } catch (error) {
+          console.error('Error sending data to the backend:', error);
+        }
+      };
+
+      const setFetchedData = async () => {
+        const tempLoadedAdvices = await fetchAdvices(currentFCISymbol, position);
+        setCurrentPositionId(position);
+        setAdvices(tempLoadedAdvices);
+      }
+
+      setFetchedData();
+      updateFCIAdviceQuantity();
     }
   };
+
+  const updateFCIAdviceQuantity = async () => {
+    let q = statistics.adviceQuantity + 1;
+    let st = new FCIStatistic(q, statistics.adviceQuantity);
+    setStatistics(prevStatistics => ({
+      ...prevStatistics,
+      adviceQuantity: q
+    }));
+    const body = JSON.stringify(st);
+    try {
+      const responseData = await axios.put('http://localhost:8098/api/v1/statistic/update', body,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      return responseData.data;
+    } catch (error) {
+      console.error('Error sending data to the backend:', error);
+    } 
+  }
 
   return (
     // <div>

@@ -208,14 +208,26 @@ function FCIPositionBias() {
   //   console.log("selectedFCISymbol = " + selectedFCISymbol);
   // }
 
-  const selectPosition = (position) => {
+  const selectPosition = async (position) => {
     if (position !== undefined) {
-      console.log("statistics.reportQuantity", statistics.reportQuantity);
+      /** FCI Position Overview */
+      const fetchFCIPositionPercentagesValued = async (fciSymbol, positionId) => {
+        try {
+          const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/percentage-valued/refresh/true');
+          return responseData.data;
+        } catch (error) {
+          console.error('Error sending data to the backend:', error);
+        }
+      };
+      
+      const setFetchedData = async () => {
+        const tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(currentFCISymbol, position);
+        setCurrentPositionId(position);
+        setPositionPercentages(tempLoadedPercentagesValued);
+      }
+      
+      setFetchedData();
       updateFCIReportQuantity();
-      // setSelectedFCISymbol(position);
-      // fetch('http://localhost:8098/api/v1/fci/' + symbol + '/position')
-      //   .then((response) => response.json())
-      //   .then((json) => setFciPositions(json));
     }
   };
 
@@ -283,7 +295,7 @@ function FCIPositionBias() {
 
       const tempLoadedPositionOverview = await reportPositionOverviewInner("");
       setPositionOverview(tempLoadedPositionOverview);
-    };
+    };  
   }, []);
 
     const fetchFCIPositionPercentageValued = async () => {
@@ -378,9 +390,9 @@ const updateFCIReportQuantity = async () => {
     ...prevStatistics,
     reportQuantity: q
   }));
-  const s = JSON.stringify(st);
+  const body = JSON.stringify(st);
   try {
-    const responseData = await axios.put('http://localhost:8098/api/v1/statistic/update', s,
+    const responseData = await axios.put('http://localhost:8098/api/v1/statistic/update', body,
     {
       headers: {
         'Content-Type': 'application/json',
@@ -416,7 +428,8 @@ const updateFCIReportQuantity = async () => {
                     </td>
                     <td width="11%"><code>&lt;FCI Position&gt;</code></td>
                     <td width="25%">
-                      <select className="text-medium-emphasis large" onChange={(e) => selectPosition(e.target.value)}>
+                      <select className="text-medium-emphasis large" 
+                            onChange={(e) => selectPosition(e.target.value)}>
                         {positions !== undefined && positions.map((fciPosition) => 
                           <React.Fragment key={fciPosition.id}>
                           <option value={fciPosition.id}>#{fciPosition.id} - {fciPosition.timestamp}&nbsp;&nbsp;&nbsp;</option>

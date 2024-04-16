@@ -60,11 +60,6 @@ const _nav = [
           name: 'FCI Position Advices',
           to: '/base/fciPositionAdvice',
         },
-        // {
-        //   component: CNavItem,
-        //   name: 'Toasts',
-        //   to: '/notification/toasts',
-        // },
       ],
   },
   {

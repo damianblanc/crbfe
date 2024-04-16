@@ -89,7 +89,6 @@ function Login() {
             <rect width="100%" height="100%" fill="#FF0000"></rect>
             </svg>
             <div className="fw-bold me-auto">Login Message</div>
-            {/* <small>A second ago</small> */}
           </CToastHeader>
           <CToastBody>{errorMessage}</CToastBody>
         </CToast>

@@ -18,6 +18,7 @@ import { cilLockLocked, cilUser } from '@coreui/icons';
 import axios from 'axios';
 
 import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
+import icon from '../../../assets/images/avatars/icon.jpg' 
 
 function Login() {
   const [username, setUsername] = useState('');
@@ -70,6 +71,13 @@ function Login() {
     }
   };
 
+  const backgroundStyle = {
+    backgroundImage: `url(${icon})`,
+    backgroundSize: '50%',
+    backgroundPosition: 'bottom',
+    height: '500px',
+  }
+
   return (
     <div className="bg-light min-vh-100 d-flex flex-row align-items-center">
       {showToast === true?
@@ -94,7 +102,7 @@ function Login() {
         </CToast>
       </CToaster>
       : null}
-      <CContainer>
+      <CContainer style={backgroundStyle}>
         <CRow className="justify-content-center">
           <CCol md={8}>
             <CCardGroup>

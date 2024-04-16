@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
-import { cilTrash, cilTransfer } from '@coreui/icons';
+import { cilTrash, cilTransfer, cilArrowTop, cilCheckCircle } from '@coreui/icons';
 
 import CIcon from '@coreui/icons-react'
 
@@ -53,6 +53,8 @@ function SpecieTypeManager() {
   const [totalSpecies, setTotalSpecies] = useState(1);
   const speciesPerPage = 15;
   const navigate = useNavigate();
+  const [updatedSpecie, setUpdatedSpecie] = useState(false);
+  const [lastupdatedSpecie, setLastUpdatedSpecie] = useState('');
 
   /** SpecieType Groups */
   useEffect(() => {
@@ -161,11 +163,14 @@ function SpecieTypeManager() {
         return responseData.data;
       } catch (error) {
         console.error('#2 - Error upserting association:', error);
+        setUpdatedSpecie(false);
       }
     };
 
     const upsertData = async (specieTypeGroupName, specieTypeName, specieName) => {
       const upsertedSpecie = await upsertSpecie(specieTypeGroupName, specieTypeName, specieName);
+      setUpdatedSpecie(true);
+      setLastUpdatedSpecie(specieName);
     }
     upsertData(specieTypeGroupName, specieTypeName, specieName);
   }
@@ -313,6 +318,10 @@ function SpecieTypeManager() {
                         <CButton component="a" color="string" role="button" size='sm' onClick={() => deleteSpecieType()}>
                             <CIcon icon={cilTrash} size="xl"/>
                         </CButton>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                        {updatedSpecie && item.specieSymbol === lastupdatedSpecie? 
+                          <CIcon icon={cilCheckCircle} size="l" />
+                        : null}  
                       </td>
                     </tr>
                     </React.Fragment>

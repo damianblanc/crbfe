@@ -12,6 +12,23 @@ import { sygnet } from 'src/assets/brand/sygnet'
 import SimpleBar from 'simplebar-react'
 import 'simplebar/dist/simplebar.min.css'
 
+import synergy from './synergy.jpg'
+
+import {
+  cilBatteryFull,
+  cilBell,
+  cilCalculator,
+  cilChartPie,
+  cilCursor,
+  cilDescription,
+  cilDrop,
+  cilNotes,
+  cilPencil,
+  cilPuzzle,
+  cilSpeedometer,
+  cilStar,
+} from '@coreui/icons'
+
 // sidebar nav config
 import navigation from '../_nav'
 
@@ -30,8 +47,8 @@ const AppSidebar = () => {
       }}
     >
       <CSidebarBrand className="d-none d-md-flex" to="/">
-      FCI Regulation Biases
-        {/* <img className="sidebar-brand-full" src="synergy.jpg" alt="&nbsp;&nbsp;Regulation Biases" height="35" /> */}
+        <CIcon icon={cilChartPie} size="xl"/>
+        &nbsp;&nbsp;&nbsp;FCI Regulation Biases
       </CSidebarBrand>
       <CSidebarNav>
         <SimpleBar>

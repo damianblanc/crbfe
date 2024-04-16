@@ -586,11 +586,11 @@ const updateFCIReportQuantity = async () => {
                                                 datasets: [
                                                   {
                                                     label: 'FCI Position Biases Percentage',
-                                                    backgroundColor: '#f87999',
+                                                    backgroundColor: '#3c4b64',
                                                     hoverBackgroundColor: 'rgba(255,99,132,0.4)',
                                                     hoverBorderColor: 'rgba(255,99,132,1)',
                                                     borderCapStyle: 'square',
-                                                    borderColor: '#f87999',
+                                                    borderColor: '#3c4b64',
                                                     borderWidth: 0,
                                                     borderDash: [0, 0],
                                                     borderDashOffset: 0,

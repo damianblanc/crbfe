@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   CButton,
@@ -17,24 +17,45 @@ import CIcon from '@coreui/icons-react';
 import { cilLockLocked, cilUser } from '@coreui/icons';
 import axios from 'axios';
 
+import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
+
 function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+  const [toast, addToast] = useState(0)
+  const toaster = useRef()
+  const [showToast, setShowToast] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+      localStorage.removeItem("loginTimestamp");
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      localStorage.removeItem("miytime");
+  });
+
+  const showToastMessage = (message) => {
+    setErrorMessage(message)
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 10000);
+  }
+
+  const toggleToast = () => {
+    setShowToast(!showToast);
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent default form submission
+    e.preventDefault();
     try {
-      console.log("Vamo a back-end");
       const response = await axios.post('http://localhost:8098/api/v1/user/login', {
         username: username,
         password: password
       });
 
-      console.log(response.data); // Logging the response data
-
       if (response.data) {
-        // If login successful, navigate to the dashboard
         localStorage.setItem("loginTimestamp", Date.now());
         localStorage.setItem("user", username);
         localStorage.setItem("token", response.data);
@@ -42,12 +63,38 @@ function Login() {
       }
     } catch (error) {
       console.error('Error occurred:', error);
-      // Handle error, e.g., show error message to user
+      setErrorMessage(error.response.data.message);
+      setShowToast(true);
+      console.log("showToast = ", showToast);
+      showToastMessage(error.response.data.message);
     }
   };
 
   return (
     <div className="bg-light min-vh-100 d-flex flex-row align-items-center">
+      {showToast === true?
+      <CToaster classname='p-3' placement='top-end' push={toast} ref={toaster}>
+        <CToast show={true} animation={true} autohide={true} 
+              fade={true} visible={true} onClose={toggleToast}>
+          <CToastHeader closeButton>
+            <svg
+              className="rounded me-2"
+              width="20"
+              height="20"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="xMidYMid slice"
+              focusable="false"
+              role="img"
+            >
+            <rect width="100%" height="100%" fill="#FF0000"></rect>
+            </svg>
+            <div className="fw-bold me-auto">Login Message</div>
+            {/* <small>A second ago</small> */}
+          </CToastHeader>
+          <CToastBody>{errorMessage}</CToastBody>
+        </CToast>
+      </CToaster>
+      : null}
       <CContainer>
         <CRow className="justify-content-center">
           <CCol md={8}>

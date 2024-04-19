@@ -747,7 +747,7 @@ const updateFCIReportQuantity = async () => {
                       </CCol>
 
                       <CCol>
-                        <CCard className="mb-4">
+                        <CCard className="mb-3">
                             <CCardHeader>FCI Position Overview - Total Position: $&nbsp; 
                             <NumericFormat displayType="text" value={positionPercentages.reduce((previousValue, p, index) => previousValue +  Number(p.valued) , 0).toFixed(2)} thousandSeparator="." decimalSeparator=','/>
                               </CCardHeader>

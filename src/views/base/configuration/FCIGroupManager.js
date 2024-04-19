@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
 import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer } from '@coreui/icons';
@@ -17,6 +17,7 @@ import axios from 'axios';
 
 import { isLoginTimestampValid } from '../../../utils/utils.js';
 import { useNavigate } from 'react-router-dom';
+import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
 
 class SpecieTypeGroup {
     constructor(id, name, description, updatable) {
@@ -38,12 +39,16 @@ class SpecieType {
 }
 
 function FCIGroupManager() {
-  const [specieTypeGroups, setSpecieTypeGroups] = useState([]);
+  const [specieTypeGroups, setSpecieTypeGroups] = useState({SpecieType});
   const [specieTypes, setSpecieTypes] = useState([]);
   const [currentGroup, setCurrentGroup] = useState({SpecieTypeGroup});
-  const [newSpecieType, setNewSpecieType] = useState({ id: '', name: '', description: '', updatable: ''});
+  const [newSpecieType, setNewSpecieType] = useState({ id: '', name: '', description: '', updatable: true, specieQuantity: 0});
   const [visible, setVisible] = useState(false);
   const navigate = useNavigate();
+  const [errorMessage, setErrorMessage] = useState('');
+  const [toast, addToast] = useState(0)
+  const toaster = useRef()
+  const [showToast, setShowToast] = useState(false);
 
   /** SpecieType Groups */
   useEffect(() => {
@@ -94,8 +99,26 @@ function FCIGroupManager() {
 
   const validateNewSpecieTypeRow = (newSpecieType) => {
     const errors = {};
-    if (!newSpecieType.name || !newSpecieType.description) {
-        errors.name = "Fields are not defined";
+    if (!newSpecieType.name) {
+       errors.composition1 = "Specie Type name is required";
+    } 
+    if (!newSpecieType.description) {
+        errors.composition2 = "Specie Type description is required";
+    }
+    if (Object.keys(errors).length > 0) {
+      const errorMessage = (
+        <>
+          {errors.composition1 && (
+            <>
+              {errors.composition1}
+              {errors.composition2 && <br />}
+            </>
+          )}
+          {errors.composition2 && <>{errors.composition2}</>}
+        </>)
+      setErrorMessage(errorMessage);
+      setShowToast(true);
+      showToastMessage(errorMessage);
     }
     return errors;
   }
@@ -104,7 +127,6 @@ function FCIGroupManager() {
     const errors = validateNewSpecieTypeRow(newSpecieType);
     if (Object.keys(errors).length === 0) {
         const fetchCreatedSpecieType = async () => {
-        
                 try {
                     const body = new SpecieType(null, newSpecieType.name, newSpecieType.description, newSpecieType.updatable);
                     newSpecieType.fciSpecieTypeId = specieTypes.length + 1;
@@ -116,7 +138,12 @@ function FCIGroupManager() {
                     });
                     return responseData.data;
                 } catch (error) {
-                    console.error('Error sending data to the backend:', error);
+                  console.error('Error sending data to the backend:', error);
+                  setErrorMessage(error.response.data.message);
+                  setShowToast(true);
+                  showToastMessage(error.response.data.message);
+                  const updatedSpecieTypes = specieTypes.filter(specieType => specieType.id !== specieTypes.length + 1);
+                  setSpecieTypes(updatedSpecieTypes);
                 }
                 
         }
@@ -130,12 +157,64 @@ function FCIGroupManager() {
     setNewSpecieType({ ...newSpecieType, fciSpecieTypeId: '', name: '', description: '', updatable: '' });
   })
 
-  const deleteSpecieType = () => {
+  const deleteSpecieType = (index, specieTypeName) => {
+    const doDeleteSpecieType = async (specieTypeName) => {
+      try {
+        const responseData = await axios.delete('http://localhost:8098/api/v1/component/specie-type-group/' + currentGroup.name + '/specie-type/' + specieTypeName);
+        const updatedSpecieTypes = specieTypes.filter(specie => specie.name !== specieTypeName);
+        setSpecieTypes(updatedSpecieTypes);
+        return responseData.data;
+      } catch (error) {
+        console.error('#15 - Error trying to delete specie type:', error);
+        let errorMsg = error.response.data.message;
+        setErrorMessage(errorMsg);
+        setShowToast(true);
+        showToastMessage(errorMsg);
+      }
+    };
 
+    const fetchDeleteOutcome = async(specieTypeName) => {
+      doDeleteSpecieType(specieTypeName);
+    }
+    fetchDeleteOutcome(specieTypeName);
   }
+
+  const showToastMessage = (message) => {
+    setErrorMessage(message)
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 10000);
+  }
+
+  const toggleToast = () => {
+    setShowToast(!showToast);
+  };
 
   return (
     <div>
+      {showToast === true?
+      <CToaster classname='p-3' placement='top-end' push={toast} ref={toaster}>
+        <CToast show={true} animation={true} autohide={true} 
+              fade={true} visible={true} onClose={toggleToast}>
+          <CToastHeader closeButton>
+            <svg
+              className="rounded me-2"
+              width="20"
+              height="20"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="xMidYMid slice"
+              focusable="false"
+              role="img"
+            >
+            <rect width="100%" height="100%" fill="#FF0000"></rect>
+            </svg>
+            <div className="fw-bold me-auto">Specie Type Group Error Message</div>
+          </CToastHeader>
+          <CToastBody>{errorMessage}</CToastBody>
+        </CToast>
+      </CToaster>
+      : null}
        <CRow>
           <CCol xs={12}>
             <CCard>
@@ -234,7 +313,7 @@ function FCIGroupManager() {
                       <td width="30%">{item.description}</td>
                       <td>{item.specieQuantity}</td>
                       <td>
-                        <CButton component="a" color="string" role="button" size='sm' onClick={() => deleteSpecieType()}>
+                        <CButton component="a" color="string" role="button" size='sm' onClick={() => deleteSpecieType(item.id, item.name)}>
                             <CIcon icon={cilTrash} size="xl"/>
                         </CButton>
                       </td>
@@ -264,6 +343,7 @@ function FCIGroupManager() {
                   <tr>
                     <th>Name</th>
                     <th>Description</th>
+                    {/* <th>Updatable</th> */}
                     <th></th>
                     <th>Actions</th>
                   </tr>
@@ -286,6 +366,15 @@ function FCIGroupManager() {
                           onChange={(e) => setNewSpecieType({ ...newSpecieType, description: e.target.value })}/>
                       </h4>
                     </td>
+                    {/* <td colSpan="1">
+                      <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
+                      <select className="text-high-emphasis-inverse"value={newSpecieType.updatable}
+                          onChange={(e) => setNewSpecieType({ ...newSpecieType, updatable: e.target.value })}>
+                        <option value={true}>Yes</option>
+                        <option value={false}>No</option>
+                      </select>
+                      </h4>
+                    </td> */}
                     <td>&nbsp;</td>
                     <td className="text-medium-emphasis">
                       <CButton component="a" color="string" role="button" size='sm' onClick={() => addSpecieType()}>
@@ -298,7 +387,6 @@ function FCIGroupManager() {
             </CCardBody>  
         </CCard>  
         </CCol>
-
        </CRow> 
       </div>   
     </div>

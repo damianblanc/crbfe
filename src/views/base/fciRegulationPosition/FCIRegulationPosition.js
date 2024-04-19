@@ -80,10 +80,8 @@ function FCIRegulationPosition() {
   const navigate = useNavigate();
 
   const [errorMessage, setErrorMessage] = useState('');
-
   const [toast, addToast] = useState(0)
   const toaster = useRef()
-
   const [showToast, setShowToast] = useState(false);
 
   /** FCI Regulations - Symbol and Name */

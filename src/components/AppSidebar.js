@@ -12,8 +12,6 @@ import { sygnet } from 'src/assets/brand/sygnet'
 import SimpleBar from 'simplebar-react'
 import 'simplebar/dist/simplebar.min.css'
 
-import synergy from './synergy.jpg'
-
 import {
   cilBatteryFull,
   cilBell,

@@ -317,7 +317,7 @@ function FCIAdviceManager() {
                       <td>
                         <>
                           <Popup trigger={
-                              <CButton shape='rounded' size='sm' color='string' onClick={() => deletePosition()}>
+                              <CButton shape='rounded' size='sm' color='string' onClick={() => deletePosition(item.id)}>
                                     <CIcon icon={cilClipboard} size="xl"/>
                               </CButton>} position="left center" modal>
                           <CRow>

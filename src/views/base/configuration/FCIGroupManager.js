@@ -338,43 +338,35 @@ function FCIGroupManager() {
               Indicate name and description for a new Specie Type to include in current Group <strong><code>&lt;{currentGroup.name}&gt;</code></strong>
             </div>
             <br/>
-            <table>
+            <table className="text-medium-emphasis small">
                 <thead>
                   <tr>
                     <th>Name</th>
                     <th>Description</th>
-                    {/* <th>Updatable</th> */}
                     <th></th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td>
+                    <td width="20%">
                         <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
                           <input
                             type="text" 
+                            style={{width: "90%"}}
                             value={newSpecieType.name}
                             onChange={(e) => setNewSpecieType({ ...newSpecieType, name: e.target.value })}
                           />
                         </h4>
                     </td>
-                    <td colSpan="1">
+                    <td colSpan="1" width="40%">
                       <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
                         <input type="text" aria-label="Description"
+                          style={{width: "95%"}}
                           value={newSpecieType.description}
                           onChange={(e) => setNewSpecieType({ ...newSpecieType, description: e.target.value })}/>
                       </h4>
                     </td>
-                    {/* <td colSpan="1">
-                      <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
-                      <select className="text-high-emphasis-inverse"value={newSpecieType.updatable}
-                          onChange={(e) => setNewSpecieType({ ...newSpecieType, updatable: e.target.value })}>
-                        <option value={true}>Yes</option>
-                        <option value={false}>No</option>
-                      </select>
-                      </h4>
-                    </td> */}
                     <td>&nbsp;</td>
                     <td className="text-medium-emphasis">
                       <CButton component="a" color="string" role="button" size='sm' onClick={() => addSpecieType()}>

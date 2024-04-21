@@ -418,7 +418,7 @@ function FCIRegulationPosition() {
                   <td>
                     <table className='table-head-1'>
                       <tr>
-                        <td width="23%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
+                        <td width="30%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
                         <td width="35%">
                           <select className="text-medium-emphasis large" 
                             onChange={(e) => selectFciSymbol(e.target.value)} style={{width: "100%"}}>
@@ -430,7 +430,7 @@ function FCIRegulationPosition() {
                           </select>
                         </td>
                         <td width="3%"></td>
-                        <td width="10%">FCI Symbol</td>
+                        <td  className="text-medium-emphasis small" width="10%">Symbol</td>
                         <td width="12%">
                           <input id="regulationSymbol" type="text" className="text-medium-emphasis small"
                               style={{width: "100%"}}
@@ -445,7 +445,7 @@ function FCIRegulationPosition() {
                       </tr>
                     </table>
                     
-                    <table width="70%">
+                    <table  className="text-medium-emphasis small" width="70%">
                       <tr className="text-medium-emphasis">
                         <td width="70%" >
                           <table className='table-head'>
@@ -459,14 +459,14 @@ function FCIRegulationPosition() {
                               <tbody>
                                 <tr>
                                   <td width="20%">Excel file (.xlsx format)</td>
-                                  <td width="50%"><input type="file" onChange={handleFileChange}></input></td>
+                                  <td width="50%"><input className="text-medium-emphasis small" type="file" onChange={handleFileChange}></input></td>
                                   <td> 
-                                    <CButton shape='rounded' size='sm' color='string' onClick={() => processExcel()}>
+                                    <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => processExcel()}>
                                       <CIcon icon={cilSync} size="xl"/>
                                     </CButton>
                                   </td>
                                   <td>
-                                  <CButton shape='rounded' size='sm' color='string' onClick={() => createFCIPosition()}>
+                                  <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => createFCIPosition()}>
                                       <CIcon icon={cilTransfer} size="xl"/>
                                   </CButton>
                                   </td>
@@ -641,7 +641,7 @@ function FCIRegulationPosition() {
                   ) : null}
                 </table>
               </p>
-              <table>
+              <table className="text-medium-emphasis small">
                 <thead>
                   <tr className="text-medium-emphasis">
                     <th>#</th>

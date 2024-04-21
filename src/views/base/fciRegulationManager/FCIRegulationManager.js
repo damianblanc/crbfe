@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './FCIRegulationTable.css';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
@@ -17,6 +17,7 @@ import { element } from 'prop-types';
 import { NumericFormat } from 'react-number-format';
 import { isLoginTimestampValid } from '../../../utils/utils.js';
 import { useNavigate } from 'react-router-dom';
+import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
 
 
 class FCIRegulation {
@@ -57,7 +58,6 @@ function FCIRegulationTable() {
   const tableDataToSend = JSON.stringify(regulations, null, 2);
   const [specieTypes, setSpecieTypes] = useState([{fciSpecieTypeId: '', name: '', description: ''}]);
   const [regulationPercentages, setRegulationPercentages] = useState([]);
-  // const [sum, setSum] = useState(0);
   const [visible, setVisible] = useState(false);
   const [searchFiltered, setSearchFiltered] = useState(false);
   const [totalRegulations, setTotalRegulations] = useState(0);
@@ -65,39 +65,45 @@ function FCIRegulationTable() {
   const [searchCurrentRegulationSymbol, setSearchCurrentRegulationSymbol] = useState('');
   const regulationsPerPage = 5;
   const navigate = useNavigate();
+  const [toast, addToast] = useState(0)
+  const toaster = useRef()
+  const [showToast, setShowToast] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const validateNewRow = (row) => {
     const regex = /^(?:[^:]+:\d+(\.\d+)?%)(?:-[^:]+:\d+(\.\d+)?%)*$/;
+    const compositions = ['symbol', 'name', 'description', 'composition1', 'composition2', 'composition3', 'composition4', 'composition5', 'composition6', 'composition7'];
     const errors = {};
-    if (!newRow.symbol) errors.symbol = 'Symbol is required';
-    if (!newRow.name) errors.name = 'Name is required';
-    if (!newRow.description) errors.description = 'Description is required';
+
+    if (!newRow.symbol) errors.symbol = '» Symbol is required';
+    if (!newRow.name) errors.name = '» Name is required';
+    if (!newRow.description) errors.description = '» Description is required';
     if (!newRow.composition) { 
-        errors.composition1 = 'Composition is required';
+        errors.composition1 = '» Composition is required';
     } else if (!regex.test(String(newRow.composition).replace(/\s/g, ''))) {
-        errors.composition2 = 'Composition format should be "<Specie Type>:<Percentage Value> + %" separated by hyphens. I/E: Equity:40.5% - Bond:39.5% - Cash:20%';
+        errors.composition2 = '» Composition format should be "<Specie Type>:<Percentage Value> + %" separated by hyphens. I/E: Equity:40.5% - Bond:39.5% - Cash:20%';
     }
      
     var w = String(newRow.composition).replace(/\s/g, '').replace(/%/g, '').split("-");
     if (w.length === 1) {
       var sp = w.at(0).split(":").at(0);
       if (sp.toLowerCase() !== 'cash') {
-        errors.composition5 = 'Composition [Cash] is not defined';
+        errors.composition5 = '» Composition [Cash] is not defined';
       }
       if (!specieTypes.find(element => element.name.toLowerCase() === sp.toLowerCase())) {
-        errors.composition3 = 'Composition [' + sp + '] is not a recognized specie type';
+        errors.composition3 = '» Composition [' + sp + '] is not a recognized specie type';
       }
     } else {
       let notCash = false;
       w.map((specie) => {
         var sp = specie.split(":").at(0);
         if (!specieTypes.find(element => element.name.toLowerCase() === sp.toLowerCase())) {
-          errors.composition4 = 'Composition [' + sp + '] is not a recognized specie type';
+          errors.composition4 = '» Composition [' + sp + '] is not a recognized specie type';
         }
         notCash = notCash || sp.toLowerCase() === 'cash';
       });
       if (!notCash) {
-        errors.composition5 = 'Composition [Cash] is not defined';
+        errors.composition5 = '» Composition [Cash] is not defined';
       }
     }
 
@@ -107,12 +113,28 @@ function FCIRegulationTable() {
     }
     const duplicatedElements = toFindDuplicates(arry);
     if (duplicatedElements.length > 0) {
-      errors.composition6 = 'Composition has duplicated [' + duplicatedElements + '] specie types defined';
+      errors.composition6 = '» Composition has duplicated [' + duplicatedElements + '] specie types defined';
     }
 
     if (findAndSumNumbers(newRow.composition) !== 100) {
-      errors.composition7 = 'Composition Percentage must close to 100%';
+      errors.composition7 = '» Composition Percentage must close to 100%';
     };
+
+    generateErrorMessage(errors, compositions);
+    if (Object.keys(errors).length > 0) {
+      const errorComponents = generateErrorMessage(errors, compositions);
+    
+      const errorMessage = (
+        <>
+          {errorComponents}
+        </>
+      );
+    
+      setErrorMessage(errorMessage);
+      setShowToast(true);
+      showToastMessage(errorMessage);
+    }
+
     return errors;
   };
 
@@ -129,38 +151,40 @@ function FCIRegulationTable() {
     return [...new Set(filteredElements)]
   } 
 
-  const validateEditRow = () => {
+  const validateNewSpecieTypeRow = () => {
     const regex = /^(?:[^:]+:\d+(\.\d+)?%)(?:-[^:]+:\d+(\.\d+)?%)*$/;
+    const compositions = ['symbol', 'name', 'description', 'composition1', 'composition2', 'composition3', 'composition4', 'composition5', 'composition6'];
     const errors = {};
-    if (!editRow.symbol) errors.symbol = 'Symbol is required';
-    if (!editRow.name) errors.name = 'Name is required';
-    if (!editRow.description) errors.description = 'Description is required';
+
+    if (!editRow.symbol) errors.symbol = '» Symbol is required';
+    if (!editRow.name) errors.name = '» Name is required';
+    if (!editRow.description) errors.description = '» Description is required';
     if (!editRow.composition) { 
-        errors.composition1 = 'Composition is required';
+        errors.composition1 = '» Composition is required';
     } else if (!regex.test(String(editRow.composition).replace(/\s/g, ''))) {
-        errors.composition2 = 'Composition format should be "<Specie Type>:<Percentage Value> + %" separated by hyphens. I/E: Equity:40.5% - Bond:39.5% - Cash:20%';
+        errors.composition2 = '» Composition format should be "<Specie Type>:<Percentage Value> + %" separated by hyphens. I/E: Equity:40.5% - Bond:39.5% - Cash:20%';
     }
      
     var w = String(editRow.composition).replace(/\s/g, '').replace(/%/g, '').split("-");
     if (w.length === 1) {
       var sp = w.at(0).split(":").at(0);
       if (sp.toLowerCase() !== 'cash') {
-        errors.composition5 = 'Composition [Cash] is not defined';
+        errors.composition5 = '» Composition [Cash] is not defined';
       }
       if (!specieTypes.find(element => element.name.toLowerCase() === sp.toLowerCase())) {
-        errors.composition3 = 'Composition [' + sp + '] is not a recognized specie type';
+        errors.composition3 = '» Composition [' + sp + '] is not a recognized specie type';
       }
     } else {
       let notCash = false;
       w.map((specie) => {
       var sp = specie.split(":").at(0);
       if (!specieTypes.find(element => element.name === sp)) {
-        errors.composition3 = 'Composition [' + sp + '] is not a recognized specie type';
+        errors.composition3 = '» Composition [' + sp + '] is not a recognized specie type';
       }
       notCash = notCash || sp.toLowerCase() === 'cash';
       })
       if (!notCash) {
-        errors.composition5 = 'Composition [Cash] is not defined';
+        errors.composition4 = '» Composition [Cash] is not defined';
       }
     };
 
@@ -170,15 +194,110 @@ function FCIRegulationTable() {
     }
     const duplicatedElements = toFindDuplicates(arry);
     if (duplicatedElements.length > 0) {
-      errors.composition6 = 'Composition has duplicated [' + duplicatedElements + '] specie types defined';
+      errors.composition5 = '» Composition has duplicated [' + duplicatedElements + '] specie types defined';
     }
 
     if (findAndSumNumbers(editRow.composition) !== 100) {
-      errors.composition4 = 'Composition Percentage must close to 100%';
+      errors.composition6 = '» Composition Percentage must close to 100%';
     };
 
+    generateErrorMessage(errors, compositions);
+    if (Object.keys(errors).length > 0) {
+      const errorComponents = generateErrorMessage(errors, compositions);
+    
+      const errorMessage = (
+        <>
+          {errorComponents}
+        </>
+      );
+    
+      setErrorMessage(errorMessage);
+      setShowToast(true);
+      showToastMessage(errorMessage);
+    }
     return errors;
   }
+
+  const validateEditRow = (newSpecieType) => {
+    const errors = {};
+    const compositions = ['symbol', 'name', 'description', 'composition1', 'composition2', 'composition3', 'composition4', 'composition5', 'composition6', 'composition7'];
+    const regex = /^(?:[^:]+:\d+(\.\d+)?%)(?:-[^:]+:\d+(\.\d+)?%)*$/;
+  
+    if (!editRow.symbol) errors.symbol = '» Symbol is required';
+    if (!editRow.name) errors.name = '» Name is required';
+    if (!editRow.description) errors.description = '> Description is required';
+    if (!editRow.composition) { 
+      errors.composition1 = '> Composition is required';
+    } else if (!regex.test(String(editRow.composition).replace(/\s/g, ''))) {
+      errors.composition2 = '» Composition format should be "<Specie Type>:<Percentage Value> + %" separated by hyphens. I/E: Equity:40.5% - Bond:39.5% - Cash:20%';
+    }
+
+    var w = String(editRow.composition).replace(/\s/g, '').replace(/%/g, '').split("-");
+    if (w.length === 1) {
+      var sp = w.at(0).split(":").at(0);
+      if (sp.toLowerCase() !== 'cash') {
+        errors.composition5 = '» Composition [Cash] is not defined';
+      }
+      if (!specieTypes.find(element => element.name.toLowerCase() === sp.toLowerCase())) {
+        errors.composition3 = '» Composition [' + sp + '] is not a recognized specie type';
+      }
+    } else {
+      let notCash = false;
+      w.map((specie) => {
+      var sp = specie.split(":").at(0);
+      if (!specieTypes.find(element => element.name === sp)) {
+        errors.composition3 = '» Composition [' + sp + '] is not a recognized specie type';
+      }
+      notCash = notCash || sp.toLowerCase() === 'cash';
+      })
+      if (!notCash) {
+        errors.composition5 = '» Composition [Cash] is not defined';
+      }
+    };
+
+    const arry = [];
+    for(var i = 0; i < w.length; i++) {
+        arry[i] = w[i].split(":").at(0);
+    }
+    const duplicatedElements = toFindDuplicates(arry);
+    if (duplicatedElements.length > 0) {
+      errors.composition6 = '» Composition has duplicated [' + duplicatedElements + '] specie types defined';
+    }
+
+    if (findAndSumNumbers(editRow.composition) !== 100) {
+      errors.composition4 = '» Composition Percentage must close to 100%';
+    };
+    
+    generateErrorMessage(errors, compositions);
+    if (Object.keys(errors).length > 0) {
+      const errorComponents = generateErrorMessage(errors, compositions);
+    
+      const errorMessage = (
+        <>
+          {errorComponents}
+        </>
+      );
+    
+      setErrorMessage(errorMessage);
+      setShowToast(true);
+      showToastMessage(errorMessage);
+    }
+    return errors;
+  }
+
+  const generateErrorMessage = (errors, compositions) => {
+    return compositions.map((comp, index) => {
+      if (errors[comp]) {
+        return (
+          <>
+            {errors[comp]}
+            {index < compositions.length - 1 && <br />}
+          </>
+        );
+      }
+      return null;
+    });
+  };
 
   useEffect(() => {
     const isValid = isLoginTimestampValid();
@@ -402,30 +521,48 @@ function FCIRegulationTable() {
     }
   };
 
+  const showToastMessage = (message) => {
+    setErrorMessage(message)
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 20000);
+  }
+
+  const toggleToast = () => {
+    setShowToast(!showToast);
+  };
+
   return (
+    <div>
+    {showToast === true?
+      <CToaster classname='p-3' placement='top-end' push={toast} ref={toaster}>
+        <CToast show={true} animation={true} autohide={true} 
+              fade={true} visible={true} onClose={toggleToast}>
+          <CToastHeader closeButton>
+            <svg
+              className="rounded me-2"
+              width="20"
+              height="20"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="xMidYMid slice"
+              focusable="false"
+              role="img"
+            >
+            <rect width="100%" height="100%" fill="#FF0000"></rect>
+            </svg>
+            <div className="fw-bold me-auto">Regulation Manager Error Message</div>
+          </CToastHeader>
+          <CToastBody>{errorMessage}</CToastBody>
+        </CToast>
+      </CToaster>
+      : null}
        <CRow>
        <CCol xs={12}>
-       
-        {Object.keys(validationEditErrors)?.length > 0 ? 
-            <CCard>
-              <CCardHeader>
-                <strong className="text-medium-emphasis small">There are some errors on FCI Regulation definition</strong>
-              </CCardHeader>
-              <CCardBody>
-                  <div className="validation-errors">
-                    {Object.keys(validationEditErrors).map((key) => (
-                      <div key={key} className="error">
-                        <code>&#187;&nbsp;{validationEditErrors[key]}</code>
-                      </div>
-                    ))}
-                  </div>
-              </CCardBody>
-            </CCard>
-        : null}
 
         <CCard>
-          <CCardHeader>
-            <strong>FCI Regulations</strong>
+          <CCardHeader className="text-medium-emphasis small">
+          <strong>Configure & Create FCI Regulations</strong>
           </CCardHeader>
           <CCardBody>
               <p className="text-medium-emphasis small">
@@ -435,15 +572,15 @@ function FCIRegulationTable() {
              
                 <table style={{border: 'none'}}>
                 {totalRegulations > 0? (
-                  <tr>
+                  <tr className="text-medium-emphasis small">
                     <td width="20%">Regulation Symbol #</td>
                     <td width="20%">
-                       <input type="text"
+                       <input className="text-medium-emphasis small" type="text"
                           style={{width: "100%"}}
                           onChange={(e) => handleSearchRegulationSymbolChange(e.target.value)}/>
                     </td>
                     <td>
-                    <CButton shape='rounded' size='sm' color='string' onClick={() => filterRegulationList()}>
+                    <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => filterRegulationList()}>
                             <CIcon icon={cilListFilter} size="xl"/>
                       </CButton>
                     </td>
@@ -467,13 +604,13 @@ function FCIRegulationTable() {
                     pages = {Math.floor(totalRegulations / regulationsPerPage)}
                     onActivePageChange={handlePageChange}>
                       {currentPage === 1? (
-                        <CPaginationItem disabled>«</CPaginationItem> ) 
-                      : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
+                        <CPaginationItem className="text-medium-emphasis small" disabled>«</CPaginationItem> ) 
+                      : (<CPaginationItem className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
                      
                       <CPaginationItem active className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
                      
                       {currentPage === Math.ceil(totalRegulations / regulationsPerPage) || searchFiltered ? (
-                        <CPaginationItem disabled>»</CPaginationItem>) 
+                        <CPaginationItem className="text-medium-emphasis small" disabled>»</CPaginationItem>) 
                       : (<CPaginationItem className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage + 1)}>»</CPaginationItem>)}
                     </CPagination>
                 </td>
@@ -481,7 +618,7 @@ function FCIRegulationTable() {
                   ) : null}
               </table>
 
-              <table>
+              <table className="text-medium-emphasis small">
                 <thead>
                   <tr>
                     <th>#</th>
@@ -526,20 +663,20 @@ function FCIRegulationTable() {
                         <td>
                           {editRowId === row.id ? (
                             <>
-                              <CButton shape='rounded' size='sm' color='string' onClick={() => handleEditRow()}>
+                              <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => handleEditRow()}>
                                   <CIcon icon={cilTransfer} size="xl"/>
                               </CButton>
 
-                              <CButton shape='rounded' size='sm' color='string' onClick={() => handleEditRowBack()}>
+                              <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => handleEditRowBack()}>
                                   <CIcon icon={cilMediaSkipBackward} size="xl"/>
                               </CButton>
                             </>
                             ) : (
                               <>
-                              <CButton shape='rounded' size='sm' color='string' onClick={ () => handleDeleteRow(row.id, row.symbol)}>
+                              <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={ () => handleDeleteRow(row.id, row.symbol)}>
                                   <CIcon icon={cilTrash} size="xl"/>
                               </CButton>&nbsp;
-                              <CButton shape='rounded' size='sm' color='string' onClick={ () =>  handleEditRowForward(row)}>
+                              <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={ () =>  handleEditRowForward(row)}>
                                   <CIcon icon={cilPencil} size="xl"/>
                               </CButton>
                               </>
@@ -635,27 +772,6 @@ function FCIRegulationTable() {
                                     </CCardBody>
                                   </CCard>
                                 </CCol>
-
-                                {/* <CCol xs={7}>
-                                    <CCard className="mb-4">
-                                      <CCardHeader>Expected FCI Regulation Definition</CCardHeader>
-                                      <CCardBody>
-                                        <CChartBar
-                                          data={{
-                                            labels: regulationPercentages?.map((p) =>p.specieType),
-                                            datasets: [
-                                              {
-                                                label: 'FCI Regulation Composition',
-                                                backgroundColor: '#f87979',
-                                                data: regulationPercentages?.map((p) => p.percentage),
-                                              },
-                                            ],
-                                          }}
-                                          labels="Percentages"
-                                        />
-                                      </CCardBody>
-                                    </CCard>
-                                  </CCol> */}
                                </CRow>   
                             </CCardBody>
                             </CCard> 
@@ -671,32 +787,16 @@ function FCIRegulationTable() {
           </CCardBody>
          </CCard>
          <br/>
-        {Object.keys(validationErrors)?.length > 0 ? 
-            <CCard>
-              <CCardHeader>
-                <strong className="text-medium-emphasis small">There are some errors on FCI Regulation definition</strong>
-              </CCardHeader>
-              <CCardBody>
-                  <div className="validation-errors">
-                    {Object.keys(validationErrors).map((key) => (
-                      <div key={key} className="error">
-                        <code>&#187;&nbsp;{validationErrors[key]}</code>
-                      </div>
-                    ))}
-                  </div>
-              </CCardBody>
-            </CCard>
-        : null}
 
          <CCard>
-          <CCardHeader>
+          <CCardHeader className="text-medium-emphasis small">
             <strong>Create a new FCI Regulation</strong>
           </CCardHeader>
           <CCardBody>
             <p className="text-medium-emphasis small">
               Indicate symbol, name, description and composition in a new <code>&lt;FCI Regulation&gt;</code> including each specie type and its percentage for further reference
             </p>
-            <table>
+            <table className="text-medium-emphasis small">
                 <thead>
                   <tr>
                     <th>#</th>
@@ -728,11 +828,11 @@ function FCIRegulationTable() {
                     </td>
                     <td className="text-medium-emphasis">
                       <>
-                      <CButton component="a" color="string" role="button" size='sm' onClick={() => handleNewRow()}>
+                      <CButton className="text-medium-emphasis small" component="a" color="string" role="button" size='sm' onClick={() => handleNewRow()}>
                           <CIcon icon={cilTransfer} size="xl"/>
                       </CButton>
 
-                      <CButton component="a" color="string" role="button" size='sm' onClick={() => clearNewRow()}>
+                      <CButton className="text-medium-emphasis small" component="a" color="string" role="button" size='sm' onClick={() => clearNewRow()}>
                           <CIcon icon={cilTrash} size="xl"/>
                       </CButton>
                       </>
@@ -767,6 +867,7 @@ function FCIRegulationTable() {
         </CCard>      
        </CCol>
      </CRow>   
+    </div>
   );
 };
 

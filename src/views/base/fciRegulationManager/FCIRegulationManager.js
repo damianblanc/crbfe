@@ -30,9 +30,10 @@ class FCIRegulation {
 }
 
 class FCIComposition {
-  constructor(id, specieType, percentage) {
+  constructor(id, specieTypeId, specieTypeName, percentage) {
     this.id = id;
-    this.fciSpecieTypeId = specieType;
+    this.fciSpecieTypeId = specieTypeId;
+    this.fciSpecieTypeName = specieTypeName;
     this.percentage = percentage;
   }
 }
@@ -559,9 +560,9 @@ function FCIRegulationTable() {
                               }
                             />
                           ) : (
-                            row.composition.map((c) => c.id !== undefined &&
-                              <React.Fragment key={c.id}>
-                                {findSpecieTypeById(c.id + 1).name}{": "}
+                            row.composition.map((c) => c.specieTypeId !== undefined &&
+                              <React.Fragment key={c.specieTypeId}>
+                                {findSpecieTypeById(c.specieTypeId).name}{": "}
                                 <b>
                                 <NumericFormat displayType="text" value={Number(c.percentage).toFixed(2)} suffix="%"/>
                                 </b>

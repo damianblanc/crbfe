@@ -132,24 +132,34 @@ function SpecieTypeManager() {
           console.error('#1 - Error receiving specieTypeGroups:', error);
         }
       };
-    
     const fetchSpecies = async (specieTypeGroupName, specieTypeName) => {
         try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/specie-type/' + specieTypeName + '/bind/page/0');
+          const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/bind/page/0');
           return responseData.data;
         } catch (error) {
           console.error('#1 - Error receiving specieTypeGroups:', error);
         }
       };
-      
-      const setFetchedData = async (specieTypeGroupName) => {
-        const tempLoadedSpecieTypeGroup = await fetchSpecieTypeGroup(specieTypeGroupName);
-        const tempLoadedSpecies = await fetchSpecies(specieTypeGroupName, tempLoadedSpecieTypeGroup.fciSpecieTypes[0].name)
-        setCurrentGroup(tempLoadedSpecieTypeGroup);
-        setSpecieTypes(tempLoadedSpecieTypeGroup.fciSpecieTypes);
-        setSpecies(tempLoadedSpecies);
+
+    const fetchTotalSpecies = async (specieTypeGroupName) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/bind');
+        return responseData.data;
+      } catch (error) {
+        console.error('#1 - Error receiving specieTypeGroups:', error);
       }
-      setFetchedData(specieTypeGroupName);
+    };
+      
+    const setFetchedData = async (specieTypeGroupName) => {
+      const tempLoadedSpecieTypeGroup = await fetchSpecieTypeGroup(specieTypeGroupName);
+      const tempLoadedSpecies = await fetchSpecies(specieTypeGroupName, tempLoadedSpecieTypeGroup.fciSpecieTypes[0].name)
+      const tempLoadedTotalSpecies = await fetchTotalSpecies(specieTypeGroupName);
+      setCurrentGroup(tempLoadedSpecieTypeGroup);
+      setSpecieTypes(tempLoadedSpecieTypeGroup.fciSpecieTypes);
+      setSpecies(tempLoadedSpecies);
+      setTotalSpecies(tempLoadedTotalSpecies.length);
+    }
+    setFetchedData(specieTypeGroupName);
   };
 
   const setCurrentSpecieTypeSelected = (specieTypeName) => {
@@ -229,7 +239,7 @@ function SpecieTypeManager() {
               <table className="text-medium-emphasis small">
                <thead>
                   <tr>
-                    <td width="12%"><strong><code>&lt;Specie Type Group&gt;</code></strong></td>
+                    <td width="15%"><strong><code>&lt;Specie Type Group&gt;</code></strong></td>
                     <td width="80%">
                       <select className="text-medium-emphasis large" onChange={(e) => selectSpecieTypeGroup(e.target.value)}>
                         {Object.prototype.toString.call(specieTypeGroups) === '[object Array]' && specieTypeGroups?.map((group) => 
@@ -265,10 +275,11 @@ function SpecieTypeManager() {
           <CCard>
             <CCardHeader className="text-medium-emphasis small">
               <tr>
-                <td>
+                <td width="25%">
                    <strong>Specie Types in Group &nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong>
                 </td>
-                <td width="82%">
+                <td>&nbsp;</td>
+                <td width="75%">
                     <CPagination align="end" size="sm" className="text-medium-emphasis small"
                     activePage = {currentPage}
                     pages = {Math.floor(totalSpecies / speciesPerPage)}
@@ -332,59 +343,6 @@ function SpecieTypeManager() {
          </CCard>
         </CCol>
         </CRow> 
-        <br/>
-        <CRow>
-        <CCol>
-        <CCard>
-          <CCardHeader>
-            <strong className="text-medium-emphasis small">Add Specie Types to Group</strong>
-          </CCardHeader>
-          <CCardBody>
-            <div className="text-medium-emphasis small">
-              Indicate name and description for a new Specie Type to include in current Group <strong><code>&lt;{currentGroup.name}&gt;</code></strong>
-            </div>
-            <br/>
-            <table>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th></th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>
-                        <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
-                          <input
-                            type="text" 
-                            value={newSpecieType.name}
-                            onChange={(e) => setNewSpecieType({ ...newSpecieType, name: e.target.value })}
-                          />
-                        </h4>
-                    </td>
-                    <td colSpan="1">
-                      <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
-                        <input type="text" aria-label="Description"
-                          value={newSpecieType.description}
-                          onChange={(e) => setNewSpecieType({ ...newSpecieType, description: e.target.value })}/>
-                      </h4>
-                    </td>
-                    <td>&nbsp;</td>
-                    <td className="text-medium-emphasis">
-                      <CButton component="a" color="string" role="button" size='sm' onClick={() => addSpecieType()}>
-                          <CIcon icon={cilTransfer} size="xl"/>
-                      </CButton>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>  
-            </CCardBody>  
-        </CCard>  
-        </CCol>
-
-       </CRow> 
       </div>   
     </div>
   );

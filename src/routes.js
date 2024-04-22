@@ -24,8 +24,8 @@ const FCIRegulationPosition = React.lazy(() => import('./views/base/fciRegulatio
 const FCIPositionAdvice = React.lazy(() => import('./views/base/fciPositionAdvice/FCIPositionAdvice'))
 const FCIAdviceManager = React.lazy(() => import('./views/base/fciPositionAdvice/FCIAdviceManager'))
 const FCIPositionBias = React.lazy(() => import('./views/report/fciPositionBias/FCIPositionBias'))
-const FCIGroupManager = React.lazy(() => import('./views/base/configuration/FCIGroupManager'))
-const SpecieTypeManager = React.lazy(() => import('./views/base/configuration/specie/SpecieTypeManager'))
+const FCIGroupManager = React.lazy(() => import('./views/base/configuration/groups/FCIGroupManager'))
+const SpecieTypeManager = React.lazy(() => import('./views/base/configuration/species/SpecieTypeManager'))
 
 
 // Buttons
@@ -59,12 +59,12 @@ const Toasts = React.lazy(() => import('./views/notifications/toasts/Toasts'))
 const Widgets = React.lazy(() => import('./views/widgets/Widgets'))
 
 const routes = [
-  { path: '/', exact: true, name: 'Home' },
+  // { path: '/dashboard', name: 'Home' },
   { path: '/dashboard', name: 'FCI Regulation Biases', element: Dashboard },
   { path: '/theme', name: 'Theme', element: Colors, exact: true },
   { path: '/theme/colors', name: 'Colors', element: Colors },
   { path: '/theme/typography', name: 'Typography', element: Typography },
-  { path: '/base', name: 'Base', element: Cards, exact: true },
+  // { path: '/base', name: 'Base', element: Cards, exact: true },
   { path: '/base/accordion', name: 'Accordion', element: Accordion },
   { path: '/base/breadcrumbs', name: 'Breadcrumbs', element: Breadcrumbs },
   { path: '/base/cards', name: 'Cards', element: Cards },
@@ -103,13 +103,12 @@ const routes = [
   { path: '/notifications/modals', name: 'Modals', element: Modals },
   { path: '/notifications/toasts', name: 'Toasts', element: Toasts },
   { path: '/widgets', name: 'Widgets', element: Widgets },
-  { path: '/base/fciRegulationManager', name: 'FCIRegulationManager', element: FCIRegulationManager },
-  { path: '/base/fciRegulationPosition', name: 'FCIRegulationPosition', element: FCIRegulationPosition },
-  { path: '/base/fciPositionAdvice', name: 'FCIPositionAdvice', element: FCIPositionAdvice },
-  { path: '/base/fciPositionAdvice', name: 'FCIAdviceManager', element: FCIAdviceManager },
-  { path: '/report/fciPositionBias', name: 'FCIPositionBias', element: FCIPositionBias },
-  { path: '/base/configuration', name: 'FCIGroupManager', element: FCIGroupManager },
-  { path: '/base/configuration/specie', name: 'SpecieTypeManager', element: SpecieTypeManager },
+  { path: '/base/regulation-management', name: 'FCI Regulation Manager', element: FCIRegulationManager },
+  { path: '/base/position-management', name: 'FCI Regulation Position', element: FCIRegulationPosition },
+  { path: '/base/advice-management', name: 'FCI Position Advice', element: FCIPositionAdvice },
+  { path: '/report/report-management', name: 'FCI Position Bias', element: FCIPositionBias },
+  { path: '/base/configuration/groups-management', name: 'FCI Group Manager', element: FCIGroupManager },
+  { path: '/base/configuration/species-management', name: 'FCI Specie Type Manager', element: SpecieTypeManager },
   
 ]
 

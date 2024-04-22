@@ -5,7 +5,7 @@ import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPagin
 import CIcon from '@coreui/icons-react'
 import { cilPencil, cilTrash, cilTransfer, cilMediaSkipBackward, cilFile, cilListFilter } from '@coreui/icons';
 
-import { CChartBar, CChartPie} from '@coreui/react-chartjs'
+import { CChartPie } from '@coreui/react-chartjs'
 
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
@@ -13,7 +13,6 @@ import 'reactjs-popup/dist/index.css';
 import axios from 'axios';
 
 import { CModal } from '@coreui/react';
-import { element } from 'prop-types';
 import { NumericFormat } from 'react-number-format';
 import { isLoginTimestampValid } from '../../../utils/utils.js';
 import { useNavigate } from 'react-router-dom';
@@ -51,8 +50,6 @@ function FCIRegulationTable() {
   const [newRow, setNewRow] = useState({ id: '', symbol: '', name: '', description: '', composition: '' });
   const [editRow, setEditRow] = useState({ id: '', symbol: '', name: '', description: '', composition: '', compositionWithId: '' });
   const [editRowId, setEditRowId] = useState(null);
-  // const dataDesc = [...regulations].sort((a, b) => b.id - a.id);
-  // const specieTypeAsc = [...data].sort((a, b) => a.specieType > b.specieType ? 1 : -1);
   const [validationErrors, setValidationErrors] = useState({});
   const [validationEditErrors, setValidationEditErrors] = useState({});
   const tableDataToSend = JSON.stringify(regulations, null, 2);
@@ -361,7 +358,7 @@ function FCIRegulationTable() {
         newRow.composition.replace(/\s/g, '').replace(/%/g, '').split("-") 
             .map((c, index) => {
                 var r = c.split(":");
-                return new FCIComposition(null, findSpecieTypeByName(r.at(0)).fciSpecieTypeId, parseFloat(r.at(1)));
+                return new FCIComposition(null, findSpecieTypeByName(r.at(0)).fciSpecieTypeId, findSpecieTypeByName(r.at(0)), parseFloat(r.at(1)));
        }));
       
 
@@ -697,15 +694,20 @@ function FCIRegulationTable() {
                               }
                             />
                           ) : (
-                            row.composition.map((c) => c.specieTypeId !== undefined &&
-                              <React.Fragment key={c.specieTypeId}>
-                                {findSpecieTypeById(c.specieTypeId).name}{": "}
-                                <b>
-                                <NumericFormat displayType="text" value={Number(c.percentage).toFixed(2)} suffix="%"/>
-                                </b>
-                                {' - '}
-                            </React.Fragment>
-                            ))}
+                            row.composition.map((c, index, array) => {
+                              if (c.specieTypeId !== undefined) {
+                                return (
+                                  <React.Fragment key={c.specieTypeId}>
+                                    {findSpecieTypeById(c.specieTypeId).name}{": "}
+                                    <b>
+                                      <NumericFormat displayType="text" value={Number(c.percentage).toFixed(2)} suffix="%" />
+                                    </b>
+                                    {index < array.length - 1 && ' - '}
+                                  </React.Fragment>
+                                );
+                              }
+                              return null;
+                            }))}
                         </td>
                         <td>
                         {/* <CButton onClick={() => setVisible(!visible)}>Launch demo modal</CButton> */}
@@ -734,7 +736,7 @@ function FCIRegulationTable() {
                                     <CCardBody>
                                       <CChartPie
                                         data={{
-                                          labels: regulationPercentages?.map((p) => p.specieType),
+                                          labels: regulationPercentages?.map((p) => p.specieTypeName),
                                           datasets: [
                                             {
                                               data: regulationPercentages?.map((p) => p.percentage),
@@ -762,7 +764,7 @@ function FCIRegulationTable() {
                                             {regulationPercentages?.map((p) => 
                                              <React.Fragment key={p.id}>
                                               <tr className="text-medium-emphasis">
-                                                <td>{p.specieType}</td>
+                                                <td>{p.specieTypeName}</td>
                                                 <td>{p.percentage}</td>
                                               </tr>
                                              </React.Fragment> 

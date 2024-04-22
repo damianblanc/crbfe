@@ -302,13 +302,13 @@ function FCIPositionAdvice() {
     <CRow>
         <CCol xs={12}>
           <CCard>
-            <CCardHeader>
+            <CCardHeader className="text-medium-emphasis small">
               <strong>FCI Regulation Position Advices</strong>
             </CCardHeader>
             <CCardBody>
               <p className="text-medium-emphasis small">
                 Refers to a <code>&lt;FCI Regulation Position List&gt;</code> that advices operations based on positon detected biases
-                <CButton shape='rounded' size='sm' color='string' onClick={() => downloadExcel(advices) }>
+                <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => downloadExcel(advices) }>
                       <CIcon icon={cilClipboard} size="xl"/>
                 </CButton>
               </p>

@@ -416,8 +416,8 @@ const updateFCIReportQuantity = async () => {
               <table>
                <thead>
                   <tr className="text-medium-emphasis">
-                    <td width="17%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
-                    <td width="25%">
+                    <td width="17%" className="text-medium-emphasis small"><code>&lt;FCI Regulation Symbol&gt;</code></td>
+                    <td width="30%">
                       <select className="text-medium-emphasis large" onChange={(e) => setCurrentFCISymbol(e.target.value)}>
                         {regulations?.map((regulation) => 
                           <React.Fragment key={regulation.id}>
@@ -426,8 +426,8 @@ const updateFCIReportQuantity = async () => {
                         )}
                       </select>
                     </td>
-                    <td width="11%"><code>&lt;FCI Position&gt;</code></td>
-                    <td width="25%">
+                    <td width="11%" className="text-medium-emphasis small"><code>&lt;FCI Position&gt;</code></td>
+                    <td width="22%">
                       <select className="text-medium-emphasis large" 
                             onChange={(e) => selectPosition(e.target.value)}>
                         {positions !== undefined && positions.map((fciPosition) => 
@@ -437,10 +437,10 @@ const updateFCIReportQuantity = async () => {
                         )}
                       </select>
                     </td>
-                    <td width="12%"><code>&lt;FCI Composition&gt;</code></td>
+                    <td width="13%" className="text-medium-emphasis small"><code>&lt;FCI Composition&gt;</code></td>
                     <td>
                       {<Popup trigger={
-                        <CButton shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages()}>
+                        <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages()}>
                             <CIcon icon={cilFile} size="xl"/>
                         </CButton>} position="right center" modal>
                         {<CRow>
@@ -559,10 +559,10 @@ const updateFCIReportQuantity = async () => {
                       </select>
                         </td>
                         <td width="40%"></td>
-                        <td>
+                        <td className="text-medium-emphasis small">
                           Position Biases Graph
                         {<Popup trigger={
-                        <CButton shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages()}>
+                        <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages()}>
                             <CIcon icon={cilFile} size="xl"/>
                         </CButton>} position="right center" modal lockScroll="false" backgroundColor="rgba(75,192,192,0.4)">
                         {
@@ -727,7 +727,7 @@ const updateFCIReportQuantity = async () => {
                     <CRow>
                     <CCol xs={3}>
                         <CCard className="mb-4">
-                          <CCardHeader>Current Position - Distribution</CCardHeader>
+                          <CCardHeader className="text-medium-emphasis small">Current Position - Distribution</CCardHeader>
                           <CCardBody>
                             {<CChartPie
                               data={{
@@ -748,13 +748,13 @@ const updateFCIReportQuantity = async () => {
 
                       <CCol>
                         <CCard className="mb-3">
-                            <CCardHeader>FCI Position Overview - Total Position: $&nbsp; 
+                            <CCardHeader className="text-medium-emphasis small">FCI Position Overview - Total Position: $&nbsp; 
                             <NumericFormat displayType="text" value={positionPercentages.reduce((previousValue, p, index) => previousValue +  Number(p.valued) , 0).toFixed(2)} thousandSeparator="." decimalSeparator=','/>
                               </CCardHeader>
                             <CCardBody>
-                                <table  className="text-medium-emphasis">
+                                <table className="text-medium-emphasis small">
                                 <thead>
-                                    <tr className="text-medium-emphasis">
+                                    <tr className="text-medium-emphasis small">
                                       <th>Type</th>
                                       <th>Position</th>
                                       <th>Valued</th>

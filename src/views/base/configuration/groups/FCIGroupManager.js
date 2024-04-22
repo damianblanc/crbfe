@@ -15,7 +15,7 @@ import 'reactjs-popup/dist/index.css';
 
 import axios from 'axios';
 
-import { isLoginTimestampValid } from '../../../utils/utils.js';
+import { isLoginTimestampValid } from '../../../../utils/utils.js';
 import { useNavigate } from 'react-router-dom';
 import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
 

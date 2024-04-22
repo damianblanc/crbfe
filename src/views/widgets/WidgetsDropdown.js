@@ -44,7 +44,7 @@ const WidgetsDropdown = () => {
 
     const fetchRegulationsPerMonth = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month');
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/regulations-per-month');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -118,7 +118,7 @@ const WidgetsDropdown = () => {
             <>
               {regulationQuantity}{' '}
               <span className="fs-6 fw-normal">
-                (-15.4% <CIcon icon={cilArrowBottom} />)
+                ({ Math.round(regPerMonthGrowth)}% <CIcon icon={cilArrowTop} />)
               </span>
             </>
           }
@@ -137,18 +137,19 @@ const WidgetsDropdown = () => {
             </CDropdown>
           }
           chart={
-            <CChartLine
+            <CChartBar
               className="mt-3 mx-3"
               style={{ height: '70px' }}
               data={{
-                labels: positionsPerMonth?.reverse().map((e) => e.month),
+                labels: regulationsPerMonth?.reverse().map((e) => e.month),
                 datasets: [
                   {
                     label: 'Regulations per Month',
-                    backgroundColor: 'blue',
+                    backgroundColor: 'white',
                     borderColor: 'rgba(255,255,255,.55)',
                     pointBackgroundColor: getStyle('--cui-info'),
-                    data: positionsPerMonth?.map((e) => e.quantity),
+                    data: regulationsPerMonth?.map((e) => e.quantity),
+                    barPercentage: 0.6,
                   },
                 ],
               }}
@@ -290,7 +291,7 @@ const WidgetsDropdown = () => {
             <>
               {reportsQuantity}{' '}
               <span className="fs-6 fw-normal">
-                (84.7% <CIcon icon={cilArrowTop} />)
+                ({ Math.round(repPerMonthGrowth)}% <CIcon icon={cilArrowTop} />)
               </span>
             </>
           }
@@ -363,7 +364,7 @@ const WidgetsDropdown = () => {
             <>
               {advicesQuantity}{' '}
               <span className="fs-6 fw-normal">
-                (-23.6% <CIcon icon={cilArrowBottom} />)
+                ({ Math.round(advPerMonthGrowth)}% <CIcon icon={cilArrowTop} />)
               </span>
             </>
           }

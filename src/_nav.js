@@ -36,12 +36,12 @@ const _nav = [
       {
         component: CNavItem,
         name: 'FCI Regulation Management',
-        to: '/base/fciRegulationManager',
+        to: '/base/regulation-management',
       },
       {
         component: CNavItem,
         name: 'FCI Regulation Position',
-        to: '/base/fciRegulationPosition',
+        to: '/base/position-management',
       },
   ]},
   {
@@ -53,12 +53,12 @@ const _nav = [
         {
           component: CNavItem,
           name: 'FCI Position Bias',
-          to: '/report/FCIPositionBias',
+          to: '/report/report-management',
         },
         {
           component: CNavItem,
           name: 'FCI Position Advices',
-          to: '/base/fciPositionAdvice',
+          to: '/base/advice-management',
         },
       ],
   },
@@ -71,12 +71,12 @@ const _nav = [
       {
         component: CNavItem,
         name: 'FCI Group Manager',
-        to: '/base/configuration',
+        to: '/base/configuration/groups-management',
       },
       {
         component: CNavItem,
         name: 'FCI Specie Type Manager',
-        to: '/base/configuration/specie',
+        to: '/base/configuration/species-management',
       }
     ],
   },

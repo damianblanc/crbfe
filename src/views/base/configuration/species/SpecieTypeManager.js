@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
 import { cilTrash, cilTransfer, cilArrowTop, cilCheckCircle } from '@coreui/icons';
@@ -14,6 +14,8 @@ import axios from 'axios';
 
 import { isLoginTimestampValid } from '../../../../utils/utils.js';
 import { useNavigate } from 'react-router-dom';
+
+import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
 
 class SpecieTypeGroup {
     constructor(id, name, description, updatable) {
@@ -55,6 +57,10 @@ function SpecieTypeManager() {
   const navigate = useNavigate();
   const [updatedSpecie, setUpdatedSpecie] = useState(false);
   const [lastupdatedSpecie, setLastUpdatedSpecie] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [toast, addToast] = useState(0)
+  const toaster = useRef()
+  const [showToast, setShowToast] = useState(false);
 
   /** SpecieType Groups */
   useEffect(() => {
@@ -95,13 +101,20 @@ function SpecieTypeManager() {
 
     const setFetchedData = async () => {
       const tempLoadedSpecieTypeGroups = await fetchSpecieTypeGroups();
-      const tempLoadedSpecies = await fetchSpecies(tempLoadedSpecieTypeGroups[0].name, 0);
-      const tempLoadedTotalSpecies = await fetchTotalSpecies(tempLoadedSpecieTypeGroups[0].name);
       setSpecieTypeGroups(tempLoadedSpecieTypeGroups);
-      setCurrentGroup(tempLoadedSpecieTypeGroups[0]);
-      setSpecieTypes(tempLoadedSpecieTypeGroups[0].fciSpecieTypes);
-      setTotalSpecies(tempLoadedTotalSpecies.length);
-      setSpecies(tempLoadedSpecies);
+      if (tempLoadedSpecieTypeGroups.length == 0) {
+        setErrorMessage("» There are no Groups defined: Equities, Bonds, Cedears and Cash must be created");
+        setShowToast(true);
+        setSpecieTypeGroups([]);
+        setSpecies([]);
+      } else {
+        const tempLoadedSpecies = await fetchSpecies(tempLoadedSpecieTypeGroups[0].name, 0);
+        const tempLoadedTotalSpecies = await fetchTotalSpecies(tempLoadedSpecieTypeGroups[0].name)
+        setCurrentGroup(tempLoadedSpecieTypeGroups[0]);
+        setSpecieTypes(tempLoadedSpecieTypeGroups[0].fciSpecieTypes);
+        setTotalSpecies(tempLoadedTotalSpecies.length);
+        setSpecies(tempLoadedSpecies);
+      }
     };
     setFetchedData();
   }, []); 
@@ -119,7 +132,11 @@ function SpecieTypeManager() {
       }
     };
     const tempLoadedSpecies = await fetchSpecies(pageNumber);
-    setSpecies(tempLoadedSpecies);
+    if (tempLoadedSpecies && tempLoadedSpecies > 0) {
+      setSpecies(tempLoadedSpecies);
+    } else {
+      setSpecies([]);
+    }
   };
 
   /** Specie Type Group */
@@ -227,8 +244,46 @@ function SpecieTypeManager() {
 
   }
 
+  const showToastMessage = (message) => {
+    setErrorMessage(message)
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 10000);
+  }
+
+  const toggleToast = () => {
+    setShowToast(!showToast);
+  };
+
   return (
     <div>
+       <>
+      {showToast === true?
+      <CToaster classname='p-3' placement='top-end' push={toast} ref={toaster}>
+        <CToast show={true} animation={true} autohide={true} 
+              fade={true} visible={true} onClose={toggleToast}>
+          <CToastHeader closeButton>
+            <svg
+              className="rounded me-2"
+              width="20"
+              height="20"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="xMidYMid slice"
+              focusable="false"
+              role="img"
+            >
+            <rect width="100%" height="100%" fill="#FF0000"></rect>
+            </svg>
+            <div className="fw-bold me-auto">Position Error Message</div>
+            <small>A second ago</small>
+          </CToastHeader>
+          <CToastBody>{errorMessage}</CToastBody>
+        </CToast>
+      </CToaster>
+      : null}
+      {specieTypeGroups.length > 0? (
+        <>
        <CRow>
           <CCol xs={12}>
             <CCard>
@@ -252,6 +307,7 @@ function SpecieTypeManager() {
                     </td>
                   </tr>
                 </thead>
+               
                 <tbody></tbody>
                </table>
                <br/>
@@ -343,7 +399,10 @@ function SpecieTypeManager() {
          </CCard>
         </CCol>
         </CRow> 
-      </div>   
+      </div> 
+      </>
+      ) : null}  
+      </>
     </div>
   );
 }

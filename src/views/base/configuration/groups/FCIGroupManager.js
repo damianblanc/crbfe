@@ -72,8 +72,13 @@ function FCIGroupManager() {
     const setFetchedData = async () => {
       const tempLoadedSpecieTypeGroups = await fetchSpecieTypeGroups();
       setSpecieTypeGroups(tempLoadedSpecieTypeGroups);
-      setCurrentGroup(tempLoadedSpecieTypeGroups[0]);
-      setSpecieTypes(tempLoadedSpecieTypeGroups[0].fciSpecieTypes);
+      if (tempLoadedSpecieTypeGroups.length == 0) {
+        setErrorMessage("» There are no Groups defined: Equities, Bonds, Cedears and Cash must be created");
+        setShowToast(true);
+      } else {
+        setCurrentGroup(tempLoadedSpecieTypeGroups[0]);
+        setSpecieTypes(tempLoadedSpecieTypeGroups[0].fciSpecieTypes);
+      }
     };
     setFetchedData();
   }, []); 
@@ -215,6 +220,7 @@ function FCIGroupManager() {
         </CToast>
       </CToaster>
       : null}
+      {specieTypeGroups.length > 0? (
        <CRow>
           <CCol xs={12}>
             <CCard>
@@ -257,8 +263,10 @@ function FCIGroupManager() {
             </CCard>
         </CCol>
       </CRow> 
+      ) : null}
       <br/>
       <div>
+        {specieTypeGroups.length > 0? (
         <CRow>
         <CCol xs={12}>
           <CCard>
@@ -326,7 +334,9 @@ function FCIGroupManager() {
          </CCard>
         </CCol>
         </CRow> 
+        ) : null}
         <br/>
+        {specieTypeGroups.length > 0? (
         <CRow>
         <CCol>
         <CCard>
@@ -379,7 +389,8 @@ function FCIGroupManager() {
             </CCardBody>  
         </CCard>  
         </CCol>
-       </CRow> 
+       </CRow>
+      ) : null}  
       </div>   
     </div>
   );

@@ -96,10 +96,12 @@ const WidgetsDropdown = () => {
       setReportsPerMonth(tempLoadedReportsPerMonth);
       setAdvicesPerMonth(tempLoadedAdvicesPerMonth);
       
-      setRegPerMonthGrowth((tempLoadedRegulationsPerMonth.at(0).quantity / tempLoadedSummarization.fciRegulationQuantity) * 100);
-      setPosPerMonthGrowth((tempLoadedPositionsPerMonth.at(0).quantity / tempLoadedSummarization.fciPositionQuantity) * 100);
-      setRepPerMonthGrowth((tempLoadedReportsPerMonth.at(0).quantity / tempLoadedSummarization.fciReportsQuantity) * 100);
-      setAdvPerMonthGrowth((tempLoadedAdvicesPerMonth.at(0).quantity / tempLoadedSummarization.fciAdvicesQuantity) * 100);
+      if (tempLoadedRegulationsPerMonth && tempLoadedPositionsPerMonth && tempLoadedReportsPerMonth && tempLoadedAdvicesPerMonth) {
+        setRegPerMonthGrowth((tempLoadedRegulationsPerMonth.at(0).quantity / tempLoadedSummarization.fciRegulationQuantity) * 100);
+        setPosPerMonthGrowth((tempLoadedPositionsPerMonth.at(0).quantity / tempLoadedSummarization.fciPositionQuantity) * 100);
+        setRepPerMonthGrowth((tempLoadedReportsPerMonth.at(0).quantity / tempLoadedSummarization.fciReportsQuantity) * 100);
+        setAdvPerMonthGrowth((tempLoadedAdvicesPerMonth.at(0).quantity / tempLoadedSummarization.fciAdvicesQuantity) * 100);
+      }
     };
     setFetchedData();
   }, []); 

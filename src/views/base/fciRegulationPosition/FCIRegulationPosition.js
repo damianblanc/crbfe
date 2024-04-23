@@ -419,6 +419,7 @@ function FCIRegulationPosition() {
         </CToast>
       </CToaster>
       : null}
+      {regulations.length > 0? (
        <CRow>
           <CCol xs={12}>
             <CCard>
@@ -573,23 +574,10 @@ function FCIRegulationPosition() {
           </CCard>
         </CCol>
       </CRow> 
+      ) : null}
       <br/>
-
-      {(validationError !== '') ? 
-            <CCard>
-              <CCardHeader>
-                <strong className="text-medium-emphasis small">There are some errors in uploaded Position</strong>
-              </CCardHeader>
-              <CCardBody>
-                  <div className="validation-errors">
-                    <code>&#187;&nbsp;{validationError}</code>
-                  </div>
-              </CCardBody>
-            </CCard>
-        : null}
-
       <div>
-      {regulations? (
+      {regulations.length > 0? (
         <CRow>
         <CCol xs={12}>
           <CCard>

@@ -334,10 +334,14 @@ function FCIRegulationTable() {
 
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
+      setRegulations(tempLoadedRegulations);
+      if (!tempLoadedRegulations || tempLoadedRegulations.length == 0) {
+        setErrorMessage("» There are no FCI Regulations defined");
+        setShowToast(true);
+      } 
       if (tempLoadedRegulations.length > 0) {
         const tempLoadedSpecieTypes = await fetchSpecieTypes(tempLoadedRegulations[0].fciSymbol);
         const tempLoadedTotalRegulations = await fetchTotalRegulations();
-        setRegulations(tempLoadedRegulations);
         setSpecieTypes(tempLoadedSpecieTypes);
         setTotalRegulations(tempLoadedTotalRegulations.length);
       } else {

@@ -148,7 +148,6 @@ function FCIPositionAdvice() {
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
       setRegulations(tempLoadedRegulations);
-
       if (!tempLoadedRegulations || tempLoadedRegulations.length == 0) {
         setErrorMessage("» There are no FCI Regulations defined, please access regulation management");
         setShowToast(true);
@@ -177,6 +176,8 @@ function FCIPositionAdvice() {
           setFlatAdvices(tempLoadedFlatAdvices);
           setPositionPercentages(tempLoadedPercentagesValued);
           setStatistics(tempLoadedStatistics);
+        } else {
+          setPositions([]);
         }
       }
     };
@@ -379,6 +380,29 @@ function FCIPositionAdvice() {
 
   return (
     <>
+     {showToast === true?
+      <CToaster classname='p-3' placement='top-end' push={toast} ref={toaster}>
+        <CToast show={true} animation={true} autohide={true} 
+              fade={true} visible={true} onClose={toggleToast}>
+          <CToastHeader closeButton>
+            <svg
+              className="rounded me-2"
+              width="20"
+              height="20"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="xMidYMid slice"
+              focusable="false"
+              role="img"
+            >
+            <rect width="100%" height="100%" fill="#FF0000"></rect>
+            </svg>
+            <div className="fw-bold me-auto">Position Bias Error Message</div>
+          </CToastHeader>
+          <CToastBody>{errorMessage}</CToastBody>
+        </CToast>
+      </CToaster>
+      : null}
+    {regulations.length > 0? (
         <CRow>
         <CCol xs={12}>
             <CCard>
@@ -422,9 +446,11 @@ function FCIPositionAdvice() {
             </CCard>
         </CCol>
     </CRow>
+    ) : null}
     {positions.length > 0? (
       <>
     <br/>
+    {regulations.length > 0? (
     <CRow>
         <CCol xs={12}>
           <CCard>
@@ -504,6 +530,7 @@ function FCIPositionAdvice() {
          </CCard>
         </CCol>
        </CRow> 
+       ) : null}
        </>
        ) : null}
     </>

@@ -426,7 +426,7 @@ const toggleToast = () => {
         </CToast>
       </CToaster>
       : null}
-      {regulations? (
+      {regulations.length > 0? (
     <CRow>
           <CCol xs={12}>
             <CCard>
@@ -568,7 +568,7 @@ const toggleToast = () => {
   {positions.length > 0? (
     <>
     <br/>
-    {regulations? (
+    {regulations.length > 0? (
     <CRow>
       <CCol xs={12}>
         <CCard>

@@ -105,8 +105,8 @@ function SpecieTypeManager() {
       if (tempLoadedSpecieTypeGroups.length == 0) {
         setErrorMessage("» There are no Groups defined: Equities, Bonds, Cedears and Cash must be created");
         setShowToast(true);
-        setSpecieTypeGroups([]);
-        setSpecies([]);
+        // setSpecieTypeGroups([]);
+        // setSpecies([]);
       } else {
         const tempLoadedSpecies = await fetchSpecies(tempLoadedSpecieTypeGroups[0].name, 0);
         const tempLoadedTotalSpecies = await fetchTotalSpecies(tempLoadedSpecieTypeGroups[0].name)
@@ -132,11 +132,7 @@ function SpecieTypeManager() {
       }
     };
     const tempLoadedSpecies = await fetchSpecies(pageNumber);
-    if (tempLoadedSpecies && tempLoadedSpecies > 0) {
-      setSpecies(tempLoadedSpecies);
-    } else {
-      setSpecies([]);
-    }
+    setSpecies(tempLoadedSpecies);
   };
 
   /** Specie Type Group */
@@ -172,6 +168,7 @@ function SpecieTypeManager() {
       const tempLoadedSpecies = await fetchSpecies(specieTypeGroupName, tempLoadedSpecieTypeGroup.fciSpecieTypes[0].name)
       const tempLoadedTotalSpecies = await fetchTotalSpecies(specieTypeGroupName);
       setCurrentGroup(tempLoadedSpecieTypeGroup);
+      setCurrentPage(1);
       setSpecieTypes(tempLoadedSpecieTypeGroup.fciSpecieTypes);
       setSpecies(tempLoadedSpecies);
       setTotalSpecies(tempLoadedTotalSpecies.length);

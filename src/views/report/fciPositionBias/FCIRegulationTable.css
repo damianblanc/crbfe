@@ -79,3 +79,12 @@ button:hover {
   color: palevioletred;
   vertical-align: top;
 }
+
+.no-border {
+  border: none !important;
+  border-collapse: collapse;
+}
+
+.no-border td, .no-border th {
+  border: none !important;
+}

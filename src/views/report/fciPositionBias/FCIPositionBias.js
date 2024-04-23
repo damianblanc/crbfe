@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CCard, CCardBody, CCol, CCardHeader, CRow, CButton } from '@coreui/react'
 
 import CIcon from '@coreui/icons-react'
@@ -24,6 +24,8 @@ import { DocsCallout } from 'src/components'
 
 import { NumericFormat } from 'react-number-format';
 import { PatternFormat } from 'react-number-format';
+
+import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
 
 import './FCIRegulationTable.css';
 
@@ -77,9 +79,7 @@ class FCIStatistic {
 }
 
 function FCIPositionBias() {
-  //const [regulationPercentageData, setRegulationPercentageData] = useState({percentages: [FCIPercentage]});
   const [regulationPercentages, setRegulationPercentages] = useState([]);
-  // const [positionPercentageData, setPositionPercentageData] = useState({ percentages: [FCIPercentage]});
   const [positionPercentages, setPositionPercentages] = useState([]);
   const [positionValueData, setPositionValueData] = useState({ values: [FCIValue]});  
   const [regulationValueData, setRegulationValueData] = useState({ values: [FCIValue]});
@@ -95,6 +95,10 @@ function FCIPositionBias() {
   const [positionOverview, setPositionOverview] = useState([]);
   const [statistics, setStatistics] = useState({FCIStatistic});
   const navigate = useNavigate();
+  const [errorMessage, setErrorMessage] = useState('');
+  const [toast, addToast] = useState(0)
+  const toaster = useRef()
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
       const isValid = isLoginTimestampValid();
@@ -104,7 +108,7 @@ function FCIPositionBias() {
     /** FCI Regulations - Symbol and Name */
     const fetchRegulations = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/symbol-name')
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/regulations')
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -163,28 +167,36 @@ function FCIPositionBias() {
 
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
-      if (tempLoadedRegulations.length > 0) {
-        const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
-        const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
-        const tempLoadedReportTypes = await fetchReportTypes();
-        let tempLoadedPercentagesValued = [];
-        if (tempLoadedPositions.length > 0) {
-           tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
-           setCurrentPositionId(tempLoadedPositions[0].id);
+      setRegulations(tempLoadedRegulations);
+      if (!tempLoadedRegulations || tempLoadedRegulations.length == 0) {
+        setErrorMessage("» There are no FCI Regulations defined, please access regulation management");
+        setShowToast(true);
+      } else {
+        if (tempLoadedRegulations && tempLoadedRegulations.length > 0) {
+          const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
+          if (tempLoadedPositions.length == 0) {
+            setErrorMessage("» FCI [" + tempLoadedRegulations[0].fciSymbol + "] has no positions informed");
+            setShowToast(true);
+          } 
+          const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
+          const tempLoadedReportTypes = await fetchReportTypes();
+          let tempLoadedPercentagesValued = [];
+          if (tempLoadedPositions.length > 0) {
+            tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+            setCurrentPositionId(tempLoadedPositions[0].id);
+          }
+          const tempLoadedStatistics = await fetchFCIStaticticsQuantity();
+          setPositions(tempLoadedPositions);
+          setRegulationPercentages(tempLoadedPercentages);
+          setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
+          setReportTypes(tempLoadedReportTypes);    
+          setPositionPercentages(tempLoadedPercentagesValued);
+          setStatistics(tempLoadedStatistics);
         }
-        const tempLoadedStatistics = await fetchFCIStaticticsQuantity();
-        
-        setRegulations(tempLoadedRegulations);
-        setPositions(tempLoadedPositions);
-        setRegulationPercentages(tempLoadedPercentages);
-        setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
-        setReportTypes(tempLoadedReportTypes);    
-        setPositionPercentages(tempLoadedPercentagesValued);
-        setStatistics(tempLoadedStatistics);
       }
     };
     setFetchedData();
-  }, []); 
+  }, []);   
 
   const processReportType = async (link) => {
     const reportTypeData = async (link) => {
@@ -201,12 +213,6 @@ function FCIPositionBias() {
       setReportTypeData(tempLoadedReportTypeData);
     };
   }
-
-  // const setCurrentSelectedFCISymbol = (fciSymbol) => {
-  //   setSelectedFCISymbol(fciSymbol);
-  //   console.log("fciSymbol = " + fciSymbol);
-  //   console.log("selectedFCISymbol = " + selectedFCISymbol);
-  // }
 
   const selectPosition = async (position) => {
     if (position !== undefined) {
@@ -231,45 +237,83 @@ function FCIPositionBias() {
     }
   };
 
-    // http://localhost:8098/api/v1/calculate-bias/fci/BTH58/position/1/regulation-valued
-    // http://localhost:8098/api/v1/calculate-bias/fci/BTH58/position/1/regulation-percentages
-    // http://localhost:8098/api/v1/calculate-bias/fci/BTH58/position/1/valued
-    // http://localhost:8098/api/v1/calculate-bias/fci/BTH58/position/1/percentages
+   /** FCI Positions bound to selected FCI Regulation */
+   const selectFciSymbol = async (fciSymbol) => {
+    setCurrentFCISymbol(fciSymbol);
+    /** FCI Positions - Id and CreatedOn */
+    const fetchPositions = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/id-created-on')
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
 
-  //   const getFCIPositionOverview = () => {
-  //     fetch('http://localhost:8098/api/v1/calculate-bias/fci/' + selectedFCISymbol + '/position/' + currentPositionId + '/refresh/true', {
-  //     method: 'GET',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //   })
-  //     .then((response) => response.json())
-  //     .then((data) => {
-  //       console.log('Backend response:', data);
-  //       setPositionOverview(data);
-  //       console.log("positionOverview = " + positionOverview);
-  //     })    
-  //     .catch((error) => {
-  //       console.error('Error sending data to the backend:', error);
-  //     });
-  // };
+     /** FCI Regulation Percentages - First Element */
+    const fetchPercentages = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/regulation-percentages')
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
 
-  // useEffect(() => {
-  // const getFCIPositionOverview = async (link) => {
-  //     try {
-  //       const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + selectedFCISymbol + '/position/' + currentPositionId + '/refresh/true')
-  //       setPositionOverview(responseData.data);
-  //     } catch (error) {
-  //       console.error('Error sending data to the backend:', error);
-  //     }
-  //   };
-  // });
-    
-  //   const setFetchedPositionOverviewData = async () => {
-  //     const tempLoadedPositionOverview = await reportPositionOverview(link);
-  //     setPositionOverview(tempLoadedPositionOverview);
-  //   };
-  // }
+    /** FCI Component - Report Types */
+    const fetchReportTypes = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/component/report')
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    /** FCI Position Overview */
+    const fetchFCIPositionPercentagesValued = async (fciSymbol, positionId) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/percentage-valued/refresh/true');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    /** FCI Report Quantity */
+    const fetchFCIStaticticsQuantity = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/statistic');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+      const setFetchedData = async (fciSymbol) => {
+        const tempLoadedPositions = await fetchPositions(fciSymbol);
+        if (tempLoadedPositions.length == 0) {
+          setErrorMessage("» FCI [" + fciSymbol + "] has no positions informed");
+          setShowToast(true);
+        } 
+        const tempLoadedPercentages = await fetchPercentages(fciSymbol);
+        const tempLoadedReportTypes = await fetchReportTypes();
+        let tempLoadedPercentagesValued = [];
+        if (tempLoadedPositions.length > 0) {
+          tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(fciSymbol, tempLoadedPositions[0].id);
+          setCurrentPositionId(tempLoadedPositions[0].id);
+        }
+        const tempLoadedStatistics = await fetchFCIStaticticsQuantity();
+        
+        setPositions(tempLoadedPositions);
+        setRegulationPercentages(tempLoadedPercentages);
+        setCurrentFCISymbol(fciSymbol);
+        setReportTypes(tempLoadedReportTypes);    
+        setPositionPercentages(tempLoadedPercentagesValued);
+        setStatistics(tempLoadedStatistics);
+      }
+   setFetchedData(fciSymbol);
+  };
 
   const getFCIPositionOverview = async (link) => {
     const reportPositionOverview = async (link) => {
@@ -316,24 +360,6 @@ function FCIPositionBias() {
       });
   };
 
-  // const getFCIPositionValued = (fciSymbol, positionId) => {
-  //   fetch('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/valued', {
-  //     method: 'GET',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //   })
-  //     .then((response) => response.json())
-  //     .then((data) => {
-  //       console.log('Backend response:', data);
-  //       setPositionValueData(data);
-  //       console.log("responseData! = " + JSON.stringify(positionValueData));
-  //     })    
-  //     .catch((error) => {
-  //       console.error('Error sending data to the backend:', error);
-  //     });
-  // };
-
   const listFCIRegulationPercentages = async () => {
     try {
       const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + currentFCISymbol + '/regulation-percentages')
@@ -342,46 +368,6 @@ function FCIPositionBias() {
       console.error('Error sending data to the backend:', error);
     }
   };
-
-  // const getFCIRegulationValued = (fciSymbol, positionId) => {
-  //   fetch('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/regulation-valued', {
-  //     method: 'GET',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //   })
-  //     .then((response) => response.json())
-  //     .then((data) => {
-  //       console.log('Backend response:', data);
-  //       setRegulationValueData(data);
-  //       console.log("responseData! = " + JSON.stringify(regulationValueData));
-  //     })    
-  //     .catch((error) => {
-  //       console.error('Error sending data to the backend:', error);
-  //     });
-  // };
-
-  // const getFCICurrentPositionData = (fciSymbol, positionId) => {
-  //   fetch('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/' + positionId, {
-  //     method: 'GET',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //   })
-  //     .then((response) => response.json())
-  //     .then((data) => {
-  //       console.log('Backend response:', data);
-  //       setCurrentPositionData(data);
-  //       console.log("responseData! = " + JSON.stringify(currentPositionData));
-  //     })    
-  //     .catch((error) => {
-  //       console.error('Error sending data to the backend:', error);
-  //     });
-  // };
-
-
-// const FCIPositionBias = () => {
-//const random = () => Math.round(Math.random() * 100)
 
 const updateFCIReportQuantity = async () => {
   let q = statistics.reportQuantity + 1;
@@ -404,8 +390,43 @@ const updateFCIReportQuantity = async () => {
   } 
 }
 
+const showToastMessage = (message) => {
+  setErrorMessage(message)
+  setShowToast(true);
+  setTimeout(() => {
+    setShowToast(false);
+  }, 10000);
+}
+
+const toggleToast = () => {
+  setShowToast(!showToast);
+};
+
   return (
     <>
+     {showToast === true?
+      <CToaster classname='p-3' placement='top-end' push={toast} ref={toaster}>
+        <CToast show={true} animation={true} autohide={true} 
+              fade={true} visible={true} onClose={toggleToast}>
+          <CToastHeader closeButton>
+            <svg
+              className="rounded me-2"
+              width="20"
+              height="20"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="xMidYMid slice"
+              focusable="false"
+              role="img"
+            >
+            <rect width="100%" height="100%" fill="#FF0000"></rect>
+            </svg>
+            <div className="fw-bold me-auto">Position Bias Error Message</div>
+          </CToastHeader>
+          <CToastBody>{errorMessage}</CToastBody>
+        </CToast>
+      </CToaster>
+      : null}
+      {regulations? (
     <CRow>
           <CCol xs={12}>
             <CCard>
@@ -418,7 +439,7 @@ const updateFCIReportQuantity = async () => {
                   <tr className="text-medium-emphasis">
                     <td width="17%" className="text-medium-emphasis small"><code>&lt;FCI Regulation Symbol&gt;</code></td>
                     <td width="30%">
-                      <select className="text-medium-emphasis large" onChange={(e) => setCurrentFCISymbol(e.target.value)}>
+                      <select className="text-medium-emphasis large" onChange={(e) => selectFciSymbol(e.target.value)}>
                         {regulations?.map((regulation) => 
                           <React.Fragment key={regulation.id}>
                           <option value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
@@ -426,8 +447,13 @@ const updateFCIReportQuantity = async () => {
                         )}
                       </select>
                     </td>
-                    <td width="11%" className="text-medium-emphasis small"><code>&lt;FCI Position&gt;</code></td>
+                    <td width="11%" className="text-medium-emphasis small">
+                    {positions.length > 0? (
+                      <code>&lt;FCI Position&gt;</code>
+                    ) : null}
+                    </td>
                     <td width="22%">
+                    {positions.length > 0? (
                       <select className="text-medium-emphasis large" 
                             onChange={(e) => selectPosition(e.target.value)}>
                         {positions !== undefined && positions.map((fciPosition) => 
@@ -436,8 +462,14 @@ const updateFCIReportQuantity = async () => {
                           </React.Fragment>
                         )}
                       </select>
+                    ) : null}
                     </td>
-                    <td width="13%" className="text-medium-emphasis small"><code>&lt;FCI Composition&gt;</code></td>
+                    <td width="13%" className="text-medium-emphasis small">
+                    {positions.length > 0? (
+                      <code>&lt;FCI Composition&gt;</code>
+                    ) : null}
+                    </td>
+                    {positions.length > 0? (
                     <td>
                       {<Popup trigger={
                         <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages()}>
@@ -457,7 +489,7 @@ const updateFCIReportQuantity = async () => {
                                     <CCardBody>
                                       <CChartPie
                                         data={{
-                                          labels: regulationPercentages?.map((p) => p.specieType),
+                                          labels: regulationPercentages?.map((p) => p.specieTypeName),
                                           datasets: [
                                             {
                                               data: regulationPercentages?.map((p) => p.percentage),
@@ -485,7 +517,7 @@ const updateFCIReportQuantity = async () => {
                                             {regulationPercentages?.map((p) => 
                                              <React.Fragment key={p.id}>
                                               <tr className="text-medium-emphasis">
-                                                <td>{p.specieType}</td>
+                                                <td>{p.specieTypeName}</td>
                                                 <td>{p.percentage}</td>
                                               </tr>
                                              </React.Fragment> 
@@ -523,6 +555,7 @@ const updateFCIReportQuantity = async () => {
                          </CRow>  }
                       </Popup>}
                     </td>
+                    ) : <td></td>}
                     
                   </tr>
                 </thead>
@@ -531,7 +564,11 @@ const updateFCIReportQuantity = async () => {
               </CCard>
         </CCol>
     </CRow>
+  ) : null}
+  {positions.length > 0? (
+    <>
     <br/>
+    {regulations? (
     <CRow>
       <CCol xs={12}>
         <CCard>
@@ -539,7 +576,7 @@ const updateFCIReportQuantity = async () => {
             <strong className="text-medium-emphasis small">Position Distribution & Details</strong>
           </CCardHeader>
           <CCardBody>
-              {regulationPercentages?.length > 0 ? (
+              {regulationPercentages?.length > 0? (
                 <CRow>
                 <CCol xs={20}>
                   <CCard>
@@ -586,6 +623,18 @@ const updateFCIReportQuantity = async () => {
                                                 datasets: [
                                                   {
                                                     label: 'FCI Position Biases Percentage',
+                                                    backgroundColor: 'grey', //'#352c2c',
+                                                    data: positionPercentages?.map((p) => p.rpercentage),
+                                                    type: "line",
+                                                    borderColor: "grey",
+                                                    fill: false,
+                                                    order: 0,
+                                                    borderWidth: 2,
+                                                    pointBackgroundColor: "#352c2c",
+                                                    lineTension: 0,
+                                                  },
+                                                  {
+                                                    label: 'FCI Position Biases Percentage',
                                                     backgroundColor: '#3c4b64',
                                                     hoverBackgroundColor: 'rgba(255,99,132,0.4)',
                                                     hoverBorderColor: 'rgba(255,99,132,1)',
@@ -625,18 +674,6 @@ const updateFCIReportQuantity = async () => {
                                                     // pointBackgroundColor: '#0b0b0b',
                                                     // order: 1,
                                                     // data: positionPercentages?.map((p) => p.rpercentage),
-                                                  },
-                                                  {
-                                                    label: 'FCI Position Biases Percentage',
-                                                    backgroundColor: 'grey', //'#352c2c',
-                                                    data: positionPercentages?.map((p) => p.rpercentage),
-                                                    type: "line",
-                                                    borderColor: "grey",
-                                                    fill: false,
-                                                    order: 0,
-                                                    borderWidth: 2,
-                                                    pointBackgroundColor: "#352c2c",
-                                                    lineTension: 0,
                                                   }
                                                 ],
                                               }}
@@ -852,7 +889,10 @@ const updateFCIReportQuantity = async () => {
         </CCard>
         </CCol>
       </CRow>
+      ) : null}
       </>
+       ) : null}
+       </>
   )
 }
 

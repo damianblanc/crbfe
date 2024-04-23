@@ -91,7 +91,7 @@ const WidgetsDropdown = () => {
       setReportsQuantity(tempLoadedSummarization.fciReportsQuantity);
       setAdvicesQuantity(tempLoadedSummarization.fciAdvicesQuantity);
       
-      setRegulationsPerMonth(tempLoadedPositionsPerMonth);
+      setRegulationsPerMonth(tempLoadedRegulationsPerMonth);
       setPositionsPerMonth(tempLoadedPositionsPerMonth);
       setReportsPerMonth(tempLoadedReportsPerMonth);
       setAdvicesPerMonth(tempLoadedAdvicesPerMonth);

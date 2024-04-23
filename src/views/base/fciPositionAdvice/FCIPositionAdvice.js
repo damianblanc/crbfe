@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton} from '@coreui/react'
@@ -13,6 +13,7 @@ import './FCIRegulationTable.css';
 
 import { isLoginTimestampValid } from '../../../utils/utils.js';
 import { useNavigate } from 'react-router-dom';
+import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
 
 class Advice {
   constructor(id, specieName, operationAdvice, quantity, price, value) {
@@ -61,6 +62,10 @@ function FCIPositionAdvice() {
   const [positionPercentages, setPositionPercentages] = useState([]);
   const [statistics, setStatistics] = useState({FCIStatistic});
   const navigate = useNavigate();
+  const [errorMessage, setErrorMessage] = useState('');
+  const [toast, addToast] = useState(0)
+  const toaster = useRef()
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     const isValid = isLoginTimestampValid();
@@ -74,7 +79,7 @@ function FCIPositionAdvice() {
     /** FCI Regulations - Symbol and Name */
     const fetchRegulations = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/symbol-name')
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/regulations')
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -142,28 +147,37 @@ function FCIPositionAdvice() {
 
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
-      if (tempLoadedRegulations.length > 0) {
-        const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
-        const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
-        setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
-        let tempLoadedAdvices = [];
-        let tempLoadedFlatAdvices = [];
-        let tempLoadedPercentagesValued = [];
-        if (tempLoadedPositions.length > 0) {
-          tempLoadedAdvices = await fetchAdvices(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
-          tempLoadedFlatAdvices = await fetchFlatAdvices(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
-          tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
-          setCurrentPositionId(tempLoadedPositions[0].id);
-        }
-        const tempLoadedStatistics = await fetchFCIStaticticsQuantity();
+      setRegulations(tempLoadedRegulations);
 
-        setRegulations(tempLoadedRegulations);
-        setPositions(tempLoadedPositions);
-        setRegulationPercentages(tempLoadedPercentages);
-        setAdvices(tempLoadedAdvices);
-        setFlatAdvices(tempLoadedFlatAdvices);
-        setPositionPercentages(tempLoadedPercentagesValued);
-        setStatistics(tempLoadedStatistics);
+      if (!tempLoadedRegulations || tempLoadedRegulations.length == 0) {
+        setErrorMessage("» There are no FCI Regulations defined, please access regulation management");
+        setShowToast(true);
+      } else {
+        if (tempLoadedRegulations && tempLoadedRegulations.length > 0) {
+          const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
+          if (tempLoadedPositions.length == 0) {
+            setErrorMessage("» FCI [" + tempLoadedRegulations[0].fciSymbol + "] has no positions informed");
+            setShowToast(true);
+          } 
+          const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
+          setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
+          let tempLoadedAdvices = [];
+          let tempLoadedFlatAdvices = [];
+          let tempLoadedPercentagesValued = [];
+          if (tempLoadedPositions.length > 0) {
+            tempLoadedAdvices = await fetchAdvices(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+            tempLoadedFlatAdvices = await fetchFlatAdvices(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+            tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+            setCurrentPositionId(tempLoadedPositions[0].id);
+          }
+          const tempLoadedStatistics = await fetchFCIStaticticsQuantity();
+          setPositions(tempLoadedPositions);
+          setRegulationPercentages(tempLoadedPercentages);
+          setAdvices(tempLoadedAdvices);
+          setFlatAdvices(tempLoadedFlatAdvices);
+          setPositionPercentages(tempLoadedPercentagesValued);
+          setStatistics(tempLoadedStatistics);
+        }
       }
     };
     setFetchedData();
@@ -253,13 +267,117 @@ function FCIPositionAdvice() {
     } 
   }
 
+  /** FCI Positions bound to selected FCI Regulation */
+  const selectFciSymbol = async (fciSymbol) => {
+    const fetchPositions = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    const fetchPositionWithFciSymbol = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+      /** FCI Regulation Percentages - First Element */
+      const fetchPercentages = async (fciSymbol) => {
+        try {
+          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/regulation-percentages')
+          return responseData.data;
+        } catch (error) {
+          console.error('Error sending data to the backend:', error);
+        }
+      };
+  
+      /** FCI Position - Advices */
+      const fetchAdvices = async (fciSymbol, positionId) => {
+        try {
+          const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/advice/criteria/price_uniformly_distribution')
+          return responseData.data;
+        } catch (error) {
+          console.error('Error sending data to the backend:', error);
+        }
+      };
+  
+      const fetchFlatAdvices = async (fciSymbol, positionId) => {
+        try {
+          const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/advice/criteria/price_uniformly_distribution/flat')
+          return responseData.data;
+        } catch (error) {
+          console.error('Error sending data to the backend:', error);
+        }
+      };
+  
+      /** FCI Position Overview */
+      const fetchFCIPositionPercentagesValued = async (fciSymbol, positionId) => {
+        try {
+          const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/percentage-valued/refresh/true');
+          return responseData.data;
+        } catch (error) {
+          console.error('Error sending data to the backend:', error);
+        }
+      };
+  
+      /** FCI Advice Quantity */
+      const fetchFCIStaticticsQuantity = async () => {
+        try {
+          const responseData = await axios.get('http://localhost:8098/api/v1/statistic');
+          return responseData.data;
+        } catch (error) {
+          console.error('Error sending data to the backend:', error);
+        }
+      };
+
+      const setFetchedData = async (fciSymbol) => {
+        setCurrentFCISymbol(fciSymbol);
+        const tempLoadedPositions = await fetchPositions(fciSymbol);
+        const tempLoadedPercentages = await fetchPercentages(fciSymbol);
+        let tempLoadedAdvices = [];
+        let tempLoadedFlatAdvices = [];
+        let tempLoadedPercentagesValued = [];
+        if (tempLoadedPositions.length == 0) {
+          setErrorMessage("» FCI [" + fciSymbol + "] has no positions informed");
+          setShowToast(true);
+        } else {
+          tempLoadedAdvices = await fetchAdvices(fciSymbol, tempLoadedPositions[0].id);
+          tempLoadedFlatAdvices = await fetchFlatAdvices(fciSymbol, tempLoadedPositions[0].id);
+          tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(fciSymbol, tempLoadedPositions[0].id);
+          setCurrentPositionId(tempLoadedPositions[0].id);
+        }
+        const tempLoadedStatistics = await fetchFCIStaticticsQuantity();
+
+        setPositions(tempLoadedPositions);
+        setRegulationPercentages(tempLoadedPercentages);
+        setAdvices(tempLoadedAdvices);
+        setFlatAdvices(tempLoadedFlatAdvices);
+        setPositionPercentages(tempLoadedPercentagesValued);
+        setStatistics(tempLoadedStatistics);
+      }
+   setFetchedData(fciSymbol);
+  };
+
+  const showToastMessage = (message) => {
+    setErrorMessage(message)
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 10000);
+  }
+  
+  const toggleToast = () => {
+    setShowToast(!showToast);
+  };
+  
+
   return (
-    // <div>
-    //   <input type="file" onChange={handleFileChange} />
-    //   <button onClick={processExcel}>Process Excel</button>
-    //   <button onClick={sendDataToBackend}>Send Data to Backend</button>
-    //   <br/>
-    //   <div>
     <>
         <CRow>
         <CCol xs={12}>
@@ -268,12 +386,12 @@ function FCIPositionAdvice() {
                 <strong className="text-medium-emphasis small">Select FCI Regulation & Position</strong>
               </CCardHeader>
               <CCardBody>
-                <table>
-                    <thead>
+                <table className="no-border" width={"100%"}>
+                    <thead className="no-border">
                         <tr className="text-medium-emphasis">
-                          <td width="17%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
-                          <td width="25%">
-                            <select className="text-medium-emphasis large" onChange={(e) => setCurrentFCISymbol(e.target.value)}>
+                          <td width="30%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
+                          <td width="30%">
+                            <select className="text-medium-emphasis large" onChange={(e) => selectFciSymbol(e.target.value)}>
                               {regulations?.map((regulation) => 
                                 <React.Fragment key={regulation.id}>
                                 <option value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
@@ -281,8 +399,13 @@ function FCIPositionAdvice() {
                               )}
                             </select>
                           </td>
-                          <td width="11%"><code>&lt;FCI Position&gt;</code></td>
-                          <td width="25%">
+                          <td width="8%">
+                            {positions.length > 0? (
+                              <code>&lt;FCI Position&gt;</code>
+                            ) : null}
+                          </td>
+                          <td width="32%">
+                            {positions.length > 0? (
                             <select className="text-medium-emphasis large" onChange={(e) => selectPosition(e.target.value)}>
                               {positions !== undefined && positions.map((fciPosition) => 
                                 <React.Fragment key={fciPosition.id}>
@@ -290,6 +413,7 @@ function FCIPositionAdvice() {
                                 </React.Fragment>
                               )}
                             </select>
+                            ) : null}
                           </td>
                         </tr>
                     </thead>
@@ -298,6 +422,8 @@ function FCIPositionAdvice() {
             </CCard>
         </CCol>
     </CRow>
+    {positions.length > 0? (
+      <>
     <br/>
     <CRow>
         <CCol xs={12}>
@@ -308,21 +434,16 @@ function FCIPositionAdvice() {
             <CCardBody>
               <p className="text-medium-emphasis small">
                 Refers to a <code>&lt;FCI Regulation Position List&gt;</code> that advices operations based on positon detected biases
-                <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => downloadExcel(advices) }>
+                <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => downloadExcel(advices) } 
+                  disabled={advices.length === 0}>
                       <CIcon icon={cilClipboard} size="xl"/>
                 </CButton>
               </p>
-              <table>
+              <table className="text-medium-emphasis small">
                 <thead>
                   <tr>
                     <th>Specie Group</th>
                     <th>Specie Type</th>
-                    {/* <tr>
-                          <th>Name</th>
-                          <th>Advice</th>
-                          <th>Quantity</th>
-                          <th>Price</th>
-                        </tr> */}
                   </tr>
                 </thead>
                 <tbody>
@@ -359,14 +480,14 @@ function FCIPositionAdvice() {
                                   <td>
                                   {(typeof advice.price === 'number')? (
                                     <div>
-                                        $ <NumericFormat displayType="text" value={parseFloat(advice.price.toPrecision(2))} thousandSeparator="." decimalSeparator=','/>
+                                        $ <NumericFormat displayType="text" value={parseFloat(advice.price.toFixed(2))} thousandSeparator="." decimalSeparator=','/>
                                     </div>
                                     ) : null}
                                   </td> 
                                   <td>
                                     {(typeof advice.value === 'number')? (
                                     <div>
-                                        $ <NumericFormat displayType="text" value={parseFloat(advice.value.toPrecision(2))} thousandSeparator="." decimalSeparator=','/>
+                                        $ <NumericFormat displayType="text" value={parseFloat(advice.value.toFixed(2))} thousandSeparator="." decimalSeparator=','/>
                                     </div>
                                     ) : null}
                                   </td> 
@@ -383,6 +504,8 @@ function FCIPositionAdvice() {
          </CCard>
         </CCol>
        </CRow> 
+       </>
+       ) : null}
     </>
   );
 }

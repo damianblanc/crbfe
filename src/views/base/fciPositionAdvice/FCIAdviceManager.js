@@ -100,6 +100,15 @@ function FCIAdviceManager() {
 
   /** FCI Positions bound to selected FCI Regulation */
   const selectFciSymbol = async (fciSymbol) => {
+    const fetchPositions = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
     const fetchPositionWithFciSymbol = async (fciSymbol) => {
       if (fciSymbol !== undefined) {
         setSelectedFCISymbol(fciSymbol);
@@ -110,6 +119,11 @@ function FCIAdviceManager() {
           console.error('Error sending data to the backend:', error);
         }
       }
+      const setFetchedData = async () => {
+        const tempLoadedPositions = await fetchPositions(fciSymbol);
+        setPositions(tempLoadedPositions);
+      };
+      setFetchedData();
   };
   
   const setFetchedData = async () => {
@@ -118,14 +132,6 @@ function FCIAdviceManager() {
   } 
   return setFetchedData;
 }; 
-  // const selectFciSymbol = (symbol) => {
-  //   if (symbol !== undefined) {
-  //     setSelectedFCISymbol(symbol);
-  //     fetch('http://localhost:8098/api/v1/fci/' + symbol + '/position')
-  //       .then((response) => response.json())
-  //       .then((json) => setPositions(json));
-  //   }
-  // };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -158,51 +164,9 @@ function FCIAdviceManager() {
     XLSX.writeFile(workbook, "Position_" + fciSymbol + "_" + timestamp + ".xlsx");
   };
 
-  //   console.log("position: " + JSON.stringify(excelData, null, 1))
-  //   fetch('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position', {
-  //     method: 'POST',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //     },
-  //     body: "{\"position\":" + JSON.stringify(excelData, null, 1) + "}",
-  //   })
-  //     .then((response) => response.json())
-  //     .then((responseData) => {
-  //         setPositions([ ...positions, responseData]);
-  //       console.log("responseData! = " + JSON.stringify(responseData));
-  //     })    
-  //     .catch((error) => {
-  //       console.error('Error sending data to the backend:', error);
-  //     });
-  //   }
-  // };
-
   const deletePosition = () => {
 
   }
-
-  const refreshPosition = (fciSymbol, positionId) => {
-    fetch('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/' + positionId + '/refresh', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-      .then((response) => response.json())
-      .then((responseData) => {
-        var d = JSON.parse(JSON.stringify(responseData));
-        const newState = positions.map(obj => {
-          if (obj.id === positionId) {
-            return {...obj, overview: d.overview, updatedMarketPosition: d.updatedMarketPosition};
-          }
-          return obj;
-        });
-        setPositions(newState);
-      })    
-      .catch((error) => {
-        console.error('Error sending data to the backend:', error);
-      });
-  };
 
   return (
     <div>
@@ -219,7 +183,6 @@ function FCIAdviceManager() {
                     <td width="20%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
                     <td width="80%">
                       <select className="text-medium-emphasis large" onChange={(e) => selectFciSymbol(e.target.value)}>
-                        {/* <option value="">&nbsp;&nbsp;&nbsp;</option> */}
                         {regulations?.map((regulation) => 
                           <React.Fragment key={regulation.id}>
                           <option value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
@@ -355,16 +318,10 @@ function FCIAdviceManager() {
                             </CCol>
                           </CRow> 
                           </Popup>
-                          <CButton shape='rounded' size='sm' color='string' onClick={() => refreshPosition(item.fciSymbol, item.id) }>
-                                <CIcon icon={cilNoteAdd} size="xl"/>
-                          </CButton>
                         </>
                       </td>
                       <td>
                         <>
-                          <CButton shape='rounded' size='sm' color='string' onClick={() => deletePosition()}>
-                                <CIcon icon={cilTrash} size="xl"/>
-                          </CButton>
                           <CButton shape='rounded' size='sm' color='string' onClick={() => downloadExcel(item.fciSymbol, item.timestamp, item.updatedMarketPosition) }>
                                 <CIcon icon={cilFile} size="xl"/>
                           </CButton>

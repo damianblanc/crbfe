@@ -93,7 +93,7 @@ function FCIRegulationPosition() {
 
     const fetchRegulations = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/symbol-name');
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/regulations');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -129,19 +129,28 @@ function FCIRegulationPosition() {
 
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
-      if (tempLoadedRegulations.length > 0) {
-        const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol, 0);
-        const tempLoadedTotalPositions = await fetchTotalPositions(tempLoadedRegulations[0].fciSymbol);
-        const tempLoadedPositionsPerMonth = await fetchPositionsPerMonth(tempLoadedRegulations[0].fciSymbol);
-        setRegulations(tempLoadedRegulations);
-        setPositions(tempLoadedPositions);
-        setSelectedFCISymbol(tempLoadedRegulations[0].fciSymbol);
-        setTotalPositions(tempLoadedTotalPositions.length);
-        setPositionsPerMonth(tempLoadedPositionsPerMonth);
-        let totalPositions = tempLoadedPositionsPerMonth.reduce((accumulator, currentValue) => accumulator + currentValue.quantity, 0);
-        setPositionQuantity(totalPositions);
-        setPosPerMonthGrowth((tempLoadedPositionsPerMonth.at(0).quantity / totalPositions) * 100);
-        setShowToast(false);
+      setRegulations(tempLoadedRegulations);
+      if (!tempLoadedRegulations || tempLoadedRegulations.length == 0) {
+        setErrorMessage("» There are no FCI Regulations defined, please access regulation management");
+        setShowToast(true);
+      } else {
+        if (tempLoadedRegulations && tempLoadedRegulations.length > 0) {
+          const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol, 0);
+          if (tempLoadedPositions && tempLoadedPositions.length == 0) {
+            setErrorMessage("» FCI [" + tempLoadedRegulations[0].fciSymbol + "] has no positions informed");
+            setShowToast(true);
+          }  
+          const tempLoadedTotalPositions = await fetchTotalPositions(tempLoadedRegulations[0].fciSymbol);
+          const tempLoadedPositionsPerMonth = await fetchPositionsPerMonth(tempLoadedRegulations[0].fciSymbol);
+          setRegulations(tempLoadedRegulations);
+          setPositions(tempLoadedPositions);
+          setSelectedFCISymbol(tempLoadedRegulations[0].fciSymbol);
+          setTotalPositions(tempLoadedTotalPositions.length);
+          setPositionsPerMonth(tempLoadedPositionsPerMonth);
+          let totalPositions = tempLoadedPositionsPerMonth.reduce((accumulator, currentValue) => accumulator + currentValue.quantity, 0);
+          setPositionQuantity(totalPositions);
+          setPosPerMonthGrowth((tempLoadedPositionsPerMonth.at(0).quantity / totalPositions) * 100);
+        }
       }
     };
     setFetchedData();
@@ -274,6 +283,10 @@ function FCIRegulationPosition() {
       const tempLoadedPositionsPerPage = await fetchPositionsPerPage(fciPositionId);
       const tempLoadedPositionsPerMonth = await fetchPositionsPerMonth(fciSymbol);
       setPositionsPerMonth(tempLoadedPositionsPerMonth);
+      if (tempLoadedPositionsPerPage && tempLoadedPositionsPerPage.length == 0) {
+        setErrorMessage("» FCI [" + fciSymbol + "] has no positions informed");
+        setShowToast(true);
+      }  
       let totalPositions = tempLoadedPositionsPerMonth.reduce((accumulator, currentValue) => accumulator + currentValue.quantity, 0);
       setPositionQuantity(totalPositions);
       setPositions(tempLoadedPositionsPerPage);
@@ -576,6 +589,7 @@ function FCIRegulationPosition() {
         : null}
 
       <div>
+      {regulations? (
         <CRow>
         <CCol xs={12}>
           <CCard>
@@ -766,6 +780,7 @@ function FCIRegulationPosition() {
          </CCard>
         </CCol>
        </CRow> 
+      ) : null}
       </div>   
     </div>
     </>

@@ -314,7 +314,7 @@ function SpecieTypeManager() {
                       <p>
                         &nbsp;<code>*&nbsp;</code>Updatable property refers to the ability to take current prices from market and apply them to a position
                       </p>
-                  ) : (null)}
+                  ) : <td></td>}
                   </tr>
                 </table>
               </CCardBody>

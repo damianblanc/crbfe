@@ -310,6 +310,7 @@ function FCIPositionBias() {
         setCurrentFCISymbol(fciSymbol);
         setReportTypes(tempLoadedReportTypes);    
         setPositionPercentages(tempLoadedPercentagesValued);
+        updateFCIReportQuantity();
         setStatistics(tempLoadedStatistics);
       }
    setFetchedData(fciSymbol);
@@ -456,7 +457,7 @@ const toggleToast = () => {
                     {positions.length > 0? (
                       <select className="text-medium-emphasis large" 
                             onChange={(e) => selectPosition(e.target.value)}>
-                        {positions !== undefined && positions.map((fciPosition) => 
+                        {positions !== undefined && positions.slice(0, 10).map((fciPosition) => 
                           <React.Fragment key={fciPosition.id}>
                           <option value={fciPosition.id}>#{fciPosition.id} - {fciPosition.timestamp}&nbsp;&nbsp;&nbsp;</option>
                           </React.Fragment>

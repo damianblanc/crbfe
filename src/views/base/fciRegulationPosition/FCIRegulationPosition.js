@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
-import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter, cilArrowTop, cilOptions } from '@coreui/icons';
+import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter, cilArrowTop, cilOptions, cilMagnifyingGlass } from '@coreui/icons';
 import { CChartLine } from '@coreui/react-chartjs'
 
 import CIcon from '@coreui/icons-react'
@@ -31,7 +31,6 @@ import {
 import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
 
 import { getStyle } from '@coreui/utils'
-
 import PropTypes from 'prop-types';
 
 class FCIPositionCompositionVO {
@@ -57,6 +56,7 @@ class FCIRegulationSymbolName {
 function FCIRegulationPosition() {
   const [regulations, setRegulations] = useState([{FCIRegulationSymbolName}]);
   const [positions, setPositions] = useState([{id : '', fciSymbol: '', jsonPosition : '', updatedMarketPosition: '', overview: '', composition: [FCIPositionCompositionVO]}]);
+  const [comboPositions, setComboPositions] = useState([{id : '', fciSymbol: '', jsonPosition : '', updatedMarketPosition: '', overview: '', composition: [FCIPositionCompositionVO]}]);
   const [excelData, setExcelData] = useState([]);
   const [excelFile, setExcelFile] = useState(null);
   const [selectedFCISymbol, setSelectedFCISymbol] = useState('');
@@ -67,8 +67,6 @@ function FCIRegulationPosition() {
   const positionsPerPage = 5;
   
   const [searchCurrentPositionId, setSearchCurrentPositionId] = useState(1);
-  const [searchCurrentFromDate, setSearchCurrentFromDate] = useState('');
-  const [searchCurrentToDate, setSearchCurrentToDate] = useState('');
 
   const [validationError, setValidationError] = useState('');
   const [positionIdentifier, setPositionIdentifier] = useState('');
@@ -83,6 +81,15 @@ function FCIRegulationPosition() {
   const [toast, addToast] = useState(0)
   const toaster = useRef()
   const [showToast, setShowToast] = useState(false);
+
+  const [searchFromDate, setSearchFromDate] = useState('');
+  const [searchToDate, setSearchToDate] = useState('');
+
+  const [currentPositionIdInFilter, setCurrentPositionIdInFilter] = useState(0);
+
+  const minPositionId = Math.min(...positions.map(position => position.id));
+  const maxPositionId = Math.max(...positions.map(position => position.id));
+
 
   /** FCI Regulations - Symbol and Name */
   useEffect(() => {
@@ -144,6 +151,7 @@ function FCIRegulationPosition() {
           const tempLoadedPositionsPerMonth = await fetchPositionsPerMonth(tempLoadedRegulations[0].fciSymbol);
           setRegulations(tempLoadedRegulations);
           setPositions(tempLoadedPositions);
+          setComboPositions(tempLoadedPositions);
           setSelectedFCISymbol(tempLoadedRegulations[0].fciSymbol);
           setTotalPositions(tempLoadedTotalPositions.length);
           setPositionsPerMonth(tempLoadedPositionsPerMonth);
@@ -177,6 +185,7 @@ function FCIRegulationPosition() {
     };
     const tempLoadedPositions = await fetchPositions(pageNumber);
     setPositions(tempLoadedPositions);
+    setComboPositions(tempLoadedPositions);
   };
 
   const setFetchedData = async () => {
@@ -213,7 +222,6 @@ function FCIRegulationPosition() {
       setShowToast(false);
       return response.data;
     } catch (error) {
-      // console.error('Error sending data to the backend:', error);
       setErrorMessage(error.response.data.message);
       setShowToast(true);
       console.log("showToast = ", showToast);
@@ -255,10 +263,12 @@ function FCIRegulationPosition() {
   /** FCI Positions bound to selected FCI Regulation */
   const selectFciSymbol = async (fciSymbol) => {
     setPositions([]);
+    setComboPositions([]);
     setValidationError('');
     setExcelFile(null);
     setSelectedFCISymbol(fciSymbol);
     setPositionIdentifier('');
+    setTotalPositions(0);
    
     const fetchPositionsPerPage = async () => {
       try {
@@ -279,17 +289,29 @@ function FCIRegulationPosition() {
       }
     };
 
+     const fetchTotalPositions = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
     const setFetchedData = async (fciPositionId) => {
       const tempLoadedPositionsPerPage = await fetchPositionsPerPage(fciPositionId);
       const tempLoadedPositionsPerMonth = await fetchPositionsPerMonth(fciSymbol);
+      const tempLoadedTotalPositions = await fetchTotalPositions(fciSymbol);
       setPositionsPerMonth(tempLoadedPositionsPerMonth);
       if (tempLoadedPositionsPerPage && tempLoadedPositionsPerPage.length == 0) {
         setErrorMessage("» FCI [" + fciSymbol + "] has no positions informed");
         setShowToast(true);
+        setRegulationSymbol('');
       }  
       let totalPositions = tempLoadedPositionsPerMonth.reduce((accumulator, currentValue) => accumulator + currentValue.quantity, 0);
       setPositionQuantity(totalPositions);
       setPositions(tempLoadedPositionsPerPage);
+      setTotalPositions(tempLoadedTotalPositions.length);
     }
    setFetchedData();
   }  
@@ -352,18 +374,18 @@ function FCIRegulationPosition() {
     setPositionIdentifier(positionId);
     setSearchCurrentPositionId(positionId);
     setSearchFiltered(!searchFiltered);
-    console.log("searchCurrentPositionId = " + searchCurrentPositionId);
   }
 
-  const handleSearchDateFromChange = (fromDate) => {
-    setSearchCurrentFromDate(fromDate);
+  const filterPositionListTable = () => {
+    if (currentPositionIdInFilter) {
+      const filteredPositions = positions.filter(position => position.id.toString() === currentPositionIdInFilter);
+      setPositions(filteredPositions);
+    } else {
+      setPositions(comboPositions);
+    }
   }
 
-  const handleSearchDateToChange = (fromDate) => {
-    setSearchCurrentToDate(fromDate);
-  }
-
-  const filterPositionList = async () => {
+  const filterPositionListSearch = async () => {
     const fetchFilteredPosition = async () => {
       try {
         if (searchCurrentPositionId !== "") {
@@ -392,7 +414,62 @@ function FCIRegulationPosition() {
   const toggleToast = () => {
     setShowToast(!showToast);
   };
+
+  const handleSearchDateFromChange = (fromDate) => {
+    setSearchFromDate(fromDate);
+  };
+
+  const handleSearchDateToChange = (toDate) => {
+    setSearchToDate(toDate);
+  };
   
+  const today = new Date().toISOString().split('T')[0];
+
+  useEffect(() => {
+    const selectedFCISymbol = regulations.find(regulation => regulation.fciSymbol === regulationSymbol);
+    if (selectedFCISymbol) {
+      setSelectedFCISymbol(selectedFCISymbol.fciSymbol);
+      selectFciSymbol(selectedFCISymbol.fciSymbol);
+    }
+  }, [regulationSymbol, regulations]);
+
+  const searchPositionsByDate = async () => {
+    const fetchFilteredPosition = async () => {
+      try {
+          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + searchFromDate + '/to/' + searchToDate + '/page/0/page_size/' + positionsPerPage);
+          return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    }
+
+    const fetchTotalFilteredPosition = async () => {
+      try {
+          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + searchFromDate + '/to/' + searchToDate + '/page/0');
+          return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    }
+    const tempLoadedPositions = await fetchFilteredPosition();
+    const tempLoadedTotalPositions = await fetchTotalFilteredPosition();
+    setPositions(tempLoadedPositions);
+    setTotalPositions(tempLoadedTotalPositions.length);
+  };
+
+  const isValidPositionId = (value, positions) => {
+    return /^[0-9]+$/.test(value);
+  }
+
+  const isPositionInTable = (value, positions) => {
+    const positionId = Number(value);
+    return positions.some(position => position.id.toString() === value);
+  }
+
+  const setPositionsForDropdown = () => {
+    setPositions(comboPositions);
+  };
+
   return (
     <>
     <div>
@@ -413,7 +490,7 @@ function FCIRegulationPosition() {
             <rect width="100%" height="100%" fill="#FF0000"></rect>
             </svg>
             <div className="fw-bold me-auto">Position Error Message</div>
-            <small>A second ago</small>
+            {/* <small>A second ago</small> */}
           </CToastHeader>
           <CToastBody>{errorMessage}</CToastBody>
         </CToast>
@@ -432,29 +509,25 @@ function FCIRegulationPosition() {
                   <td>
                     <table className='table-head-1'>
                       <tr>
-                        <td width="30%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
+                        <td width="20%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
                         <td width="35%">
-                          <select className="text-medium-emphasis large" 
+                          <select className="text-medium-emphasis small"
                             onChange={(e) => selectFciSymbol(e.target.value)} style={{width: "100%"}}>
                               {regulations?.map((regulation) => 
                                 <React.Fragment key={regulation.id}>
-                                <option value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
+                                <option selected={regulation.fciSymbol === regulationSymbol}
+                                 value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
                                 </React.Fragment>
                               )}
                           </select>
                         </td>
                         <td width="3%"></td>
-                        <td  className="text-medium-emphasis small" width="10%">Symbol</td>
-                        <td width="12%">
+                        <td className="text-medium-emphasis small" width="10%">Symbol</td>
+                        <td width="20%" className="text-medium-emphasis small">
                           <input id="regulationSymbol" type="text" className="text-medium-emphasis small"
-                              style={{width: "100%"}}
-                              onChange={(e) => handleSearchPositionIdChange(e.target.value)} //TODO: Change FCI Symbol
+                              // style={{width: "100%"}}
+                              onChange={(e) => setRegulationSymbol(e.target.value)}
                               value={regulationSymbol}/>
-                        </td>
-                        <td>
-                          <CButton shape='rounded' size='sm' color='string' onClick={() => selectFciSymbol()}>
-                                <CIcon icon={cilListFilter} size="xl"/>
-                          </CButton>
                         </td>
                       </tr>
                     </table>
@@ -577,7 +650,7 @@ function FCIRegulationPosition() {
       ) : null}
       <br/>
       <div>
-      {regulations.length > 0? (
+      {regulations.length? (
         <CRow>
         <CCol xs={12}>
           <CCard>
@@ -587,60 +660,85 @@ function FCIRegulationPosition() {
             <CCardBody>
               <p>
                 <table>
-                {totalPositions > 0? (
                   <tr>
-                    <td width="12%">Position Identifier #</td>
-                    <td width="20%">
-                    {/* <select className="text-medium-emphasis large">
-                        {positions !== undefined && positions.map((fciPosition) => 
-                          <React.Fragment key={fciPosition.id}>
-                          <option value={fciPosition.id}>#{fciPosition.id} - {fciPosition.timestamp}&nbsp;&nbsp;&nbsp;</option>
-                          </React.Fragment>
-                        )}
-                      </select> */}
-                       <input id="positionIdentifier" type="number" min="1"
-                          style={{width: "100%"}}
-                          onChange={(e) => handleSearchPositionIdChange(e.target.value)}
-                          value={positionIdentifier}/>
+                    <td className="text-medium-emphasis small" width="15%">Position Identifier #</td>
+                    <td className="text-medium-emphasis large" width="8%">
+                         <select className="text-medium-emphasis large" id="positionIdentifier"
+                            onChange={(e) => setCurrentPositionIdInFilter(e.target.value)}
+                            style={{width: "100%"}}>
+                            <option/>
+                            {positions?.map((position) => 
+                              <React.Fragment key={position.id}>
+                                <option value={position.id}>{position.id}</option>
+                              </React.Fragment>
+                            )}
+                          </select>
                     </td>
+                    <td width="1%"/>
                     <td>
-                      <CButton shape='rounded' size='sm' color='string' onClick={() => filterPositionList()}>
-                            <CIcon icon={cilListFilter} size="xl"/>
+                      <CButton shape='rounded' size='sm' color='string' onClick={() => filterPositionListTable()}>
+                            <CIcon className="text-medium-emphasis small" icon={cilListFilter} size="xl"/>
                       </CButton>
                     </td>
-                    {/* <td width="5%"></td>
-                    <td width="20%">Date From</td>
+                    <td width="3%"/>
+                    <td width="8%" className="text-medium-emphasis small">Date From</td>
+                    <td width="1%"/>
+                    <td width="12%">
+                      <input 
+                        type="date"
+                        className="text-medium-emphasis small"
+                        onChange={(e) => handleSearchDateFromChange(e.target.value)}
+                        value={searchFromDate}
+                        max={searchToDate}
+                      />
+                    </td>
+                    <td width="2%"></td>
+                    <td width="7%" className="text-medium-emphasis small">Date To</td>
+                    <td width="10%">
+                      <input
+                        type="date"
+                        className="text-medium-emphasis small"
+                        onChange={(e) => handleSearchDateToChange(e.target.value)}
+                        value={searchToDate}
+                        min={searchFromDate}
+                        max={today}
+                      />
+                    </td>
+                    <td width="2%"></td>
                     <td>
-                      <input type="text" className="text-medium-emphasis small"
-                          onChange={(e) => handleSearchDateFromChange(e.target.value)}/>
+                      <CButton shape='rounded' size='sm' color='string' onClick={() => searchPositionsByDate()}>
+                            <CIcon className="text-medium-emphasis small" icon={cilMagnifyingGlass} size="xl"/>
+                      </CButton>
                     </td>
                     <td width="5%"></td>
-                    <td width="20%">Date To</td>
-                    <td width="10%"> */}
-                      {/* <CDateRangePicker startDate="2022/08/03" endDate="2022/08/17" label="Date range" locale="en-US" /> */}
-                    {/* </td> */}
-                      {/* <input type="text" className="text-medium-emphasis small"
-                          onChange={(e) => handleSearchDateToChange(e.target.value)}/> */}
-                  
                     <td>
-                    <CPagination align="end" size="sm" className="text-medium-emphasis small"
-                    activePage = {currentPage}
-                    pages = {Math.floor(totalPositions / positionsPerPage)}
-                    onActivePageChange={handlePageChange}>
-                      {currentPage === 1? (
-                        <CPaginationItem disabled>«</CPaginationItem> ) 
-                      : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
-                     
-                      <CPaginationItem active className="text-medium-emphasis small" 
-                          onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
-                     
-                      {currentPage === Math.ceil(totalPositions / positionsPerPage) || searchFiltered ? (
-                        <CPaginationItem disabled>»</CPaginationItem>) 
-                      : (<CPaginationItem className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage + 1)}>»</CPaginationItem>)}
-                    </CPagination>
-                </td>
+                      <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+                        {totalPositions > 0? (  
+                          <CPagination valign="end" align="end" size="sm" 
+                          activePage = {currentPage}
+                          pages = {Math.floor(totalPositions / positionsPerPage)}
+                          onActivePageChange={handlePageChange}>
+                            {currentPage === 1? (
+                              <CPaginationItem disabled>«</CPaginationItem> ) 
+                            : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
+                          
+                            <CPaginationItem style={{ backgroundColor: 'lightcyan' }}
+                                onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
+                            {currentPage === Math.ceil(totalPositions / positionsPerPage)? (
+                            <CPaginationItem style={{ backgroundColor: 'lightgrey' }}>{Math.ceil(totalPositions / positionsPerPage)}</CPaginationItem>
+                            ) :
+                            (<CPaginationItem style={{ backgroundColor: 'lightcyan' }}>{Math.ceil(totalPositions / positionsPerPage)}</CPaginationItem>)}
+                            
+                            <CPaginationItem style={{ backgroundColor: 'lightblue' }} >{totalPositions < positionsPerPage? positions.length : totalPositions}</CPaginationItem>
+
+                            {totalPositions === 0 || currentPage === Math.ceil(totalPositions / positionsPerPage) ? (
+                              <CPaginationItem disabled>»</CPaginationItem>) 
+                            : (<CPaginationItem className={"custom-pagination-item"} onClick={() => handlePageChange(currentPage + 1)}>»</CPaginationItem>)}
+                          </CPagination>)
+                        : null}
+                      </div>
+                   </td>
                   </tr>
-                  ) : null}
                 </table>
               </p>
               <table className="text-medium-emphasis small">
@@ -692,10 +790,9 @@ function FCIRegulationPosition() {
                                           <CCardBody>
                                             <table>
                                               <thead>
-                                                <tr>
+                                                <tr className="text-medium-emphasis small">
                                                   <th>Specie Group</th>
                                                   <th>Specie Type</th>
-                                                  {/* <th>Specie Name</th> */}
                                                   <th>Symbol</th>
                                                   <th>Market Price</th>
                                                   <th>Quantity</th>
@@ -708,7 +805,6 @@ function FCIRegulationPosition() {
                                                     <tr>
                                                       <td>{specie.specieGroup}</td>
                                                       <td>{specie.specieType}</td>
-                                                      {/* <td>{specie.specieName}</td> */}
                                                       <td>{specie.specieSymbol}</td>
                                                       <td>
                                                         <div>

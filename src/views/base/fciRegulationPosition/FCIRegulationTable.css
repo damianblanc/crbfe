@@ -95,3 +95,23 @@ button:hover {
 .pop-up {
   width: 20%;
 }
+
+.custom-first-page-item {
+  background-color: lightblue !important;
+}
+
+.custom-prev-item {
+  background-color: lightgreen !important;
+}
+
+.custom-page-item {
+  background-color: lightyellow !important;
+}
+
+.custom-next-item {
+  background-color: lightcoral !important;
+}
+
+.custom-last-page-item {
+  background-color: lightsalmon !important;
+}

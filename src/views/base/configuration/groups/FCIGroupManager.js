@@ -231,8 +231,8 @@ function FCIGroupManager() {
               <table className="text-medium-emphasis small">
                <thead>
                   <tr>
-                    <td width="12%"><strong><code>&lt;Specie Type Group&gt;</code></strong></td>
-                    <td width="80%">
+                    <td width="20%"><strong><code>&lt;Specie Type Group&gt;</code></strong></td>
+                    <td width="20%">
                       <select className="text-medium-emphasis large" onChange={(e) => selectSpecieTypeGroup(e.target.value)}>
                         {Object.prototype.toString.call(specieTypeGroups) === '[object Array]' && specieTypeGroups?.map((group) => 
                           <React.Fragment key={group.id}>
@@ -240,9 +240,11 @@ function FCIGroupManager() {
                           </React.Fragment>
                         )}
                       </select>
-                      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{currentGroup.description}
                     </td>
-                    <td>{currentGroup.updatable? (<strong><code>Updatable</code></strong>) 
+                    <td width="50%">
+                    {currentGroup.description}
+                    </td>
+                    <td width="10%">{currentGroup.updatable? (<strong><code>Updatable</code></strong>) 
                                                : (<strong><code>Not Updatable</code></strong>)}
                     </td>
                   </tr>
@@ -271,10 +273,10 @@ function FCIGroupManager() {
         <CCol xs={12}>
           <CCard>
             <CCardHeader className="text-medium-emphasis small">
-              <strong>Specie Types in Group &nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong>
+              <strong className="text-medium-emphasis large">Specie Types in Group &nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong>
               <Popup trigger={
                 <CButton shape='rounded' size='xxl' color='string'>
-                    <CIcon icon={cilClipboard} size="xl"/>
+                    <CIcon className="text-medium-emphasis small" icon={cilClipboard} size="xl"/>
                 </CButton>} position="right">
                   {<CRow>
                       <CCol xs={30}>
@@ -302,9 +304,9 @@ function FCIGroupManager() {
                 </Popup>
             </CCardHeader>
             <CCardBody>
-              <table>
+              <table className="text-medium-emphasis small">
                 <thead>
-                  <tr className="text-medium-emphasis">
+                  <tr className="text-medium-emphasis small">
                     <th width="5%">#</th>
                     <th>Name</th>
                     <th>Description</th>
@@ -322,7 +324,7 @@ function FCIGroupManager() {
                       <td>{item.specieQuantity}</td>
                       <td>
                         <CButton component="a" color="string" role="button" size='sm' onClick={() => deleteSpecieType(item.id, item.name)}>
-                            <CIcon icon={cilTrash} size="xl"/>
+                            <CIcon className="text-medium-emphasis small" icon={cilTrash} size="xl"/>
                         </CButton>
                       </td>
                     </tr>

@@ -333,19 +333,17 @@ function FCIRegulationTable() {
     };
 
     const setFetchedData = async () => {
+      const tempLoadedSpecieTypes = await fetchSpecieTypes();
+      setSpecieTypes(tempLoadedSpecieTypes);
       const tempLoadedRegulations = await fetchRegulations();
-      setRegulations(tempLoadedRegulations);
       if (!tempLoadedRegulations || tempLoadedRegulations.length == 0) {
         setErrorMessage("» There are no FCI Regulations defined");
         setShowToast(true);
       } 
       if (tempLoadedRegulations.length > 0) {
-        const tempLoadedSpecieTypes = await fetchSpecieTypes(tempLoadedRegulations[0].fciSymbol);
+        setRegulations(tempLoadedRegulations);
         const tempLoadedTotalRegulations = await fetchTotalRegulations();
-        setSpecieTypes(tempLoadedSpecieTypes);
         setTotalRegulations(tempLoadedTotalRegulations.length);
-      } else {
-        setRegulations([]);
       }
     };
     setFetchedData();
@@ -702,7 +700,9 @@ function FCIRegulationTable() {
                               if (c.specieTypeId !== undefined) {
                                 return (
                                   <React.Fragment key={c.specieTypeId}>
-                                    {findSpecieTypeById(c.specieTypeId).name}{": "}
+                                    {specieTypes.length > 0? (
+                                    findSpecieTypeById(c.specieTypeId).name + ": "
+                                    ) :null}
                                     <b>
                                       <NumericFormat displayType="text" value={Number(c.percentage).toFixed(2)} suffix="%" />
                                     </b>
@@ -716,7 +716,7 @@ function FCIRegulationTable() {
                         <td>
                         {/* <CButton onClick={() => setVisible(!visible)}>Launch demo modal</CButton> */}
                           <CButton shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages(row.fciSymbol)}>
-                            <CIcon icon={cilFile} size="xl"/>
+                            <CIcon className="text-medium-emphasis small" icon={cilFile} size="xl"/>
                         </CButton>
                         <div>{() => listFCIRegulationPercentages(row.fciSymbol)}</div>
                         <CModal

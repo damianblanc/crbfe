@@ -56,6 +56,7 @@ class FCIRegulationSymbolName {
 function FCIRegulationPosition() {
   const [regulations, setRegulations] = useState([{FCIRegulationSymbolName}]);
   const [positions, setPositions] = useState([{id : '', fciSymbol: '', jsonPosition : '', updatedMarketPosition: '', overview: '', composition: [FCIPositionCompositionVO]}]);
+  const [oldestPoition, setOldestPosition] = useState();
   const [comboPositions, setComboPositions] = useState([{id : '', fciSymbol: '', jsonPosition : '', updatedMarketPosition: '', overview: '', composition: [FCIPositionCompositionVO]}]);
   const [excelData, setExcelData] = useState([]);
   const [excelFile, setExcelFile] = useState(null);
@@ -64,6 +65,7 @@ function FCIRegulationPosition() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPositions, setTotalPositions] = useState(0);
   const [searchFiltered, setSearchFiltered] = useState(false);
+  const [searchFilteredPosition, setSearchFilteredPosition] = useState(false);
   const positionsPerPage = 5;
   
   const [searchCurrentPositionId, setSearchCurrentPositionId] = useState(1);
@@ -84,6 +86,9 @@ function FCIRegulationPosition() {
 
   const [searchFromDate, setSearchFromDate] = useState('');
   const [searchToDate, setSearchToDate] = useState('');
+
+  const [searchFromDateAfter, setSearchFromDateAfter] = useState('');
+  const [searchToDateAfter, setSearchToDateAfter] = useState('');
 
   const [currentPositionIdInFilter, setCurrentPositionIdInFilter] = useState(0);
 
@@ -134,6 +139,15 @@ function FCIRegulationPosition() {
       }
     };
 
+    const fetchOldestPosition = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/oldest');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
       setRegulations(tempLoadedRegulations);
@@ -149,8 +163,10 @@ function FCIRegulationPosition() {
           }  
           const tempLoadedTotalPositions = await fetchTotalPositions(tempLoadedRegulations[0].fciSymbol);
           const tempLoadedPositionsPerMonth = await fetchPositionsPerMonth(tempLoadedRegulations[0].fciSymbol);
+          const tempLoadedOldestPostion = await fetchOldestPosition(tempLoadedRegulations[0].fciSymbol);
           setRegulations(tempLoadedRegulations);
           setPositions(tempLoadedPositions);
+          setOldestPosition(tempLoadedOldestPostion)
           setComboPositions(tempLoadedPositions);
           setSelectedFCISymbol(tempLoadedRegulations[0].fciSymbol);
           setTotalPositions(tempLoadedTotalPositions.length);
@@ -174,10 +190,11 @@ function FCIRegulationPosition() {
   const handlePageChange = async (pageNumber) => {
     setCurrentPage(pageNumber);
     let pPage = pageNumber - 1;
-    console.log("url: http://localhost:8098/api/v1/fci/" + selectedFCISymbol + "/position/page/" + pPage + '/page_size/' + positionsPerPage);
     const fetchPositions = async (pageNumber) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/page/' + pPage + '/page_size/' + positionsPerPage);
+        const responseData = searchFiltered? 
+        (await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + searchFromDateAfter + '/to/' + searchToDateAfter + '/page/' + pPage + '/page_size/' + positionsPerPage)) 
+        : (await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/page/' + pPage + '/page_size/' + positionsPerPage));
         return responseData.data;
       } catch (error) {
         console.error('#1 - Error receiving specieTypeAssociation:', error);
@@ -298,6 +315,15 @@ function FCIRegulationPosition() {
       }
     };
 
+    const fetchOldestPosition = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/oldest');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
     const setFetchedData = async (fciPositionId) => {
       const tempLoadedPositionsPerPage = await fetchPositionsPerPage(fciPositionId);
       const tempLoadedPositionsPerMonth = await fetchPositionsPerMonth(fciSymbol);
@@ -308,9 +334,11 @@ function FCIRegulationPosition() {
         setShowToast(true);
         setRegulationSymbol('');
       }  
+      const tempLoadedOldestPostion = await fetchOldestPosition(fciSymbol);
       let totalPositions = tempLoadedPositionsPerMonth.reduce((accumulator, currentValue) => accumulator + currentValue.quantity, 0);
       setPositionQuantity(totalPositions);
       setPositions(tempLoadedPositionsPerPage);
+      setOldestPosition(tempLoadedOldestPostion);
       setTotalPositions(tempLoadedTotalPositions.length);
     }
    setFetchedData();
@@ -380,8 +408,11 @@ function FCIRegulationPosition() {
     if (currentPositionIdInFilter) {
       const filteredPositions = positions.filter(position => position.id.toString() === currentPositionIdInFilter);
       setPositions(filteredPositions);
+      setSearchFilteredPosition(true);
     } else {
       setPositions(comboPositions);
+      setSearchFilteredPosition(false);
+      setCurrentPositionIdInFilter(0);
     }
   }
 
@@ -433,10 +464,27 @@ function FCIRegulationPosition() {
     }
   }, [regulationSymbol, regulations]);
 
-  const searchPositionsByDate = async () => {
-    const fetchFilteredPosition = async () => {
+  const searchPositionsByDate = async (pageNumber) => {
+    
+    let fromDate;
+    let toDate;
+    if (searchFromDate == "") {
+      fromDate = oldestPoition.timestamp.split(" ")[0];
+      setSearchFromDate(fromDate);
+    } else {
+      fromDate = searchFromDate;
+    }
+    if (searchToDate == "") {
+      let todayDate = new Date().toISOString().split('T')[0];
+      setSearchToDate(todayDate);
+      toDate = todayDate;
+    } else {
+      toDate = searchToDate;
+    }
+
+    const fetchFilteredPosition = async (pageNumber) => {
       try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + searchFromDate + '/to/' + searchToDate + '/page/0/page_size/' + positionsPerPage);
+          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + fromDate + '/to/' + toDate + '/page/' + pageNumber + '/page_size/' + positionsPerPage);
           return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -445,16 +493,19 @@ function FCIRegulationPosition() {
 
     const fetchTotalFilteredPosition = async () => {
       try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + searchFromDate + '/to/' + searchToDate + '/page/0');
+          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + fromDate + '/to/' + toDate + '/page/0');
           return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
       }
     }
-    const tempLoadedPositions = await fetchFilteredPosition();
+    const tempLoadedPositions = await fetchFilteredPosition(pageNumber);
     const tempLoadedTotalPositions = await fetchTotalFilteredPosition();
     setPositions(tempLoadedPositions);
     setTotalPositions(tempLoadedTotalPositions.length);
+    setSearchFiltered(true);
+    setSearchFromDateAfter(searchFromDate);
+    setSearchToDateAfter(searchToDate);
   };
 
   const isValidPositionId = (value, positions) => {
@@ -525,7 +576,6 @@ function FCIRegulationPosition() {
                         <td className="text-medium-emphasis small" width="10%">Symbol</td>
                         <td width="20%" className="text-medium-emphasis small">
                           <input id="regulationSymbol" type="text" className="text-medium-emphasis small"
-                              // style={{width: "100%"}}
                               onChange={(e) => setRegulationSymbol(e.target.value)}
                               value={regulationSymbol}/>
                         </td>
@@ -589,9 +639,9 @@ function FCIRegulationPosition() {
                               datasets: [
                                 {
                                   label: 'Positions per Month',
-                                  backgroundColor: '#3A3B3C',
-                                  borderColor: '#3A3B3C',
-                                  pointBackgroundColor: getStyle('--cui-info'),
+                                  backgroundColor: 'grey',
+                                  borderColor: 'grey',
+                                  pointBackgroundColor: 'white',
                                   data: positionsPerMonth?.map((e) => e.quantity),
                                 },
                               ],
@@ -601,6 +651,21 @@ function FCIRegulationPosition() {
                                 legend: {
                                   display: false,
                                 },
+                                // tooltip: { // Add the tooltip object here
+                                //   backgroundColor: 'blue', // Set the background color to black
+                                //   bodyColor: 'blue', // Set the text color to white
+                                //   titleColor: 'white', // Set the title color to white
+                                //   titleFont: {
+                                //     size: 12, // Set the title font size
+                                //   },
+                                //   bodyFont: {
+                                //     size: 10, // Set the body font size
+                                //   },
+                                //   callbacks: {
+                                //     title: () => '', // Hide the tooltip title
+                                //     label: (context) => `Quantity: ${context.parsed.y}`, // Set the tooltip label
+                                //   },
+                                // },
                               },
                               maintainAspectRatio: false,
                               scales: {
@@ -706,7 +771,7 @@ function FCIRegulationPosition() {
                     </td>
                     <td width="2%"></td>
                     <td>
-                      <CButton shape='rounded' size='sm' color='string' onClick={() => searchPositionsByDate()}>
+                      <CButton shape='rounded' size='sm' color='string' onClick={() => searchPositionsByDate(0)}>
                             <CIcon className="text-medium-emphasis small" icon={cilMagnifyingGlass} size="xl"/>
                       </CButton>
                     </td>
@@ -718,7 +783,7 @@ function FCIRegulationPosition() {
                           activePage = {currentPage}
                           pages = {Math.floor(totalPositions / positionsPerPage)}
                           onActivePageChange={handlePageChange}>
-                            {currentPage === 1? (
+                            {currentPage === 1 || searchFilteredPosition === true? (
                               <CPaginationItem disabled>«</CPaginationItem> ) 
                             : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
                           
@@ -731,7 +796,7 @@ function FCIRegulationPosition() {
                             
                             <CPaginationItem style={{ backgroundColor: 'lightblue' }} >{totalPositions < positionsPerPage? positions.length : totalPositions}</CPaginationItem>
 
-                            {totalPositions === 0 || currentPage === Math.ceil(totalPositions / positionsPerPage) ? (
+                            {totalPositions === 0 || currentPage === Math.ceil(totalPositions / positionsPerPage) || searchFilteredPosition === true? (
                               <CPaginationItem disabled>»</CPaginationItem>) 
                             : (<CPaginationItem className={"custom-pagination-item"} onClick={() => handlePageChange(currentPage + 1)}>»</CPaginationItem>)}
                           </CPagination>)

@@ -465,7 +465,6 @@ function FCIRegulationPosition() {
   }, [regulationSymbol, regulations]);
 
   const searchPositionsByDate = async (pageNumber) => {
-    
     let fromDate;
     let toDate;
     if (searchFromDate == "") {
@@ -787,7 +786,7 @@ function FCIRegulationPosition() {
                               <CPaginationItem disabled>«</CPaginationItem> ) 
                             : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
                           
-                            <CPaginationItem style={{ backgroundColor: 'lightcyan' }}
+                            <CPaginationItem style={{ background : currentPage === 1? 'lightgrey' : 'lightcyan' }}
                                 onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
                             {currentPage === Math.ceil(totalPositions / positionsPerPage)? (
                             <CPaginationItem style={{ backgroundColor: 'lightgrey' }}>{Math.ceil(totalPositions / positionsPerPage)}</CPaginationItem>

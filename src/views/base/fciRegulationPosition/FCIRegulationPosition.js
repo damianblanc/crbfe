@@ -56,7 +56,7 @@ class FCIRegulationSymbolName {
 function FCIRegulationPosition() {
   const [regulations, setRegulations] = useState([{FCIRegulationSymbolName}]);
   const [positions, setPositions] = useState([{id : '', fciSymbol: '', jsonPosition : '', updatedMarketPosition: '', overview: '', composition: [FCIPositionCompositionVO]}]);
-  const [oldestPoition, setOldestPosition] = useState();
+  const [oldestPosition, setOldestPosition] = useState();
   const [comboPositions, setComboPositions] = useState([{id : '', fciSymbol: '', jsonPosition : '', updatedMarketPosition: '', overview: '', composition: [FCIPositionCompositionVO]}]);
   const [excelData, setExcelData] = useState([]);
   const [excelFile, setExcelFile] = useState(null);
@@ -96,6 +96,7 @@ function FCIRegulationPosition() {
   const maxPositionId = Math.max(...positions.map(position => position.id));
 
   const [noPositions, setNoPositions] = useState(false);
+  const [noPositionsDateFilter, setNoPositionsDateFilter] = useState(false);
   const [excelDataLoaded, setExcelDataLoaded] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -481,7 +482,7 @@ function FCIRegulationPosition() {
     let fromDate;
     let toDate;
     if (searchFromDate == "") {
-      fromDate = oldestPoition.timestamp.split(" ")[0];
+      fromDate = oldestPosition.timestamp.split(" ")[0];
       setSearchFromDate(fromDate);
     } else {
       fromDate = searchFromDate;
@@ -515,6 +516,9 @@ function FCIRegulationPosition() {
     const tempLoadedTotalPositions = await fetchTotalFilteredPosition();
     setPositions(tempLoadedPositions);
     setTotalPositions(tempLoadedTotalPositions.length);
+    if (tempLoadedTotalPositions.length == 0) {
+      setNoPositionsDateFilter(false);
+    }
     setSearchFiltered(true);
     setSearchFromDateAfter(searchFromDate);
     setSearchToDateAfter(searchToDate);
@@ -569,11 +573,11 @@ function FCIRegulationPosition() {
               <CCardBody>
               <table>
                 <tr>
-                  <td>
-                    <table className='table-head-1'>
-                      <tr>
-                        <td width="20%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
-                        <td width="35%">
+                  <td style={{ border: "none"}}>
+                    <table className='table-head-1' style={{ border: "none"}}>
+                      <tr style={{ border: "none"}}>
+                        <td width="30%" style={{ border: "none"}}><code>&lt;FCI Regulation Symbol&gt;</code></td>
+                        <td width="35%" style={{ border: "none"}}>
                           <select className="text-medium-emphasis small"
                             onChange={(e) => selectFciSymbol(e.target.value)} style={{width: "100%"}}>
                               {regulations?.map((regulation) => 
@@ -584,21 +588,22 @@ function FCIRegulationPosition() {
                               )}
                           </select>
                         </td>
-                        <td width="3%"></td>
-                        <td className="text-medium-emphasis small" width="10%">Symbol</td>
-                        <td width="20%" className="text-medium-emphasis small">
-                          <input id="regulationSymbol" type="text" className="text-medium-emphasis small"
+                        <td width="6%" style={{ border: "none"}}></td>
+                        <td className="text-medium-emphasis small" style={{ border: "none"}} width="10%">Symbol</td>
+                        <td width="16%" className="text-medium-emphasis small" style={{ border: "none"}}>
+                          <input id="regulationSymbol" type="text" className="text-medium-emphasis small" style={{ width:"80%", height: "22px" }}
                               onChange={(e) => setRegulationSymbol(e.target.value)}
                               value={regulationSymbol}/>
                         </td>
+                        <td width="10%" style={{ border: "none"}}></td>
                       </tr>
                     </table>
                     
-                    <table  className="text-medium-emphasis small" width="70%">
-                      <tr className="text-medium-emphasis">
-                        <td width="70%" >
-                          <table className='table-head'>
-                            <td width="5%"/>
+                    <table className="text-medium-emphasis small" width="70%" style={{ border: "none"}}>
+                      <tr className="text-medium-emphasis" style={{ border: "none"}}>
+                        <td width="70%" style={{ border: "none"}}>
+                          <table className='table-head' style={{ border: "none"}}>
+                            <td width="5%" style={{ border: "none"}}/>
                               <thead>
                                 <th>Format</th>
                                 <th>File</th>
@@ -607,10 +612,10 @@ function FCIRegulationPosition() {
                               </thead>
                               <tbody>
                                 <tr>
-                                  <td width="20%">Excel file (.xlsx format)</td>
-                                  <td width="50%"><input className="text-medium-emphasis small" type="file" onChange={handleFileChange} ref={fileInputRef} style={{ border: "none",}}></input></td>
+                                  <td width="20%" style={{ border: "none"}}>Excel file (.xlsx format)</td>
+                                  <td width="50%" style={{ border: "none"}}><input className="text-medium-emphasis small" type="file" onChange={handleFileChange} ref={fileInputRef} style={{ border: "none"}}></input></td>
                                   <td> 
-                                    <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' style={{ border: "none",}} onClick={() => processExcel()}>
+                                    <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' style={{ border: "none"}} onClick={() => processExcel()}>
                                       <CIcon icon={cilSync} size="xl"/>
                                       {excelDataLoaded? ( 
                                         <>
@@ -621,7 +626,7 @@ function FCIRegulationPosition() {
                                     </CButton>
                                   </td>
                                   <td>
-                                  <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => createFCIPosition()} style={{ border: "none",}}>
+                                  <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => createFCIPosition()} style={{ border: "none"}}>
                                       <CIcon icon={cilTransfer} size="xl"/>
                                   </CButton>
                                   </td>
@@ -629,12 +634,12 @@ function FCIRegulationPosition() {
                               </tbody>
                           </table>
                         </td>
-                        <td width="2%"/>
+                        <td width="2%" style={{ border: "none"}}/>
                       </tr>
                     </table>
                   </td>
-                  <td width="28%">
-                    <CCol sm={12} mb={6}>
+                  <td width="28%" style={{ border: "none"}}>
+                    <CCol sm={12} mb={6} style={{ width: "100%"}}>
                       <CWidgetStatsA
                         className="mb-6"
                         color="secondary"
@@ -741,14 +746,13 @@ function FCIRegulationPosition() {
               <strong>FCI Regulation Positions</strong>
             </CCardHeader>
             <CCardBody>
-              <p>
                 <table>
                   <tr>
                     <td className="text-medium-emphasis small" width="15%">Position Identifier #</td>
                     <td className="text-medium-emphasis large" width="8%">
                          <select className="text-medium-emphasis large" id="positionIdentifier"
                             onChange={(e) => setCurrentPositionIdInFilter(e.target.value)}
-                            style={{width: "100%"}} disabled={!noPositions}>
+                            style={{width: "100%"}} disabled={!noPositions || noPositionsDateFilter}>
                             <option/>
                             {positions?.map((position) => 
                               <React.Fragment key={position.id}>
@@ -760,13 +764,12 @@ function FCIRegulationPosition() {
                     <td width="1%"/>
                     <td>
                       <CButton shape='rounded' size='sm' color='string' onClick={() => filterPositionListTable()}
-                        disabled={!noPositions} style={{ border: "none",}}>
+                        disabled={!noPositions || !noPositionsDateFilter} style={{ border: "none"}}>
                             <CIcon className="text-medium-emphasis small" icon={cilListFilter} size="xl"/>
                       </CButton>
                     </td>
                     <td width="3%"/>
-                    <td width="8%" className="text-medium-emphasis small">Date From</td>
-                    <td width="1%"/>
+                    <td width="5%" className="text-medium-emphasis small">From</td>
                     <td width="12%">
                       <input 
                         type="date"
@@ -778,7 +781,7 @@ function FCIRegulationPosition() {
                       />
                     </td>
                     <td width="2%"></td>
-                    <td width="7%" className="text-medium-emphasis small">Date To</td>
+                    <td width="3%" className="text-medium-emphasis small">To</td>
                     <td width="10%">
                       <input
                         type="date"
@@ -793,7 +796,7 @@ function FCIRegulationPosition() {
                     <td width="2%"></td>
                     <td>
                       <CButton shape='rounded' size='sm' color='string' onClick={() => searchPositionsByDate(0)}
-                        disabled={searchFilteredPosition || !noPositions} style={{ border: "none",}}>
+                        disabled={searchFilteredPosition || !noPositions} style={{ border: "none"}}>
                             <CIcon className="text-medium-emphasis small" icon={cilMagnifyingGlass} size="xl"/>
                       </CButton>
                     </td>
@@ -827,126 +830,126 @@ function FCIRegulationPosition() {
                    </td>
                   </tr>
                 </table>
-              </p>
-              <table className="text-medium-emphasis small">
-                <thead>
-                  <tr className="text-medium-emphasis">
-                    <th>#</th>
-                    <th>Position</th>
-                    <th>FCI</th>
-                    <th>Date</th>
-                    <th>Overview</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.prototype.toString.call(positions) === '[object Array]' && positions?.map((item) => 
-                    item !== 'undefined'? (
-                    <React.Fragment key={item.fciSymbol}>
-                    <tr>
-                      {item.id? (<td width="5%">{item.id}</td>) : (null)}
-                      <td>
-                        <>
-                          <Popup 
-                            position="left center" visible={visible}
-                            trigger={
-            
-                              <CButton shape='rounded' size='sm' color='string' >
-                                    <CIcon icon={cilClipboard} size="xl"/>
-                              </CButton>}>
-                          <CRow>
-                            <CCol xs={12}>
-                              <CCard>
-                                <CCardHeader>
-                                  <strong className="text-medium-emphasis small"><code>#{item.id} - Position</code></strong>
-                                </CCardHeader>
-                                <CCardBody>
-                                <table>
-                                  <thead>
-                                    <tr/>
-                                  </thead>
-                                  <tbody>  
-                                    <tr>
-                                      <td>
-                                      <CRow>
-                                        <CCol xs={12}>
-                                          <CCard>
-                                          <CCardHeader>
-                                            <strong className="text-medium-emphasis small">{item.fciSymbol} - {item.timestamp} - {item.overview}</strong>
-                                          </CCardHeader>
-                                          <CCardBody>
-                                            <table>
-                                              <thead>
-                                                <tr className="text-medium-emphasis small">
-                                                  <th>Specie Group</th>
-                                                  <th>Specie Type</th>
-                                                  <th>Symbol</th>
-                                                  <th>Market Price</th>
-                                                  <th>Quantity</th>
-                                                  <th>Valued</th>
-                                                </tr>
-                                              </thead>
-                                              <tbody>
-                                                {Object.prototype.toString.call(item.composition) === '[object Array]' && item.composition?.map((specie) => 
-                                                <React.Fragment key={specie.id}>
-                                                    <tr>
-                                                      <td>{specie.specieGroup}</td>
-                                                      <td>{specie.specieType}</td>
-                                                      <td>{specie.specieSymbol}</td>
-                                                      <td>
-                                                        <div>
-                                                          $ <NumericFormat displayType="text" value={Number(specie.marketPrice).toFixed(2)} thousandSeparator="." decimalSeparator=','/>
-                                                        </div>
-                                                      </td>
-                                                      <td>{specie.quantity}</td>
-                                                      <td>
-                                                        <div>
-                                                          $ <NumericFormat displayType="text" value={Number(specie.valued).toFixed(2)} thousandSeparator="." decimalSeparator=','/>
-                                                        </div>
-                                                      </td>
-                                                    </tr> 
-                                                </React.Fragment>
-                                                )}
-                                              </tbody>
-                                            </table>
-                                                
-                                            </CCardBody>
-                                        </CCard>
-                                        </CCol>
-                                      </CRow> 
-                                      </td>
-                                    </tr>
-                                  </tbody>
-                                  </table>
-                              </CCardBody>
-                            </CCard>
-                            </CCol>
-                          </CRow> 
-                          </Popup>
-                          <CButton shape='rounded' size='sm' color='string' onClick={() => refreshPosition(item.fciSymbol, item.id) }>
-                                <CIcon icon={cilNoteAdd} size="xl"/>
-                          </CButton>
-                        </>
-                      </td>
-                      <td width="5%">{item.fciSymbol}</td>
-                      <td width="15%">{item.timestamp}</td>
-                      <td width="30%">{item.overview}</td>
-                      <td>
-                        <>
-                          <CButton shape='rounded' size='sm' color='string' onClick={() => deletePosition(item.id)}>
-                                <CIcon icon={cilTrash} size="xl"/>
-                          </CButton>
-                          <CButton shape='rounded' size='sm' color='string' onClick={() => downloadExcel(item.fciSymbol, item.timestamp, item.updatedMarketPosition) }>
-                                <CIcon icon={cilFile} size="xl"/>
-                          </CButton>
-                        </>
-                      </td>
+                <table><tr><td style={{ width:"80%", height: "10px" }}></td></tr></table>
+                <table className="text-medium-emphasis small">
+                  <thead>
+                    <tr className="text-medium-emphasis">
+                      <th>#</th>
+                      <th>Position</th>
+                      <th>FCI</th>
+                      <th>Date</th>
+                      <th>Overview</th>
+                      <th>Actions</th>
                     </tr>
-                    </React.Fragment>
-                    ) : null
-                  )}
-                </tbody> 
-              </table>
+                  </thead>
+                  <tbody>
+                    {Object.prototype.toString.call(positions) === '[object Array]' && positions?.map((item) => 
+                      item !== 'undefined'? (
+                      <React.Fragment key={item.fciSymbol}>
+                      <tr>
+                        {item.id? (<td width="5%">{item.id}</td>) : (null)}
+                        <td>
+                          <>
+                            <Popup 
+                              position="left center" visible={visible}
+                              trigger={
+              
+                                <CButton shape='rounded' size='sm' color='string' >
+                                      <CIcon icon={cilClipboard} size="xl"/>
+                                </CButton>}>
+                            <CRow>
+                              <CCol xs={12}>
+                                <CCard>
+                                  <CCardHeader>
+                                    <strong className="text-medium-emphasis small"><code>#{item.id} - Position</code></strong>
+                                  </CCardHeader>
+                                  <CCardBody>
+                                  <table>
+                                    <thead>
+                                      <tr/>
+                                    </thead>
+                                    <tbody>  
+                                      <tr>
+                                        <td>
+                                        <CRow>
+                                          <CCol xs={12}>
+                                            <CCard>
+                                            <CCardHeader>
+                                              <strong className="text-medium-emphasis small">{item.fciSymbol} - {item.timestamp} - {item.overview}</strong>
+                                            </CCardHeader>
+                                            <CCardBody>
+                                              <table>
+                                                <thead>
+                                                  <tr className="text-medium-emphasis small">
+                                                    <th>Specie Group</th>
+                                                    <th>Specie Type</th>
+                                                    <th>Symbol</th>
+                                                    <th>Market Price</th>
+                                                    <th>Quantity</th>
+                                                    <th>Valued</th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                  {Object.prototype.toString.call(item.composition) === '[object Array]' && item.composition?.map((specie) => 
+                                                  <React.Fragment key={specie.id}>
+                                                      <tr>
+                                                        <td>{specie.specieGroup}</td>
+                                                        <td>{specie.specieType}</td>
+                                                        <td>{specie.specieSymbol}</td>
+                                                        <td>
+                                                          <div>
+                                                            $ <NumericFormat displayType="text" value={Number(specie.marketPrice).toFixed(2)} thousandSeparator="." decimalSeparator=','/>
+                                                          </div>
+                                                        </td>
+                                                        <td>{specie.quantity}</td>
+                                                        <td>
+                                                          <div>
+                                                            $ <NumericFormat displayType="text" value={Number(specie.valued).toFixed(2)} thousandSeparator="." decimalSeparator=','/>
+                                                          </div>
+                                                        </td>
+                                                      </tr> 
+                                                  </React.Fragment>
+                                                  )}
+                                                </tbody>
+                                              </table>
+                                                  
+                                              </CCardBody>
+                                          </CCard>
+                                          </CCol>
+                                        </CRow> 
+                                        </td>
+                                      </tr>
+                                    </tbody>
+                                    </table>
+                                </CCardBody>
+                              </CCard>
+                              </CCol>
+                            </CRow> 
+                            </Popup>
+                            <CButton shape='rounded' size='sm' color='string' onClick={() => refreshPosition(item.fciSymbol, item.id) }>
+                                  <CIcon icon={cilNoteAdd} size="xl"/>
+                            </CButton>
+                          </>
+                        </td>
+                        <td width="5%">{item.fciSymbol}</td>
+                        <td width="15%">{item.timestamp}</td>
+                        <td width="30%">{item.overview}</td>
+                        <td>
+                          <>
+                            <CButton shape='rounded' size='sm' color='string' onClick={() => deletePosition(item.id)}>
+                                  <CIcon icon={cilTrash} size="xl"/>
+                            </CButton>
+                            <CButton shape='rounded' size='sm' color='string' onClick={() => downloadExcel(item.fciSymbol, item.timestamp, item.updatedMarketPosition) }>
+                                  <CIcon icon={cilFile} size="xl"/>
+                            </CButton>
+                          </>
+                        </td>
+                      </tr>
+                      </React.Fragment>
+                      ) : null
+                    )}
+                  </tbody> 
+                </table>
           </CCardBody>
          </CCard>
         </CCol>

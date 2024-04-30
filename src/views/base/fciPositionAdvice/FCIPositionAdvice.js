@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton} from '@coreui/react'
-import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter, cilArrowTop, cilOptions } from '@coreui/icons';
+import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter, cilArrowTop, cilOptions, cilMagnifyingGlass } from '@coreui/icons';
 import CIcon from '@coreui/icons-react'
 
 import axios from 'axios';
@@ -66,6 +66,28 @@ function FCIPositionAdvice() {
   const [toast, addToast] = useState(0)
   const toaster = useRef()
   const [showToast, setShowToast] = useState(false);
+
+  const [searchFiltered, setSearchFiltered] = useState(false);
+  const [oldestPoition, setOldestPosition] = useState();
+  const [searchFilteredPosition, setSearchFilteredPosition] = useState(false);
+  const [searchCurrentPositionId, setSearchCurrentPositionId] = useState(1);
+  const [selectedFCISymbol, setSelectedFCISymbol] = useState('');
+  const positionsPerPage = 5;
+  const [totalPositions, setTotalPositions] = useState(0);
+
+  const [searchFromDate, setSearchFromDate] = useState('');
+  const [searchToDate, setSearchToDate] = useState('');
+
+  const [searchFromDateAfter, setSearchFromDateAfter] = useState('');
+  const [searchToDateAfter, setSearchToDateAfter] = useState('');
+
+  const [currentPositionIdInFilter, setCurrentPositionIdInFilter] = useState(0);
+
+  const minPositionId = Math.min(...positions.map(position => position.id));
+  const maxPositionId = Math.max(...positions.map(position => position.id));
+
+  const [noPositions, setNoPositions] = useState(false);
+  const [noPositionsDateFilter, setNoPositionsDateFilter] = useState(false);
 
   useEffect(() => {
     const isValid = isLoginTimestampValid();
@@ -377,6 +399,92 @@ function FCIPositionAdvice() {
     setShowToast(!showToast);
   };
   
+  const today = new Date().toISOString().split('T')[0];
+
+  const filterPositionListTable = () => {
+    if (currentPositionIdInFilter) {
+      const filteredPositions = positions.filter(position => position.id.toString() === currentPositionIdInFilter);
+      setPositions(filteredPositions);
+      setSearchFilteredPosition(true);
+    } else {
+      setPositions(positions);
+      setSearchFilteredPosition(false);
+      setCurrentPositionIdInFilter(0);
+    }
+  }
+  
+  const filterPositionListSearch = async () => {
+    const fetchFilteredPosition = async () => {
+      try {
+        if (searchCurrentPositionId !== "") {
+          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + searchCurrentPositionId + '/filtered');
+          return responseData.data;
+        } else {
+          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/page/' + 0 + '/page_size/' + positionsPerPage);
+          return responseData.data;
+        }
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    }
+    const tempLoadedPositions = await fetchFilteredPosition();
+    setPositions(tempLoadedPositions);
+  };
+  
+  const handleSearchDateFromChange = (fromDate) => {
+    setSearchFromDate(fromDate);
+  };
+  
+  const handleSearchDateToChange = (toDate) => {
+    setSearchToDate(toDate);
+  };
+  
+  const searchPositionsByDate = async (pageNumber) => {
+    if (searchFilteredPosition) return;
+    let fromDate;
+    let toDate;
+    if (searchFromDate == "") {
+      fromDate = oldestPoition.timestamp.split(" ")[0];
+      setSearchFromDate(fromDate);
+    } else {
+      fromDate = searchFromDate;
+    }
+    if (searchToDate == "") {
+      let todayDate = new Date().toISOString().split('T')[0];
+      setSearchToDate(todayDate);
+      toDate = todayDate;
+    } else {
+      toDate = searchToDate;
+    }
+  
+    const fetchFilteredPosition = async (pageNumber) => {
+      try {
+          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + fromDate + '/to/' + toDate + '/page/' + pageNumber + '/page_size/' + positionsPerPage);
+          return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    }
+  
+    const fetchTotalFilteredPosition = async () => {
+      try {
+          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + fromDate + '/to/' + toDate + '/page/0');
+          return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    }
+    const tempLoadedPositions = await fetchFilteredPosition(pageNumber);
+    const tempLoadedTotalPositions = await fetchTotalFilteredPosition();
+    setPositions(tempLoadedPositions);
+    setTotalPositions(tempLoadedTotalPositions.length);
+    if (tempLoadedTotalPositions.length == 0) {
+      setNoPositionsDateFilter(false);
+    }
+    setSearchFiltered(true);
+    setSearchFromDateAfter(searchFromDate);
+    setSearchToDateAfter(searchToDate);
+  };
 
   return (
     <>
@@ -442,6 +550,63 @@ function FCIPositionAdvice() {
                         </tr>
                     </thead>
                 </table>
+                <table>
+                  <tr>
+                    <td className="text-medium-emphasis small" width="15%">Position Identifier #</td>
+                    <td className="text-medium-emphasis large" width="8%">
+                          <select className="text-medium-emphasis large" id="positionIdentifier"
+                            onChange={(e) => setCurrentPositionIdInFilter(e.target.value)}
+                            style={{width: "100%"}} disabled={!noPositions || noPositionsDateFilter}>
+                            <option/>
+                            {positions?.map((position) => 
+                              <React.Fragment key={position.id}>
+                                <option value={position.id}>{position.id}</option>
+                              </React.Fragment>
+                            )}
+                          </select>
+                    </td>
+                    <td width="1%"/>
+                    <td>
+                      <CButton shape='rounded' size='sm' color='string' onClick={() => filterPositionListTable()}
+                        disabled={!noPositions || !noPositionsDateFilter} style={{ border: "none",}}>
+                            <CIcon className="text-medium-emphasis small" icon={cilListFilter} size="xl"/>
+                      </CButton>
+                    </td>
+                    <td width="3%"/>
+                    <td width="8%" className="text-medium-emphasis small">Date From</td>
+                    <td width="1%"/>
+                    <td width="12%">
+                      <input 
+                        type="date"
+                        className="text-medium-emphasis small"
+                        onChange={(e) => handleSearchDateFromChange(e.target.value)}
+                        value={searchFromDate}
+                        max={searchToDate}
+                        disabled={searchFilteredPosition || !noPositions}
+                      />
+                    </td>
+                    <td width="2%"></td>
+                    <td width="7%" className="text-medium-emphasis small">Date To</td>
+                    <td width="10%">
+                      <input
+                        type="date"
+                        className="text-medium-emphasis small"
+                        onChange={(e) => handleSearchDateToChange(e.target.value)}
+                        value={searchToDate}
+                        min={searchFromDate}
+                        max={today}
+                        disabled={searchFilteredPosition || !noPositions}
+                      />
+                    </td>
+                    <td width="2%"></td>
+                    <td>
+                      <CButton shape='rounded' size='sm' color='string' onClick={() => searchPositionsByDate(0)}
+                        disabled={searchFilteredPosition || !noPositions} style={{ border: "none",}}>
+                            <CIcon className="text-medium-emphasis small" icon={cilMagnifyingGlass} size="xl"/>
+                      </CButton>
+                    </td>
+                  </tr>
+               </table>
              </CCardBody>
             </CCard>
         </CCol>

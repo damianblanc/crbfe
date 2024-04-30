@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
-import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter, cilArrowTop, cilOptions, cilMagnifyingGlass } from '@coreui/icons';
+import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter, cilArrowTop, cilOptions, cilMagnifyingGlass, cilCheckCircle } from '@coreui/icons';
 import { CChartLine } from '@coreui/react-chartjs'
 
 import CIcon from '@coreui/icons-react'
@@ -95,6 +95,10 @@ function FCIRegulationPosition() {
   const minPositionId = Math.min(...positions.map(position => position.id));
   const maxPositionId = Math.max(...positions.map(position => position.id));
 
+  const [noPositions, setNoPositions] = useState(false);
+  const [excelDataLoaded, setExcelDataLoaded] = useState(false);
+  const fileInputRef = useRef(null);
+
 
   /** FCI Regulations - Symbol and Name */
   useEffect(() => {
@@ -166,6 +170,7 @@ function FCIRegulationPosition() {
           const tempLoadedOldestPostion = await fetchOldestPosition(tempLoadedRegulations[0].fciSymbol);
           setRegulations(tempLoadedRegulations);
           setPositions(tempLoadedPositions);
+          setNoPositions(tempLoadedTotalPositions.length > 0);
           setOldestPosition(tempLoadedOldestPostion)
           setComboPositions(tempLoadedPositions);
           setSelectedFCISymbol(tempLoadedRegulations[0].fciSymbol);
@@ -174,6 +179,7 @@ function FCIRegulationPosition() {
           let totalPositions = tempLoadedPositionsPerMonth.reduce((accumulator, currentValue) => accumulator + currentValue.quantity, 0);
           setPositionQuantity(totalPositions);
           setPosPerMonthGrowth((tempLoadedPositionsPerMonth.at(0).quantity / totalPositions) * 100);
+          setSearchFilteredPosition(false);
         }
       }
     };
@@ -286,6 +292,9 @@ function FCIRegulationPosition() {
     setSelectedFCISymbol(fciSymbol);
     setPositionIdentifier('');
     setTotalPositions(0);
+    setSearchFilteredPosition(false);
+    setExcelDataLoaded(false);
+    fileInputRef.current.value = "";
    
     const fetchPositionsPerPage = async () => {
       try {
@@ -340,6 +349,7 @@ function FCIRegulationPosition() {
       setPositions(tempLoadedPositionsPerPage);
       setOldestPosition(tempLoadedOldestPostion);
       setTotalPositions(tempLoadedTotalPositions.length);
+      setNoPositions(tempLoadedTotalPositions.length > 0);
     }
    setFetchedData();
   }  
@@ -347,6 +357,7 @@ function FCIRegulationPosition() {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setExcelFile(file);
+    setExcelDataLoaded(false);
   };
 
   const processExcel = () => {
@@ -354,15 +365,16 @@ function FCIRegulationPosition() {
       return;
     }
 
-  const reader = new FileReader();
-    reader.onload = (e) => {
-      const data = e.target.result;
-      const workbook = XLSX.read(data, { type: 'binary' });
-      const sheetName = workbook.SheetNames[0];
-      const excelData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-      setExcelData(excelData);
-    };
+    const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = e.target.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const excelData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+        setExcelData(excelData);
+      };
     reader.readAsBinaryString(excelFile);
+    setExcelDataLoaded(true);
   };
 
   const downloadExcel = (fciSymbol, timestamp, jsonPosition) => {
@@ -465,6 +477,7 @@ function FCIRegulationPosition() {
   }, [regulationSymbol, regulations]);
 
   const searchPositionsByDate = async (pageNumber) => {
+    if (searchFilteredPosition) return;
     let fromDate;
     let toDate;
     if (searchFromDate == "") {
@@ -595,14 +608,20 @@ function FCIRegulationPosition() {
                               <tbody>
                                 <tr>
                                   <td width="20%">Excel file (.xlsx format)</td>
-                                  <td width="50%"><input className="text-medium-emphasis small" type="file" onChange={handleFileChange}></input></td>
+                                  <td width="50%"><input className="text-medium-emphasis small" type="file" onChange={handleFileChange} ref={fileInputRef} style={{ border: "none",}}></input></td>
                                   <td> 
-                                    <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => processExcel()}>
+                                    <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' style={{ border: "none",}} onClick={() => processExcel()}>
                                       <CIcon icon={cilSync} size="xl"/>
+                                      {excelDataLoaded? ( 
+                                        <>
+                                        &nbsp;&nbsp;
+                                        <CIcon icon={cilCheckCircle} className="text-medium-emphasis small" size="xl"  style={{ backgroundColor: "lightblue" }}/>
+                                        </>
+                                      ) : null}
                                     </CButton>
                                   </td>
                                   <td>
-                                  <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => createFCIPosition()}>
+                                  <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => createFCIPosition()} style={{ border: "none",}}>
                                       <CIcon icon={cilTransfer} size="xl"/>
                                   </CButton>
                                   </td>
@@ -729,7 +748,7 @@ function FCIRegulationPosition() {
                     <td className="text-medium-emphasis large" width="8%">
                          <select className="text-medium-emphasis large" id="positionIdentifier"
                             onChange={(e) => setCurrentPositionIdInFilter(e.target.value)}
-                            style={{width: "100%"}}>
+                            style={{width: "100%"}} disabled={!noPositions}>
                             <option/>
                             {positions?.map((position) => 
                               <React.Fragment key={position.id}>
@@ -740,7 +759,8 @@ function FCIRegulationPosition() {
                     </td>
                     <td width="1%"/>
                     <td>
-                      <CButton shape='rounded' size='sm' color='string' onClick={() => filterPositionListTable()}>
+                      <CButton shape='rounded' size='sm' color='string' onClick={() => filterPositionListTable()}
+                        disabled={!noPositions} style={{ border: "none",}}>
                             <CIcon className="text-medium-emphasis small" icon={cilListFilter} size="xl"/>
                       </CButton>
                     </td>
@@ -754,6 +774,7 @@ function FCIRegulationPosition() {
                         onChange={(e) => handleSearchDateFromChange(e.target.value)}
                         value={searchFromDate}
                         max={searchToDate}
+                        disabled={searchFilteredPosition || !noPositions}
                       />
                     </td>
                     <td width="2%"></td>
@@ -766,11 +787,13 @@ function FCIRegulationPosition() {
                         value={searchToDate}
                         min={searchFromDate}
                         max={today}
+                        disabled={searchFilteredPosition || !noPositions}
                       />
                     </td>
                     <td width="2%"></td>
                     <td>
-                      <CButton shape='rounded' size='sm' color='string' onClick={() => searchPositionsByDate(0)}>
+                      <CButton shape='rounded' size='sm' color='string' onClick={() => searchPositionsByDate(0)}
+                        disabled={searchFilteredPosition || !noPositions} style={{ border: "none",}}>
                             <CIcon className="text-medium-emphasis small" icon={cilMagnifyingGlass} size="xl"/>
                       </CButton>
                     </td>

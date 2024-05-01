@@ -3,7 +3,7 @@ import './FCIRegulationTable.css';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilPencil, cilTrash, cilTransfer, cilMediaSkipBackward, cilFile, cilListFilter } from '@coreui/icons';
+import { cilNoteAdd, cilBookmark, cilPencil, cilTrash, cilTransfer, cilMediaSkipBackward, cilFile, cilListFilter } from '@coreui/icons';
 
 import { CChartPie } from '@coreui/react-chartjs'
 
@@ -561,6 +561,35 @@ function FCIRegulationTable() {
 
         <CCard>
           <CCardHeader className="text-medium-emphasis small">
+          {<Popup trigger={
+                  <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages()}>
+                      <CIcon icon={cilBookmark} size="xl"/>
+                  </CButton>} position="right" modal lockScroll="false" backgroundColor="rgba(75,192,192,0.4)"
+                   contentStyle={{ width: "60%", height: "73%", overflow: "auto", position: 'absolute', top: '19%', left: '21%'}}>
+                  {
+                    <CRow>
+                    <CCol xs={12}>
+                      <CCard>
+                        <CCardHeader>
+                          <strong className="text-medium-emphasis small">FCI Regulation & Position Biases</strong>
+                        </CCardHeader>
+                        <CCardBody>
+                        <CRow>
+                          <CCol>
+                          <p className="text-medium-emphasis small">» The FCI Regulation Page allows to view, add, edit, and delete FCI regulations. Important information is displayed about each regulation, such as its symbol, name, description, and composition.</p>
+                          <p className="text-medium-emphasis small">» When FCI Regulation Page is accessed, it will fetch all available regulation data to be displayed in the table. You can use the search bar to filter the regulations by symbol, and you can use the pagination controls to navigate between pages of results.</p>
+                          <p className="text-medium-emphasis small">» To add a new regulation, simply enter its symbol, name, description, and composition in the provided input fields and click the &quot;Add&quot; button. The composition field should include each specie type and its percentage, separated by hyphens. For example, you might enter &quot;Equity:40.5% - Bond:39.5% - Cash:20%&quot;.</p>
+                          <p className="text-medium-emphasis small">» Take into account that there are many validations implemented, in order to accept a well defined FCI Regulation, such that its percentage must close to 100% or that Cash specie type is to be part of it.</p>
+                          <p className="text-medium-emphasis small">» If you need to edit an existing regulation, click the &quot;Edit&quot; button next to the regulation you want to modify. This will open a modal where you can edit the regulation symbol, name, description, and composition. Once you have made your changes, click the &quot;Save&quot; button to save them.</p>
+                          <p className="text-medium-emphasis small">» If you need to delete a regulation, click the &quot;Delete&quot; button next to the regulation you want to remove. This will permanently delete the regulation from our system.</p>
+                          <p className="text-medium-emphasis small">» If you encounter any errors while using the FCI Regulation Table, you may see a toast message with more information about the error.</p>
+                          </CCol>
+                        </CRow>
+                      </CCardBody>
+                      </CCard>
+                      </CCol>
+                      </CRow>}
+                      </Popup>}
           <strong>Configure & Create FCI Regulations</strong>
           </CCardHeader>
           <CCardBody>
@@ -568,55 +597,48 @@ function FCIRegulationTable() {
                 Refers to a <code>&lt;FCI Regulation List&gt;</code> to performs operations beforehand bias process running
                 including their composition
               </p>
-             
-                <table style={{border: 'none'}}>
+              <table style={{border: 'none', marginTop: "-10px"}}>
                 {totalRegulations > 0? (
-                  <tr className="text-medium-emphasis small">
-                    <td width="20%">Regulation Symbol #</td>
-                    <td width="20%">
-                       <input className="text-medium-emphasis small" type="text"
+                  <tr className="text-medium-emphasis small" style={{ border: "none"}}>
+                    <td width="11%" style={{ border: "none"}}>Regulation Symbol #</td>
+                    <td width="10%" style={{ border: "none"}} className="text-medium-emphasis small">
+                       <input className="text-medium-emphasis large" type="text"
                           style={{width: "100%"}}
                           onChange={(e) => handleSearchRegulationSymbolChange(e.target.value)}/>
                     </td>
-                    <td>
-                    <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => filterRegulationList()}>
-                            <CIcon icon={cilListFilter} size="xl"/>
-                      </CButton>
+                    <td style={{ width: "5%", border: "none"}}>
+                       <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => filterRegulationList()}>
+                          <CIcon icon={cilListFilter} size="xl"/>
+                       </CButton>
                     </td>
-                    {/* <td width="5%"></td>
-                    <td width="20%">Date From</td>
-                    <td>
-                      <input type="text" className="text-medium-emphasis small"
-                          onChange={(e) => handleSearchDateFromChange(e.target.value)}/>
-                    </td>
-                    <td width="5%"></td>
-                    <td width="20%">Date To</td>
-                    <td width="10%"> */}
-                      {/* <CDateRangePicker startDate="2022/08/03" endDate="2022/08/17" label="Date range" locale="en-US" /> */}
-                    {/* </td> */}
-                      {/* <input type="text" className="text-medium-emphasis small"
-                          onChange={(e) => handleSearchDateToChange(e.target.value)}/> */}
-                  
-                    <td>
-                    <CPagination align="end" size="sm" className="text-medium-emphasis small"
-                    activePage = {currentPage}
-                    pages = {Math.floor(totalRegulations / regulationsPerPage)}
-                    onActivePageChange={handlePageChange}>
-                      {currentPage === 1? (
-                        <CPaginationItem className="text-medium-emphasis small" disabled>«</CPaginationItem> ) 
-                      : (<CPaginationItem className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
-                     
-                      <CPaginationItem active className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
-                     
-                      {currentPage === Math.ceil(totalRegulations / regulationsPerPage) || searchFiltered ? (
-                        <CPaginationItem className="text-medium-emphasis small" disabled>»</CPaginationItem>) 
-                      : (<CPaginationItem className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage + 1)}>»</CPaginationItem>)}
-                    </CPagination>
-                </td>
-                  </tr>
-                  ) : null}
-              </table>
+                    <td style={{ width: "30%", border: "none"}}/>
+                    <td style={{ width: "10%", border: "none", verticalAlign: "bottom"}}>
+                      <CPagination style={{verticalAlign: "bottom"}} align="end" size="sm" 
+                          activePage = {currentPage}
+                          pages = {Math.floor(totalRegulations / regulationsPerPage)}
+                          onActivePageChange={handlePageChange}>
+                            {currentPage === 1? (
+                              <CPaginationItem disabled>«</CPaginationItem> ) 
+                            : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
+                          
+                            <CPaginationItem style={{ background : currentPage === 1? 'lightgrey' : 'lightcyan' }}
+                                onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
+                            {currentPage === Math.ceil(totalRegulations / regulationsPerPage)? (
+                            <CPaginationItem style={{ backgroundColor: 'lightgrey' }}>{Math.ceil(totalRegulations / regulationsPerPage)}</CPaginationItem>
+                            ) :
+                            (<CPaginationItem style={{ backgroundColor: 'lightcyan' }}>{Math.ceil(totalRegulations / regulationsPerPage)}</CPaginationItem>)}
+                            
+                            <CPaginationItem style={{ backgroundColor: 'lightblue' }} >{totalRegulations < regulationsPerPage? regulations.length : totalRegulations}</CPaginationItem>
 
+                            {totalRegulations === 0 || currentPage === Math.ceil(totalRegulations / regulationsPerPage) || searchFiltered === true? (
+                              <CPaginationItem disabled>»</CPaginationItem>) 
+                            : (<CPaginationItem className={"custom-pagination-item"} onClick={() => handlePageChange(currentPage + 1)}>»</CPaginationItem>)}
+                      </CPagination>
+                    </td>
+                </tr>
+                ) : null}
+              </table>
+              <table className="text-medium-emphasis small" style={{ border: "none", marginTop: "-30px"}}><tr style={{ border: "none"}}><td style={{ border: "none"}}></td></tr></table>
               <table className="text-medium-emphasis small">
                 <thead>
                   <tr>
@@ -736,7 +758,7 @@ function FCIRegulationTable() {
                               <CRow>
                               <CCol xs={4}>
                                   <CCard className="mb-4">
-                                    <CCardHeader>Expected FCI Regulation Definition</CCardHeader>
+                                    <CCardHeader className="text-medium-emphasis small">FCI Regulation Definition</CCardHeader>
                                     <CCardBody>
                                       <CChartPie
                                         data={{
@@ -755,11 +777,11 @@ function FCIRegulationTable() {
                                 </CCol>
                                 <CCol xs={8}>
                                 <CCard className="mb-4">
-                                    <CCardHeader>FCI Regulation Composition</CCardHeader>
+                                    <CCardHeader className="text-medium-emphasis small">FCI Regulation Composition</CCardHeader>
                                     <CCardBody>
-                                        <table  className="text-medium-emphasis">
+                                        <table className="text-medium-emphasis small">
                                         <thead>
-                                            <tr className="text-medium-emphasis">
+                                            <tr className="text-medium-emphasis small">
                                               <th>Specie Type</th>
                                               <th>Percentage</th>
                                             </tr>  
@@ -795,9 +817,10 @@ function FCIRegulationTable() {
          <br/>
 
          <CCard>
-          <CCardHeader className="text-medium-emphasis small">
-            <strong>Create a new FCI Regulation</strong>
-          </CCardHeader>
+           <CCardHeader className="text-medium-emphasis small d-flex align-items-center" style={{ padding: '0.5rem 1rem', lineHeight: '3rem' }}>
+              &nbsp;&nbsp;&nbsp;<CIcon icon={cilNoteAdd} size="xl"/>&nbsp;&nbsp;&nbsp;
+              <strong>Create a new FCI Regulation</strong>
+            </CCardHeader>
           <CCardBody>
             <p className="text-medium-emphasis small">
               Indicate symbol, name, description and composition in a new <code>&lt;FCI Regulation&gt;</code> including each specie type and its percentage for further reference
@@ -816,7 +839,7 @@ function FCIRegulationTable() {
                     <td></td>
                     <td>
                        <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
-                          <input
+                          <input className='text-medium-emphasis small'
                             type="text" value={newRow.symbol}
                             style={{width: "100%"}}
                             onChange={(e) => setNewRow({ ...newRow, symbol: e.target.value })}/>
@@ -824,7 +847,7 @@ function FCIRegulationTable() {
                     </td>   
                     <td>
                         <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
-                          <input
+                          <input className='text-medium-emphasis small'
                             type="text" 
                             style={{width: "100%"}}
                             value={newRow.name}
@@ -848,7 +871,7 @@ function FCIRegulationTable() {
                     <td className='FCIRegulationTable'><b>Description</b></td>
                     <td colSpan="4">
                       <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
-                        <input type="text" aria-label="Description"
+                        <input className='text-medium-emphasis small' type="text" aria-label="Description"
                          style={{width: "100%"}}
                           value={newRow.description}
                           onChange={(e) => setNewRow({ ...newRow, description: e.target.value })}/>
@@ -859,7 +882,7 @@ function FCIRegulationTable() {
                     <td className='FCIRegulationTable'><b>Composition</b></td>
                     <td colSpan="4">
                       <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
-                        <input
+                        <input className='text-medium-emphasis small'
                           type="text"
                           style={{width: "100%"}}
                           value={newRow.composition}

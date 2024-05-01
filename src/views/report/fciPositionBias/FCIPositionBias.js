@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { CCard, CCardBody, CCol, CCardHeader, CRow, CButton } from '@coreui/react'
 
 import CIcon from '@coreui/icons-react'
-import { cilFile, cilTrash, cilPaperPlane, cilMediaSkipBackward, cilMagnifyingGlass, cilListFilter } from '@coreui/icons';
+import { cilAlignRight, cilBookmark, cilFile, cilMagnifyingGlass } from '@coreui/icons';
 
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
@@ -233,7 +233,7 @@ function FCIPositionBias() {
       }
     };
     setFetchedData();
-  }, []);   
+  }, [regulations, currentFCISymbol, positions, reportTypes]);   
 
   const processReportType = async (link) => {
     const reportTypeData = async (link) => {
@@ -570,6 +570,34 @@ return (
           <CCol xs={12}>
             <CCard>
               <CCardHeader>
+                {<Popup trigger={
+                  <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string'>
+                      <CIcon icon={cilBookmark} size="xl"/>
+                  </CButton>} position="right" modal lockScroll="false" backgroundColor="rgba(75,192,192,0.4)"
+                   contentStyle={{ width: "60%", height: "60%", overflow: "auto", position: 'absolute', top: '19%', left: '21%'}}>
+                  {
+                    <CRow>
+                    <CCol xs={12}>
+                      <CCard>
+                        <CCardHeader>
+                          <strong className="text-medium-emphasis small">FCI Regulation & Position Biases</strong>
+                        </CCardHeader>
+                        <CCardBody>
+                        <CRow>
+                          <CCol>
+                          <p className="text-medium-emphasis small">» The FCI Position Bias Page allows to view and analyze data related to FCI regulations and positions. Upon opening the Biases Page, it fetches and displays a list of FCI regulations and their corresponding positions. A FCI regulation and position can be selected to view detailed information such as position percentages and values.</p>
+                          <p className="text-medium-emphasis small">» The Biases Page also provides a chart comparing the expected FCI regulation definition with the actual FCI regulation composition. Additionally, positions be filtered by date range to view position data for a specific time period.</p>
+                          <p className="text-medium-emphasis small">» If there is an error with the data, the Biases Page displays a toast message with the error details. The Biases Page also updates the FCI report quantity each time a report is generated.</p>
+                          <p className="text-medium-emphasis small">» A proportional overview comparing FCI regulation percentages with the current loaded position is a visual representation that highlights any biases or deviations between the expected FCI regulation definition and the actual FCI regulation composition. This overview displays the expected percentages of each specie type in the FCI regulation and compares them with the percentages of the same specie types in the current loaded position.</p>
+                          <p className="text-medium-emphasis small">» To create this overview, the Biases Page first retrieves the expected percentages of each specie type in the FCI regulation from the backend API. It then retrieves the current loaded position data, which includes the percentages of each specie type in the position. The application calculates the differences between the expected and actual percentages for each specie type and displays them in a chart or table format.</p>
+                          <p className="text-medium-emphasis small">» The proportional overview helps to identify any biases or deviations in the current loaded position compared to the expected FCI regulation definition. For example, if the expected percentage of a certain specie type in the FCI regulation is 10%, but the actual percentage in the current loaded position is 15%, this indicates a bias towards that specie type. By exposing these biases, the Biases Page enables to make informed decisions about adjusting the current loaded position to better align with the expected FCI regulation definition.</p>
+                          </CCol>
+                        </CRow>
+                      </CCardBody>
+                      </CCard>
+                      </CCol>
+                      </CRow>}
+                      </Popup>}
                 <strong className="text-medium-emphasis small">Select FCI Regulation & Position</strong>
               </CCardHeader>
               <CCardBody>
@@ -604,7 +632,7 @@ return (
                                 <CRow>
                                 <CCol xs={5}>
                                     <CCard className="mb-4">
-                                      <CCardHeader>Expected FCI Regulation Definition</CCardHeader>
+                                      <CCardHeader className="text-medium-emphasis small">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FCI Regulation Distribution</CCardHeader>
                                       <CCardBody>
                                         <CChartPie
                                           data={{
@@ -623,21 +651,21 @@ return (
                                   </CCol>
                                   <CCol>
                                   <CCard className="mb-4">
-                                      <CCardHeader>FCI Regulation Composition</CCardHeader>
+                                      <CCardHeader className="text-medium-emphasis small">FCI Regulation Composition</CCardHeader>
                                       <CCardBody>
-                                          <table  className="text-medium-emphasis">
+                                          <table className="text-medium-emphasis" style={{ overflow: "auto"}}>
                                           <thead>
-                                              <tr className="text-medium-emphasis">
-                                                <th>Specie Type</th>
-                                                <th>Percentage</th>
+                                              <tr className="text-medium-emphasis small">
+                                                <th className="text-medium-emphasis small">Specie Type</th>
+                                                <th className="text-medium-emphasis small">Percentage</th>
                                               </tr>  
                                             </thead>  
                                             <tbody>
                                               {regulationPercentages?.map((p) => 
                                               <React.Fragment key={p.id}>
                                                 <tr className="text-medium-emphasis">
-                                                  <td>{p.specieTypeName}</td>
-                                                  <td>{p.percentage}</td>
+                                                  <td className="text-medium-emphasis small">{p.specieTypeName}</td>
+                                                  <td className="text-medium-emphasis small">{p.percentage}</td>
                                                 </tr>
                                               </React.Fragment> 
                                               )}                                       
@@ -677,7 +705,7 @@ return (
                       ) : <td></td>}
                     </tr>
                   </thead>
-                  <table><tr><td>&nbsp;</td></tr></table>
+                  <table style={{ marginTop: "-10px" }}><tr><td>&nbsp;</td></tr></table>
                 </table>
                 <table>
                 {positions.length > 0? (
@@ -757,8 +785,9 @@ return (
     <CRow>
       <CCol xs={12}>
         <CCard>
-          <CCardHeader>
-            <strong className="text-medium-emphasis small">Position Distribution & Details</strong>
+          <CCardHeader className="text-medium-emphasis small  d-flex align-items-center" style={{ padding: '0.5rem 1rem', lineHeight: '3rem' }}>
+              &nbsp;&nbsp;&nbsp;<CIcon icon={cilAlignRight} size="xl"/>&nbsp;&nbsp;&nbsp;
+              <strong>Position Distribution & Details</strong>
           </CCardHeader>
           <CCardBody>
               {regulationPercentages?.length > 0? (
@@ -786,7 +815,8 @@ return (
                           {<Popup trigger={
                           <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages()}>
                               <CIcon icon={cilFile} size="xl"/>
-                          </CButton>} position="right center" modal lockScroll="false" backgroundColor="rgba(75,192,192,0.4)">
+                          </CButton>} position="right center" modal lockScroll="true" backgroundColor="rgba(75,192,192,0.4)"
+                          contentStyle={{ width: "50%", height: "80%", top: '8%', bottom: '5%', left: '5%', right: '10%'}}>
                           {
                             <CRow>
                             <CCol xs={12}>

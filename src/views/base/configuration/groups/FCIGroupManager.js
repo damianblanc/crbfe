@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
-import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer } from '@coreui/icons';
+import { cilAlignRight, cilBookmark, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer } from '@coreui/icons';
 
 import CIcon from '@coreui/icons-react'
 
@@ -225,6 +225,34 @@ function FCIGroupManager() {
           <CCol xs={12}>
             <CCard>
               <CCardHeader>
+              {<Popup trigger={
+                  <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string'>
+                      <CIcon icon={cilBookmark} size="xl"/>
+                  </CButton>} position="right" modal lockScroll="false" backgroundColor="rgba(75,192,192,0.4)"
+                   contentStyle={{ width: "60%", height: "65%", overflow: "auto", position: 'absolute', top: '19%', left: '21%'}}>
+                  {
+                    <CRow>
+                    <CCol xs={12}>
+                      <CCard>
+                        <CCardHeader>
+                          <strong className="text-medium-emphasis small">FCI Regulation</strong>
+                        </CCardHeader>
+                        <CCardBody>
+                        <CRow>
+                          <CCol>
+                          <p className="text-medium-emphasis small">» The Group Management page is design to manage and view information related to Specie Type Groups and Specie Types.</p>
+                          <p className="text-medium-emphasis small">» Upon loading, the page fetches all available Specie Type Groups. If there are no groups found, an error message is displayed. Otherwise, the first group is selected by default, and its Specie Types are shown.</p>
+                          <p className="text-medium-emphasis small">» Different Specie Type Group can be selected from a dropdown list to view its Specie Types. For each Specie Type, details such as its name, description, and the number of species it contains are displayed. The ability to delete a Specie Type from its group is also accepted, but it is important to understand restrictions to this deletion once specie type is referenced from any position.</p>
+                          <p className="text-medium-emphasis small">» In addition, a new Specie Type can be added to the current group. To do so, they need to provide a name and description for the new Specie Type. If the provided information is valid, the new Specie Type is added to the group. Otherwise, an error message is displayed.</p>
+                          <p className="text-medium-emphasis small">» There is also a popup window that provides detailed information about specie types distribution in group.</p>
+                          <p className="text-medium-emphasis small">» Any error messages that occur during the use of this page are displayed as toast notifications.</p>
+                          </CCol>
+                        </CRow>
+                      </CCardBody>
+                      </CCard>
+                      </CCol>
+                      </CRow>}
+                      </Popup>}
                 <strong className="text-medium-emphasis small">Specie Type Groups Configuration</strong>
               </CCardHeader>
               <CCardBody>
@@ -252,7 +280,7 @@ function FCIGroupManager() {
                 <tbody></tbody>
                </table>
                <br/>
-               <table className="text-medium-emphasis small"> 
+               <table className="text-medium-emphasis small" style={{ border: "none", marginBottom: "-10px"}}> 
                <tr>
                {currentGroup.updatable? (
                   <p>
@@ -272,8 +300,9 @@ function FCIGroupManager() {
         <CRow>
         <CCol xs={12}>
           <CCard>
-            <CCardHeader className="text-medium-emphasis small">
-              <strong className="text-medium-emphasis large">Specie Types in Group &nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong>
+          <CCardHeader className="text-medium-emphasis small d-flex align-items-center" style={{ padding: '0.5rem 1rem', lineHeight: '3rem' }}>
+              &nbsp;&nbsp;&nbsp;<CIcon icon={cilAlignRight} size="xl"/>&nbsp;&nbsp;&nbsp;
+              <strong>Specie Types in Group &nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong>
               <Popup trigger={
                 <CButton shape='rounded' size='xxl' color='string'>
                     <CIcon className="text-medium-emphasis small" icon={cilClipboard} size="xl"/>

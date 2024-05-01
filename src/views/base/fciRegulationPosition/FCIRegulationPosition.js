@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
-import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter, cilArrowTop, cilOptions, cilMagnifyingGlass, cilCheckCircle } from '@coreui/icons';
+import { cilAlignRight, cilBookmark, cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter, cilArrowTop, cilOptions, cilMagnifyingGlass, cilCheckCircle } from '@coreui/icons';
 import { CChartLine } from '@coreui/react-chartjs'
 
 import CIcon from '@coreui/icons-react'
 
 import './FCIRegulationTable.css';
-import './Popup.css';
 
+import './Popup.css';
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
 
@@ -568,6 +568,34 @@ function FCIRegulationPosition() {
           <CCol xs={12}>
             <CCard>
               <CCardHeader>
+              {<Popup trigger={
+                  <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string'>
+                      <CIcon icon={cilBookmark} size="xl"/>
+                  </CButton>} position="right" modal lockScroll="false" backgroundColor="rgba(75,192,192,0.4)"
+                   contentStyle={{ width: "60%", height: "60%", overflow: "auto", position: 'absolute', top: '19%', left: '21%'}}>
+                  {
+                    <CRow>
+                    <CCol xs={12}>
+                      <CCard>
+                        <CCardHeader>
+                          <strong className="text-medium-emphasis small">FCI Regulation & Position Biases</strong>
+                        </CCardHeader>
+                        <CCardBody>
+                        <CRow>
+                          <CCol>
+                          <p className="text-medium-emphasis small">» The FCI Position Page is a user-friendly tool designed to help users manage and analyze FCI regulation positions.</p>
+                          <p className="text-medium-emphasis small">» With this FCI Position Page, a FCI regulation can be selected and view its corresponding positions, including position percentages and values.</p>
+                          <p className="text-medium-emphasis small">» The Position Page also provides an overview of each specie type valued summarized price, as well as a detailed popup that shows each specie in position with its market price valued.</p>
+                          <p className="text-medium-emphasis small">» FCI Positions can be filtered by date range and view position data for a specific time period.</p> 
+                          <p className="text-medium-emphasis small">» The FCI Position Page also allows to create and upload new positions using an Excel file, and refresh or delete existing positions.</p> 
+                          <p className="text-medium-emphasis small">» With its intuitive interface and powerful features, the FCI Regulation Position FCI Position Page is an essential tool for anyone working with FCI regulations.</p>
+                          </CCol>
+                        </CRow>
+                      </CCardBody>
+                      </CCard>
+                      </CCol>
+                      </CRow>}
+                      </Popup>}
                 <strong className="text-medium-emphasis small">Select & Upload Position</strong>
               </CCardHeader>
               <CCardBody>
@@ -742,7 +770,8 @@ function FCIRegulationPosition() {
         <CRow>
         <CCol xs={12}>
           <CCard>
-            <CCardHeader className="text-medium-emphasis small">
+            <CCardHeader className="text-medium-emphasis small  d-flex align-items-center" style={{ padding: '0.5rem 1rem', lineHeight: '3rem' }}>
+              &nbsp;&nbsp;&nbsp;<CIcon icon={cilAlignRight} size="xl"/>&nbsp;&nbsp;&nbsp;
               <strong>FCI Regulation Positions</strong>
             </CCardHeader>
             <CCardBody>

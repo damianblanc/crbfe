@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
-import { cilTrash, cilTransfer, cilArrowTop, cilCheckCircle } from '@coreui/icons';
+import { cilAlignRight, cilBookmark, cilTrash, cilTransfer, cilCheckCircle } from '@coreui/icons';
 
 import CIcon from '@coreui/icons-react'
 
 import './FCIRegulationTable.css';
-import './Popup.css';
 
+import './Popup.css';
 import 'reactjs-popup/dist/index.css';
+import Popup from 'reactjs-popup';
 
 import axios from 'axios';
 
@@ -285,6 +286,32 @@ function SpecieTypeManager() {
           <CCol xs={12}>
             <CCard>
               <CCardHeader>
+              {<Popup trigger={
+                  <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string'>
+                      <CIcon icon={cilBookmark} size="xl"/>
+                  </CButton>} position="right" modal lockScroll="false" backgroundColor="rgba(75,192,192,0.4)"
+                   contentStyle={{ top: "6%", width: "60%", height: "42%", overflow: "auto", position: 'absolute', top: '19%', left: '21%'}}>
+                  {
+                    <CRow>
+                    <CCol xs={12}>
+                      <CCard>
+                        <CCardHeader>
+                          <strong className="text-medium-emphasis small">FCI Regulation & Position Biases</strong>
+                        </CCardHeader>
+                        <CCardBody>
+                        <CRow>
+                          <CCol>
+                          <p className="text-medium-emphasis small">» The specie type page is designed to manage and display specie type groups, specie types, and species.&nbsp;&nbsp;A list of specie type groups are shown and are is able to be selected a group to view its associated specie types and species. New specie types, update the association between a specie and a specie type, and delete specie types operations with associations.</p>
+                          <p className="text-medium-emphasis small">» The specie type page displays a table showing the specie type groups, species, and their associations.</p>
+                          <p className="text-medium-emphasis small">» The specie type page also provides a popup with information about FCI regulations and position biases.</p>
+                          <p className="text-medium-emphasis small">» If there is an error with the data, the specie type page displays an error message to the user. The error message is displayed as a toast notification at the top right corner of the screen.</p>
+                          </CCol>
+                        </CRow>
+                      </CCardBody>
+                      </CCard>
+                      </CCol>
+                      </CRow>}
+                      </Popup>}
                 <strong className="text-medium-emphasis small">Specie Type Groups Configuration</strong>
               </CCardHeader>
               <CCardBody>
@@ -308,7 +335,7 @@ function SpecieTypeManager() {
                 <tbody></tbody>
                </table>
                <br/>
-               <table className="text-medium-emphasis small"> 
+               <table className="text-medium-emphasis small" style={{ border: "none", marginBottom: "-10px"}}> 
                <tr>
                   {currentGroup.updatable? (
                       <p>
@@ -326,45 +353,55 @@ function SpecieTypeManager() {
         <CRow>
         <CCol xs={12}>
           <CCard>
-            <CCardHeader className="text-medium-emphasis small">
+          <CCardHeader className="text-medium-emphasis small d-flex align-items-center" style={{ padding: '0.5rem 1rem', lineHeight: '3rem' }}>
+              &nbsp;&nbsp;&nbsp;<CIcon icon={cilAlignRight} size="xl"/>&nbsp;&nbsp;&nbsp;
+              <strong>Specie Types in Group&nbsp;&nbsp;&nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong>
+            </CCardHeader>
+            <CCardHeader className="text-medium-emphasis small" style={{ border: "none", marginBottom: "-30px"}}>
               <tr>
-                <td width="25%">
-                   <strong>Specie Types in Group &nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong>
-                </td>
-                <td>&nbsp;</td>
-                <td width="75%">
-                    <CPagination align="end" size="sm" className="text-medium-emphasis small"
-                    activePage = {currentPage}
-                    pages = {Math.floor(totalSpecies / speciesPerPage)}
-                    onActivePageChange={handlePageChange}>
-                      {currentPage === 1? (
-                        <CPaginationItem disabled>«</CPaginationItem> ) 
-                      : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
-                      <CPaginationItem active className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
-                      {currentPage === Math.ceil(totalSpecies / speciesPerPage)? (
-                        <CPaginationItem disabled>»</CPaginationItem>) 
-                      : (<CPaginationItem className="text-medium-emphasis small" onClick={() => handlePageChange(currentPage + 1)}>»</CPaginationItem>)}
+                 <td width="60%">&nbsp;<code>*&nbsp;</code>Associate each market specie to its required specie type for further recognition at position uploading time</td>
+                 <td style={{ width: "10%", border: "none", verticalAlign: "bottom"}}>
+                    <CPagination style={{verticalAlign: "bottom"}} align="end" size="sm" 
+                        activePage = {currentPage}
+                        pages = {Math.floor(totalSpecies / speciesPerPage)}
+                        onActivePageChange={handlePageChange}>
+                          {currentPage === 1? (
+                            <CPaginationItem disabled>«</CPaginationItem> ) 
+                          : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
+                        
+                          <CPaginationItem style={{ background : currentPage === 1? 'lightgrey' : 'lightcyan' }}
+                              onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
+                          {currentPage === Math.ceil(totalSpecies / speciesPerPage)? (
+                          <CPaginationItem style={{ backgroundColor: 'lightgrey' }}>{Math.ceil(totalSpecies / speciesPerPage)}</CPaginationItem>
+                          ) :
+                          (<CPaginationItem style={{ backgroundColor: 'lightcyan' }}>{Math.ceil(totalSpecies / speciesPerPage)}</CPaginationItem>)}
+                          
+                          <CPaginationItem style={{ backgroundColor: 'lightblue' }} >{totalSpecies < speciesPerPage? species.length : totalSpecies}</CPaginationItem>
+
+                          {totalSpecies === 0 || currentPage === Math.ceil(totalSpecies / speciesPerPage)? (
+                            <CPaginationItem disabled>»</CPaginationItem>) 
+                          : (<CPaginationItem className={"custom-pagination-item"} onClick={() => handlePageChange(currentPage + 1)}>»</CPaginationItem>)}
                     </CPagination>
-                </td>
+                  </td>
               </tr>
             </CCardHeader>
             <CCardBody>
               <table>
                 <thead>
                   <tr className="text-medium-emphasis">
-                    <th>#</th>
-                    <th>Specie Symbol</th>
-                    <th>Specie Type</th>
-                    <th>Actions</th>
+                    <th className='text-medium-emphasis small'>#</th>
+                    <th className='text-medium-emphasis small'>Specie Symbol</th>
+                    <th className='text-medium-emphasis small'>Specie Type</th>
+                    <th className='text-medium-emphasis small'>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {Object.prototype.toString.call(species) === '[object Array]' && species?.map((item) => 
                     <React.Fragment key={item.id}>
                     <tr>
-                    <td width="5%">{item.id}</td>
-                      <td width="5%">{item.specieSymbol}</td>
-                      <td width="30%">
+                    <td width="5%" className='text-medium-emphasis small'>{item.id}</td>
+                      <td width="5%" className='text-medium-emphasis small'>{item.specieSymbol}</td>
+                      <td width="30%" className='text-medium-emphasis small'>
                       <select className="text-medium-emphasis large" onChange={(e) => setCurrentSpecieTypeSelected(e.target.value)}>
                         <option>&nbsp;&nbsp;&nbsp;</option> 
                         {Object.prototype.toString.call(specieTypes) === '[object Array]' && specieTypes?.map((specietype) => 
@@ -376,10 +413,10 @@ function SpecieTypeManager() {
                       </select>
                     </td>
                     <td>
-                      <CButton component="a" color="string" role="button" size='sm' onClick={() => upsertSpecieToSpecieTypeAssociation(currentGroup.name, currentSpecieTypeName, item.specieSymbol)}>
+                      <CButton  className='text-medium-emphasis small' component="a" color="string" role="button" size='sm' onClick={() => upsertSpecieToSpecieTypeAssociation(currentGroup.name, currentSpecieTypeName, item.specieSymbol)}>
                             <CIcon icon={cilTransfer} size="xl"/>
                         </CButton>
-                        <CButton component="a" color="string" role="button" size='sm' onClick={() => deleteSpecieType()}>
+                        <CButton className='text-medium-emphasis small' component="a" color="string" role="button" size='sm' onClick={() => deleteSpecieType()}>
                             <CIcon icon={cilTrash} size="xl"/>
                         </CButton>
                         &nbsp;&nbsp;&nbsp;&nbsp;

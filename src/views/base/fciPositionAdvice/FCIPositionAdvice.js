@@ -2,12 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton} from '@coreui/react'
-import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter, cilArrowTop, cilOptions, cilMagnifyingGlass } from '@coreui/icons';
+import { cilAlignRight, cilBookmark, cilClipboard, cilListFilter, cilMagnifyingGlass } from '@coreui/icons';
 import CIcon from '@coreui/icons-react'
 
 import axios from 'axios';
 
 import { NumericFormat } from 'react-number-format';
+
+import Popup from 'reactjs-popup';
+import 'reactjs-popup/dist/index.css';
 
 import './FCIRegulationTable.css';
 
@@ -88,6 +91,8 @@ function FCIPositionAdvice() {
 
   const [noPositions, setNoPositions] = useState(false);
   const [noPositionsDateFilter, setNoPositionsDateFilter] = useState(false);
+
+  const [inputValue, setInputValue] = useState("");
 
   useEffect(() => {
     const isValid = isLoginTimestampValid();
@@ -486,6 +491,15 @@ function FCIPositionAdvice() {
     setSearchToDateAfter(searchToDate);
   };
 
+  const handleInputChange = (event) => {
+    const input = event.target.value;
+    const numericInput = input.replace(/[^0-9]/g, "");
+    const positiveInput = numericInput ? Math.abs(numericInput) : "";
+  
+    setInputValue(positiveInput);
+    setCurrentPositionIdInFilter(positiveInput == ""? 0 : positiveInput);
+  };  
+
   return (
     <>
      {showToast === true?
@@ -515,14 +529,41 @@ function FCIPositionAdvice() {
         <CCol xs={12}>
             <CCard>
               <CCardHeader>
+              {<Popup trigger={
+                  <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string'>
+                      <CIcon icon={cilBookmark} size="xl"/>
+                  </CButton>} position="right" modal lockScroll="false" backgroundColor="rgba(75,192,192,0.4)"
+                   contentStyle={{ width: "60%", height: "41%", overflow: "auto", position: 'absolute', top: '19%', left: '21%'}}>
+                  {
+                    <CRow>
+                    <CCol xs={12}>
+                      <CCard>
+                        <CCardHeader>
+                          <strong className="text-medium-emphasis small">FCI Regulation Position Advices</strong>
+                        </CCardHeader>
+                        <CCardBody>
+                        <CRow>
+                          <CCol>
+                          <p className="text-medium-emphasis small">» The FCI Position Advice Page allows to view and analyze data related to FCI positions in order to access recomendations on how to operate contained species.</p> 
+                          <p className="text-medium-emphasis small">» Upon opening the Biases Page, it fetches and displays a list of FCI regulations and their corresponding positions.</p>
+                          <p className="text-medium-emphasis small">» The advices table provides information about how to operate on current loaded position.</p>
+                          <p className="text-medium-emphasis small">» Export the table data to an Excel file is provided in order to get current advice information.</p>
+                          <p className="text-medium-emphasis small">» If there is an error with the data, the Advices Page displays a toast message with the error details. The Biases Page also updates the FCI report quantity each time a report is generated.</p>
+                          </CCol>
+                        </CRow>
+                      </CCardBody>
+                      </CCard>
+                      </CCol>
+                      </CRow>}
+                      </Popup>}
                 <strong className="text-medium-emphasis small">Select FCI Regulation & Position</strong>
               </CCardHeader>
               <CCardBody>
                 <table className="no-border" width={"100%"}>
                     <thead className="no-border">
                         <tr className="text-medium-emphasis">
-                          <td width="30%"><code>&lt;FCI Regulation Symbol&gt;</code></td>
-                          <td width="30%">
+                          <td width="20%" className="text-medium-emphasis" style={{ border: "none"}}><code>&lt;FCI Regulation Symbol&gt;</code></td>
+                          <td width="30%" style={{ border: "none"}}>
                             <select className="text-medium-emphasis large" onChange={(e) => selectFciSymbol(e.target.value)}>
                               {regulations?.map((regulation) => 
                                 <React.Fragment key={regulation.id}>
@@ -531,63 +572,36 @@ function FCIPositionAdvice() {
                               )}
                             </select>
                           </td>
-                          <td width="8%">
-                            {positions.length > 0? (
-                              <code>&lt;FCI Position&gt;</code>
-                            ) : null}
-                          </td>
-                          <td width="32%">
-                            {positions.length > 0? (
-                            <select className="text-medium-emphasis large" onChange={(e) => selectPosition(e.target.value)}>
-                              {positions !== undefined && positions.slice(0, 10).map((fciPosition) => 
-                                <React.Fragment key={fciPosition.id}>
-                                <option value={fciPosition.id}>#{fciPosition.id} - {fciPosition.timestamp}&nbsp;&nbsp;&nbsp;</option>
-                                </React.Fragment>
-                              )}
-                            </select>
-                            ) : null}
-                          </td>
+                          <td width="55%" style={{ border: "none"}}/>
                         </tr>
                     </thead>
                 </table>
                 <table>
+                {positions.length > 0? (
                   <tr>
-                    <td className="text-medium-emphasis small" width="15%">Position Identifier #</td>
-                    <td className="text-medium-emphasis large" width="8%">
-                          <select className="text-medium-emphasis large" id="positionIdentifier"
-                            onChange={(e) => setCurrentPositionIdInFilter(e.target.value)}
-                            style={{width: "100%"}} disabled={!noPositions || noPositionsDateFilter}>
-                            <option/>
-                            {positions?.map((position) => 
-                              <React.Fragment key={position.id}>
-                                <option value={position.id}>{position.id}</option>
-                              </React.Fragment>
-                            )}
-                          </select>
+                    <td className="text-medium-emphasis small" style={{ border: "none"}} width="18%">Position Identifier #</td>
+                    <td width="1%" style={{ border: "none"}}/>
+                    <td className="text-medium-emphasis small" style={{ border: "none"}} width="12%">
+                      <input className="text-medium-emphasis small" style={{ width: "100%"}}
+                      value={inputValue} onChange={handleInputChange}/>
                     </td>
-                    <td width="1%"/>
-                    <td>
-                      <CButton shape='rounded' size='sm' color='string' onClick={() => filterPositionListTable()}
-                        disabled={!noPositions || !noPositionsDateFilter} style={{ border: "none",}}>
-                            <CIcon className="text-medium-emphasis small" icon={cilListFilter} size="xl"/>
-                      </CButton>
-                    </td>
-                    <td width="3%"/>
-                    <td width="8%" className="text-medium-emphasis small">Date From</td>
-                    <td width="1%"/>
-                    <td width="12%">
+                    <td width="10%" style={{ border: "none"}}/>
+                    <td width="4%" className="text-medium-emphasis small" style={{ border: "none"}}>&nbsp;&nbsp;&nbsp;From</td>
+                    <td width="2%" style={{ border: "none"}}></td>
+                    <td width="5%" style={{ border: "none"}}>
                       <input 
                         type="date"
                         className="text-medium-emphasis small"
                         onChange={(e) => handleSearchDateFromChange(e.target.value)}
                         value={searchFromDate}
                         max={searchToDate}
-                        disabled={searchFilteredPosition || !noPositions}
+                        //disabled={searchFilteredPosition || !noPositions}
                       />
                     </td>
-                    <td width="2%"></td>
-                    <td width="7%" className="text-medium-emphasis small">Date To</td>
-                    <td width="10%">
+                    <td width="2%" style={{ border: "none"}}></td>
+                    <td width="2%" className="text-medium-emphasis small" style={{ border: "none"}}>To</td>
+                    <td width="1%" style={{ border: "none"}}></td>
+                    <td width="4%" style={{ border: "none"}}>
                       <input
                         type="date"
                         className="text-medium-emphasis small"
@@ -595,17 +609,37 @@ function FCIPositionAdvice() {
                         value={searchToDate}
                         min={searchFromDate}
                         max={today}
-                        disabled={searchFilteredPosition || !noPositions}
+                      //  disabled={searchFilteredPosition || !noPositions}
                       />
                     </td>
-                    <td width="2%"></td>
-                    <td>
-                      <CButton shape='rounded' size='sm' color='string' onClick={() => searchPositionsByDate(0)}
-                        disabled={searchFilteredPosition || !noPositions} style={{ border: "none",}}>
-                            <CIcon className="text-medium-emphasis small" icon={cilMagnifyingGlass} size="xl"/>
+                    <td width="2%" style={{ border: "none"}}></td>
+                    <td style={{ border: "none"}} width="2%">
+                      <CButton shape='rounded' size='sm' color='string' onClick={() => searchPositionsByDate(0)} style={{ border: "none"}}>
+                        <CIcon className="text-medium-emphasis small" icon={cilMagnifyingGlass} size="xl"/>
                       </CButton>
                     </td>
+                    <td width="5%" style={{ border: "none"}}></td>
+                    <td className="text-medium-emphasis small" width="15%" style={{ border: "none"}}>
+                      {positions.length > 0? (
+                          <code>&lt;FCI Position&gt;</code>
+                        ) : null}
+                    </td>
+                    <td width="1%" style={{ border: "none"}}></td>
+                    <td width="10%" style={{ border: "none"}}>
+                      {positions.length > 0? (
+                        <select className="text-medium-emphasis large" 
+                              onChange={(e) => selectPosition(e.target.value)}>
+                          {positions !== undefined && positions.slice(0, 20).map((fciPosition) => 
+                            <React.Fragment key={fciPosition.id}>
+                            <option value={fciPosition.id}>#{fciPosition.id} - {fciPosition.timestamp}&nbsp;&nbsp;&nbsp;</option>
+                            </React.Fragment>
+                          )}
+                        </select>
+                      ) : null}
+                      </td>
+                      <td width="21%"></td>
                   </tr>
+                  ) : null}
                </table>
              </CCardBody>
             </CCard>
@@ -619,7 +653,8 @@ function FCIPositionAdvice() {
     <CRow>
         <CCol xs={12}>
           <CCard>
-            <CCardHeader className="text-medium-emphasis small">
+            <CCardHeader className="text-medium-emphasis small  d-flex align-items-center" style={{ padding: '0.5rem 1rem', lineHeight: '3rem' }}>
+              &nbsp;&nbsp;&nbsp;<CIcon icon={cilAlignRight} size="xl"/>&nbsp;&nbsp;&nbsp;
               <strong>FCI Regulation Position Advices</strong>
             </CCardHeader>
             <CCardBody>

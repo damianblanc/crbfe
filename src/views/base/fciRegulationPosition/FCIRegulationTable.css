@@ -115,3 +115,12 @@ button:hover {
 .custom-last-page-item {
   background-color: lightsalmon !important;
 }
+
+.chartjs-tooltip {
+  background-color: lightgrey;
+  border-radius: 5px;
+  padding: 3px;
+  color: grey !important;
+  font-size: 12px;
+  opacity: 1;
+}

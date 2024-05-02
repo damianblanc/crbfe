@@ -667,96 +667,96 @@ function FCIRegulationPosition() {
                     </table>
                   </td>
                   <td width="28%" style={{ border: "none"}}>
-                    <CCol sm={12} mb={6} style={{ width: "100%"}}>
-                      <CWidgetStatsA
-                        className="mb-6"
-                        color="secondary"
-                        style={{ height: '138px'}}
-                        value={
-                          <>
-                            {positionQuantity}{' '}
-                            <span className="fs-6 fw-small">
-                              ({posPerMonthGrowth}% <CIcon icon={cilArrowTop} />)
-                            </span>
-                          </>
-                        }
-                        title="Positions"
-                        chart={
-                          <CChartLine
-                            className="st-0 sx-0"
-                            style={{ height: '70px'}}
-                            data={{
-                              labels: positionsPerMonth?.reverse().map((e) => e.month),
-                              datasets: [
-                                {
-                                  label: 'Positions per Month',
-                                  backgroundColor: 'grey',
-                                  borderColor: 'grey',
-                                  pointBackgroundColor: 'white',
-                                  data: positionsPerMonth?.map((e) => e.quantity),
-                                },
-                              ],
-                            }}
-                            options={{
-                              plugins: {
-                                legend: {
-                                  display: false,
-                                },
-                                // tooltip: { // Add the tooltip object here
-                                //   backgroundColor: 'blue', // Set the background color to black
-                                //   bodyColor: 'blue', // Set the text color to white
-                                //   titleColor: 'white', // Set the title color to white
-                                //   titleFont: {
-                                //     size: 12, // Set the title font size
-                                //   },
-                                //   bodyFont: {
-                                //     size: 10, // Set the body font size
-                                //   },
-                                //   callbacks: {
-                                //     title: () => '', // Hide the tooltip title
-                                //     label: (context) => `Quantity: ${context.parsed.y}`, // Set the tooltip label
-                                //   },
-                                // },
-                              },
-                              maintainAspectRatio: false,
-                              scales: {
-                                x: {
-                                  grid: {
-                                    display: false,
-                                    drawBorder: false,
-                                  },
-                                  ticks: {
-                                    display: false,
-                                  },
-                                },
-                                y: {
-                                  min: -200,
-                                  max: 200,
-                                  display: false,
-                                  grid: {
-                                    display: false,
-                                  },
-                                  ticks: {
-                                    display: false,
-                                  },
-                                },
-                              },
-                              elements: {
-                                line: {
-                                  borderWidth: 1,
-                                },
-                                point: {
-                                  radius: 4,
-                                  hitRadius: 10,
-                                  hoverRadius: 10,
-                                },
-                              },
-                            }}
-                          />
-                        }
-                      />
-                    </CCol>
-                  </td>
+  <CCol sm={12} mb={6} style={{ width: "100%"}}>
+    <CWidgetStatsA
+      className="mb-6"
+      color="secondary"
+      style={{ height: '138px'}}
+      value={
+        <>
+          {positionQuantity}{' '}
+          <span className="fs-6 fw-small">
+            ({posPerMonthGrowth? posPerMonthGrowth.toFixed(2) (<CIcon icon={cilArrowTop}/>) : 0}%)
+          </span>
+        </>
+      }
+      title="Positions"
+      chart={
+        <CChartLine
+          className="st-0 sx-0"
+          style={{ height: '70px'}}
+          data={{
+            labels: positionsPerMonth?.reverse().map((e) => e.month),
+            datasets: [
+              {
+                label: 'Positions per Month',
+                backgroundColor: 'grey',
+                borderColor: 'grey',
+                pointBackgroundColor: 'white',
+                data: positionsPerMonth?.map((e) => e.quantity),
+              },
+            ],
+          }}
+          options={{
+            plugins: {
+              legend: {
+                display: false,
+              },
+              tooltip: {
+                backgroundColor: 'blue', 
+                bodyColor: 'blue', 
+                titleColor: 'white', 
+                titleFont: {
+                  size: 6,
+                },
+                bodyFont: {
+                  size: 4,
+                },
+                callbacks: {
+                  title: (context) => context ? `${context[0].label}` : '',
+                  // label: (context) => '',
+                },
+              },
+            },
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                grid: {
+                  display: false,
+                  drawBorder: false,
+                },
+                ticks: {
+                  display: false,
+                },
+              },
+              y: {
+                min: -100,
+                max: 100,
+                display: false,
+                grid: {
+                  display: false,
+                },
+                ticks: {
+                  display: false,
+                },
+              },
+            },
+            elements: {
+              line: {
+                borderWidth: 1,
+              },
+              point: {
+                radius: 4,
+                hitRadius: 10,
+                hoverRadius: 10,
+              },
+            },
+          }}
+        />
+      }
+    />
+  </CCol>
+</td>
                 </tr>
               </table> 
             </CCardBody>

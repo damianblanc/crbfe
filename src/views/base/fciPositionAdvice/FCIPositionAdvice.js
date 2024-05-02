@@ -637,7 +637,7 @@ function FCIPositionAdvice() {
                         </select>
                       ) : null}
                       </td>
-                      <td width="21%"></td>
+                      <td width="21%" style={{ border: "none"}}></td>
                   </tr>
                   ) : null}
                </table>

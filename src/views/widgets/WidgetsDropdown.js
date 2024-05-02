@@ -207,7 +207,7 @@ const WidgetsDropdown = () => {
             <>
               {positionQuantity}{' '}
               <span className="fs-6 fw-normal">
-                ({posPerMonthGrowth}% <CIcon icon={cilArrowTop} />)
+                ({posPerMonthGrowth.toFixed(2)}% <CIcon icon={cilArrowTop} />)
               </span>
             </>
           }

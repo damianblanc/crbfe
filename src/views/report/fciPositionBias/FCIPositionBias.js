@@ -115,8 +115,8 @@ function FCIPositionBias() {
 
   const [currentPositionIdInFilter, setCurrentPositionIdInFilter] = useState(0);
 
-  const minPositionId = Math.min(...positions.map(position => position.id));
-  const maxPositionId = Math.max(...positions.map(position => position.id));
+  // const minPositionId = Math.min(...positions.map(position => position.id));
+  // const maxPositionId = Math.max(...positions.map(position => position.id));
 
   const [noPositions, setNoPositions] = useState(false);
   const [noPositionsDateFilter, setNoPositionsDateFilter] = useState(false);
@@ -208,21 +208,23 @@ function FCIPositionBias() {
       } else {
         if (tempLoadedRegulations && tempLoadedRegulations.length > 0) {
           const tempLoadedPositions = await fetchPositions(tempLoadedRegulations[0].fciSymbol);
-          if (tempLoadedPositions.length == 0) {
+          if (tempLoadedPositions && tempLoadedPositions.length == 0) {
             setErrorMessage("» FCI [" + tempLoadedRegulations[0].fciSymbol + "] has no positions informed");
             setShowToast(true);
-          } 
+            setPositions([]);
+            setCurrentPositionId(0);
+          } else {
+            setPositions(tempLoadedPositions);
+         } 
           const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
           const tempLoadedReportTypes = await fetchReportTypes();
           let tempLoadedPercentagesValued = [];
-          if (tempLoadedPositions.length > 0) {
+          if (tempLoadedPositions && tempLoadedPositions.length > 0) {
             tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
             setCurrentPositionId(tempLoadedPositions[0].id);
           }
           const tempLoadedStatistics = await fetchFCIStaticticsQuantity();
           const tempLoadedOldestPostion = await fetchOldestPosition(tempLoadedRegulations[0].fciSymbol);
-          setPositions(tempLoadedPositions);
-          setCurrentPositionId(tempLoadedPositions[0].id);
           setOldestPosition(tempLoadedOldestPostion)
           setRegulationPercentages(tempLoadedPercentages);
           setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
@@ -233,7 +235,7 @@ function FCIPositionBias() {
       }
     };
     setFetchedData();
-  }, [regulations, currentFCISymbol, positions, reportTypes]);   
+  }, []);   
 
   const processReportType = async (link) => {
     const reportTypeData = async (link) => {
@@ -329,14 +331,14 @@ function FCIPositionBias() {
 
       const setFetchedData = async (fciSymbol) => {
         const tempLoadedPositions = await fetchPositions(fciSymbol);
-        if (tempLoadedPositions.length == 0) {
+        if (tempLoadedPositions && tempLoadedPositions.length == 0) {
           setErrorMessage("» FCI [" + fciSymbol + "] has no positions informed");
           setShowToast(true);
         } 
         const tempLoadedPercentages = await fetchPercentages(fciSymbol);
         const tempLoadedReportTypes = await fetchReportTypes();
         let tempLoadedPercentagesValued = [];
-        if (tempLoadedPositions.length > 0) {
+        if (tempLoadedPositions && tempLoadedPositions.length > 0) {
           tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(fciSymbol, tempLoadedPositions[0].id);
           setCurrentPositionId(Number(tempLoadedPositions[0].id));
         }
@@ -518,8 +520,8 @@ const searchPositionsByDate = async (pageNumber) => {
   const tempLoadedPositions = await fetchFilteredPosition(pageNumber);
   const tempLoadedTotalPositions = await fetchTotalFilteredPosition();
   setPositions(tempLoadedPositions);
-  setTotalPositions(tempLoadedTotalPositions.length);
-  if (tempLoadedTotalPositions.length == 0) {
+  setTotalPositions(tempLoadedTotalPositions && tempLoadedTotalPositions.length);
+  if (tempLoadedTotalPositions && tempLoadedTotalPositions.length == 0) {
     setNoPositionsDateFilter(false);
   }
   setSearchFiltered(true);
@@ -537,7 +539,9 @@ const handleInputChange = (event) => {
 };
 
 const findPositionById = () => {
-  return positions.find(p => p.id === currentPositionId);
+  if (currentPositionId > 0) {
+    return positions.find(p => p.id === currentPositionId);
+  }
 }
 
 return (
@@ -564,7 +568,7 @@ return (
         </CToast>
       </CToaster>
       : null}
-      {regulations.length > 0? (
+      {regulations && regulations.length > 0? (
         <>
        <CRow>
           <CCol xs={12}>
@@ -608,7 +612,7 @@ return (
                       <td width="18%" className="text-medium-emphasis large" style={{ border: "none"}}><code>&lt;FCI Regulation Symbol&gt;</code></td>
                       <td width="10%" style={{ border: "none"}}>
                         <select className="text-medium-emphasis large" onChange={(e) => selectFciSymbol(e.target.value)}>
-                          {regulations?.map((regulation) => 
+                          {regulations && regulations?.map((regulation) => 
                             <React.Fragment key={regulation.id}>
                             <option value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
                             </React.Fragment>
@@ -616,7 +620,7 @@ return (
                         </select>
                       </td>
                       <td width="2%" style={{ border: "none"}}/>
-                      {positions.length > 0? (
+                      {positions && positions.length > 0? (
                       <td style={{ border: "none"}}>
                         {<Popup trigger={
                           <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages()}>
@@ -636,10 +640,10 @@ return (
                                       <CCardBody>
                                         <CChartPie
                                           data={{
-                                            labels: regulationPercentages?.map((p) => p.specieTypeName),
+                                            labels: regulationPercentages && regulationPercentages?.map((p) => p.specieTypeName),
                                             datasets: [
                                               {
-                                                data: regulationPercentages?.map((p) => p.percentage),
+                                                data: regulationPercentages && regulationPercentages?.map((p) => p.percentage),
                                                 backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
                                                 hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
                                               },
@@ -708,7 +712,7 @@ return (
                   <table style={{ marginTop: "-10px" }}><tr><td>&nbsp;</td></tr></table>
                 </table>
                 <table>
-                {positions.length > 0? (
+                {positions && positions.length > 0? (
                   <tr>
                     <td className="text-medium-emphasis small" style={{ border: "none"}} width="18%">Position Identifier #</td>
                     <td width="1%" style={{ border: "none"}}/>
@@ -751,13 +755,13 @@ return (
                     </td>
                     <td width="5%"></td>
                     <td className="text-medium-emphasis small" width="15%" style={{ border: "none"}}>
-                      {positions.length > 0? (
+                      {positions && positions.length > 0? (
                           <code>&lt;FCI Position&gt;</code>
                         ) : null}
                     </td>
                     <td width="1%" style={{ border: "none"}}></td>
                     <td width="10%" style={{ border: "none"}}>
-                      {positions.length > 0? (
+                      {positions && positions.length > 0? (
                         <select className="text-medium-emphasis large" 
                               onChange={(e) => selectPosition(e.target.value)}>
                           {positions !== undefined && positions.slice(0, 20).map((fciPosition) => 
@@ -778,10 +782,10 @@ return (
        </CRow>
     </>
   ) : null}
-  {positions.length > 0? (
+  {positions && positions.length > 0? (
     <>
     <br/>
-    {regulations.length > 0? (
+    {regulations && regulations.length > 0? (
     <CRow>
       <CCol xs={12}>
         <CCard>
@@ -790,7 +794,7 @@ return (
               <strong>Position Distribution & Details</strong>
           </CCardHeader>
           <CCardBody>
-              {regulationPercentages?.length > 0? (
+              {regulationPercentages && regulationPercentages?.length > 0? (
                 <CRow>
                 <CCol xs={20}>
                   <CCard>
@@ -809,7 +813,11 @@ return (
                               )}
                            </select>
                          </td>
-                          <td className="text-medium-emphasis small" width="15%"><strong>Position # {findPositionById().id} - {findPositionById().timestamp}</strong></td>
+                          <td className="text-medium-emphasis small" width="15%">
+                            <strong>
+                              Position # {findPositionById() ? findPositionById().id + ' - ' + findPositionById().timestamp : ''}
+                            </strong>
+                          </td>
                           <td width="1%"></td>
                           <td className="text-medium-emphasis small" width="1%">
                           {<Popup trigger={
@@ -1002,7 +1010,7 @@ return (
                       <CCol>
                         <CCard className="mb-3">
                             <CCardHeader className="text-medium-emphasis small">FCI Position Overview - Total Position: $&nbsp; 
-                            <NumericFormat displayType="text" value={positionPercentages.reduce((previousValue, p, index) => previousValue +  Number(p.valued) , 0).toFixed(2)} thousandSeparator="." decimalSeparator=','/>
+                            <NumericFormat displayType="text" value={Array.isArray(positionPercentages)? positionPercentages.reduce((previousValue, p, index) => previousValue +  Number(p.valued) , 0).toFixed(2) : 0} thousandSeparator="." decimalSeparator=','/>
                               </CCardHeader>
                             <CCardBody>
                                 <table className="text-medium-emphasis small">

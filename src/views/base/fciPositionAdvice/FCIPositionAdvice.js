@@ -10,9 +10,9 @@ import axios from 'axios';
 import { NumericFormat } from 'react-number-format';
 
 import Popup from 'reactjs-popup';
-import 'reactjs-popup/dist/index.css';
 
-import './FCIRegulationTable.css';
+import 'reactjs-popup/dist/index.css';
+import './FCIPositionAdvice.css';
 
 import { isLoginTimestampValid } from '../../../utils/utils.js';
 import { useNavigate } from 'react-router-dom';
@@ -101,6 +101,14 @@ function FCIPositionAdvice() {
       localStorage.removeItem("user");
       localStorage.removeItem("token");
       navigate('/');
+    }
+
+    const currentPage = document.location.pathname;
+    localStorage.setItem('currentPage', currentPage);
+    const previousPage = localStorage.getItem("previousPage");
+    if (currentPage !== previousPage) {
+        localStorage.setItem('previousPage', currentPage);
+        window.location.reload();
     }
 
     /** FCI Regulations - Symbol and Name */
@@ -283,7 +291,7 @@ function FCIPositionAdvice() {
     }));
     const body = JSON.stringify(st);
     try {
-      const responseData = await axios.put('http://localhost:8098/api/v1/statistic/update', body,
+      const responseData = await axios.put('http://localhost:8098/api/v1/statistic/update/advice-quantity', body,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -565,8 +573,8 @@ function FCIPositionAdvice() {
                           <td width="20%" className="text-medium-emphasis" style={{ border: "none"}}><code>&lt;FCI Regulation Symbol&gt;</code></td>
                           <td width="30%" style={{ border: "none"}}>
                             <select className="text-medium-emphasis large" onChange={(e) => selectFciSymbol(e.target.value)}>
-                              {regulations?.map((regulation) => 
-                                <React.Fragment key={regulation.id}>
+                              {regulations?.map((regulation, index) => 
+                                <React.Fragment key={regulation.id || index}>
                                 <option value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
                                 </React.Fragment>
                               )}
@@ -576,17 +584,19 @@ function FCIPositionAdvice() {
                         </tr>
                     </thead>
                 </table>
+                <table style={{marginTop: "-10px", border: "none"}}><tbody><tr style={{ border: "none"}}><td style={{ border: "none"}}/></tr></tbody></table>
                 <table>
-                {positions.length > 0? (
+                {positions && positions.length > 0? (
+                  <tbody>
                   <tr>
-                    <td className="text-medium-emphasis small" style={{ border: "none"}} width="18%">Position Identifier #</td>
+                    <td className="text-medium-emphasis small" style={{ width: "18%", border: "none"}}>Position Identifier #</td>
                     <td width="1%" style={{ border: "none"}}/>
-                    <td className="text-medium-emphasis small" style={{ border: "none"}} width="12%">
+                    <td width="12%" className="text-medium-emphasis small" style={{ border: "none"}}>
                       <input className="text-medium-emphasis small" style={{ width: "100%"}}
                       value={inputValue} onChange={handleInputChange}/>
                     </td>
                     <td width="10%" style={{ border: "none"}}/>
-                    <td width="4%" className="text-medium-emphasis small" style={{ border: "none"}}>&nbsp;&nbsp;&nbsp;From</td>
+                    <td width="2%" className="text-medium-emphasis small" style={{ border: "none"}}>&nbsp;&nbsp;&nbsp;From</td>
                     <td width="2%" style={{ border: "none"}}></td>
                     <td width="5%" style={{ border: "none"}}>
                       <input 
@@ -618,27 +628,28 @@ function FCIPositionAdvice() {
                         <CIcon className="text-medium-emphasis small" icon={cilMagnifyingGlass} size="xl"/>
                       </CButton>
                     </td>
-                    <td width="5%" style={{ border: "none"}}></td>
+                    <td style={{ width:'5%', border: "none"}}/>
                     <td className="text-medium-emphasis small" width="15%" style={{ border: "none"}}>
-                      {positions.length > 0? (
+                      {positions && positions.length > 0? (
                           <code>&lt;FCI Position&gt;</code>
                         ) : null}
                     </td>
                     <td width="1%" style={{ border: "none"}}></td>
                     <td width="10%" style={{ border: "none"}}>
-                      {positions.length > 0? (
+                      {positions && positions.length > 0? (
                         <select className="text-medium-emphasis large" 
                               onChange={(e) => selectPosition(e.target.value)}>
-                          {positions !== undefined && positions.slice(0, 20).map((fciPosition) => 
-                            <React.Fragment key={fciPosition.id}>
+                          {positions !== undefined && positions.slice(0, 20).map((fciPosition, index) => 
+                            <React.Fragment key={fciPosition.id || index}>
                             <option value={fciPosition.id}>#{fciPosition.id} - {fciPosition.timestamp}&nbsp;&nbsp;&nbsp;</option>
                             </React.Fragment>
                           )}
                         </select>
                       ) : null}
                       </td>
-                      <td width="21%" style={{ border: "none"}}></td>
+                      <td style={{ width:'19%', border: "none"}}></td>
                   </tr>
+                  </tbody>
                   ) : null}
                </table>
              </CCardBody>
@@ -673,56 +684,58 @@ function FCIPositionAdvice() {
                   </tr>
                 </thead>
                 <tbody>
-                  {advices.map((item) => 
-                    <React.Fragment key={item.id}>
+                  {advices.map((item, index) => 
+                    <React.Fragment key={item.id || index}>
                     <tr>
-                    <td width={"3%"}>{item.specieTypeGroup}</td>
-                    <td>{item.specieType}</td>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Name</th>
-                          <th>Operation Advice</th>
-                          <th>Relative Quantity</th>
-                          <th>Absolute Quantity</th>
-                          <th>Market Price</th>
-                          <th>Value</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {item.operationAdvices.map((advice) => 
-                              <React.Fragment key={advice.id}>
-                                <tr>
-                                  <td>{advice.specieName}</td> 
-                                  <td>{advice.operationAdvice}</td> 
-                                  <td>{Math.floor(advice.quantity)}</td> 
-                                  <td>
-                                    {(typeof advice.quantity === 'number')? (
-                                    <div>
-                                        <NumericFormat displayType="text" value={parseFloat(advice.quantity.toFixed(2))} decimalSeparator=','/>
-                                    </div>
-                                    ) : null}
-                                  </td> 
-                                  <td>
-                                  {(typeof advice.price === 'number')? (
-                                    <div>
-                                        $ <NumericFormat displayType="text" value={parseFloat(advice.price.toFixed(2))} thousandSeparator="." decimalSeparator=','/>
-                                    </div>
-                                    ) : null}
-                                  </td> 
-                                  <td>
-                                    {(typeof advice.value === 'number')? (
-                                    <div>
-                                        $ <NumericFormat displayType="text" value={parseFloat(advice.value.toFixed(2))} thousandSeparator="." decimalSeparator=','/>
-                                    </div>
-                                    ) : null}
-                                  </td> 
-                                </tr>
-                              </React.Fragment> )}
-                      </tbody>
-                    </table>
-                    </tr>
-                    </React.Fragment>
+                      <td style={{ width: "12%"}}>{item.specieTypeGroup}</td>
+                      <td width={"15%"}> {item.specieType}</td>
+                      <td style={{ width: "73%"}}>
+                          <table>
+                            <thead>
+                              <tr>
+                                <th>Name</th>
+                                <th>Operation Advice</th>
+                                <th>Relative Quantity</th>
+                                <th>Absolute Quantity</th>
+                                <th>Market Price</th>
+                                <th>Value</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {item.operationAdvices.map((advice, index) => 
+                                    <React.Fragment key={advice.id || index}>
+                                      <tr>
+                                        <td>{advice.specieName}</td> 
+                                        <td style={{ color: advice.operationAdvice === 'BUY' ? 'green' : '#000080' }}>{advice.operationAdvice}</td>
+                                        <td style={{ color: advice.operationAdvice === 'BUY' ? 'green' : '#000080' }}>{Math.floor(advice.quantity)}</td> 
+                                        <td>
+                                          {(typeof advice.quantity === 'number')? (
+                                          <div>
+                                              <NumericFormat displayType="text" value={parseFloat(advice.quantity.toFixed(2))} decimalSeparator=','/>
+                                          </div>
+                                          ) : null}
+                                        </td> 
+                                        <td>
+                                        {(typeof advice.price === 'number')? (
+                                          <div>
+                                              $ <NumericFormat displayType="text" value={parseFloat(advice.price.toFixed(2))} thousandSeparator="." decimalSeparator=','/>
+                                          </div>
+                                          ) : null}
+                                        </td> 
+                                        <td>
+                                          {(typeof advice.value === 'number')? (
+                                          <div style={{ color: advice.operationAdvice === 'BUY' ? 'green' : '#000080' }}>
+                                              $ <NumericFormat displayType="text" value={parseFloat(advice.value.toFixed(2))} thousandSeparator="." decimalSeparator=','/>
+                                          </div>
+                                          ) : null}
+                                        </td> 
+                                      </tr>
+                                    </React.Fragment> )}
+                            </tbody>
+                          </table>
+                        </td>
+                     </tr>
+                  </React.Fragment>
                   )}
                 </tbody>
               </table>
@@ -733,6 +746,7 @@ function FCIPositionAdvice() {
        ) : null}
        </>
        ) : null}
+       <br/>
     </>
   );
 }

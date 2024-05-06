@@ -5,7 +5,7 @@ import { cilAlignRight, cilBookmark, cilTrash, cilTransfer, cilCheckCircle } fro
 
 import CIcon from '@coreui/icons-react'
 
-import './FCIRegulationTable.css';
+import './SpecieTypeManager.css';
 
 import './Popup.css';
 import 'reactjs-popup/dist/index.css';
@@ -53,7 +53,7 @@ function SpecieTypeManager() {
   const [newSpecieType, setNewSpecieType] = useState({ id: '', name: '', description: '', updatable: ''});
   const [species, setSpecies] = useState([Specie]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalSpecies, setTotalSpecies] = useState(1);
+  const [totalSpecies, setTotalSpecies] = useState(0);
   const speciesPerPage = 15;
   const navigate = useNavigate();
   const [updatedSpecie, setUpdatedSpecie] = useState(false);
@@ -72,6 +72,14 @@ function SpecieTypeManager() {
       localStorage.removeItem("token");
       navigate('/');
     }
+
+    const currentPage = document.location.pathname;
+    localStorage.setItem('currentPage', currentPage);
+    const previousPage = localStorage.getItem("previousPage");
+    if (currentPage !== previousPage) {
+        localStorage.setItem('previousPage', currentPage);
+        window.location.reload();
+    }
   
     const fetchSpecieTypeGroups = async () => {
       try {
@@ -88,6 +96,9 @@ function SpecieTypeManager() {
         return responseData.data;
       } catch (error) {
         console.error('#1 - Error receiving specieTypeGroups:', error);
+        setErrorMessage(error.response.data.message);
+        setShowToast(true);
+        showToastMessage(error.response.data.message);
       }
     };
 
@@ -103,17 +114,15 @@ function SpecieTypeManager() {
     const setFetchedData = async () => {
       const tempLoadedSpecieTypeGroups = await fetchSpecieTypeGroups();
       setSpecieTypeGroups(tempLoadedSpecieTypeGroups);
-      if (tempLoadedSpecieTypeGroups.length == 0) {
+      if (tempLoadedSpecieTypeGroups && tempLoadedSpecieTypeGroups.length == 0) {
         setErrorMessage("» There are no Groups defined: Equities, Bonds, Cedears and Cash must be created");
         setShowToast(true);
-        // setSpecieTypeGroups([]);
-        // setSpecies([]);
       } else {
         const tempLoadedSpecies = await fetchSpecies(tempLoadedSpecieTypeGroups[0].name, 0);
         const tempLoadedTotalSpecies = await fetchTotalSpecies(tempLoadedSpecieTypeGroups[0].name)
         setCurrentGroup(tempLoadedSpecieTypeGroups[0]);
         setSpecieTypes(tempLoadedSpecieTypeGroups[0].fciSpecieTypes);
-        setTotalSpecies(tempLoadedTotalSpecies.length);
+        setTotalSpecies(tempLoadedTotalSpecies && tempLoadedTotalSpecies.length);
         setSpecies(tempLoadedSpecies);
       }
     };
@@ -172,7 +181,7 @@ function SpecieTypeManager() {
       setCurrentPage(1);
       setSpecieTypes(tempLoadedSpecieTypeGroup.fciSpecieTypes);
       setSpecies(tempLoadedSpecies);
-      setTotalSpecies(tempLoadedTotalSpecies.length);
+      setTotalSpecies(tempLoadedTotalSpecies && tempLoadedTotalSpecies.length);
     }
     setFetchedData(specieTypeGroupName);
   };
@@ -273,14 +282,13 @@ function SpecieTypeManager() {
             >
             <rect width="100%" height="100%" fill="#FF0000"></rect>
             </svg>
-            <div className="fw-bold me-auto">Position Error Message</div>
-            <small>A second ago</small>
+            <div className="fw-bold me-auto">Specie Type Error Message</div>
           </CToastHeader>
           <CToastBody>{errorMessage}</CToastBody>
         </CToast>
       </CToaster>
       : null}
-      {specieTypeGroups.length > 0? (
+      {specieTypeGroups && specieTypeGroups.length > 0? (
         <>
        <CRow>
           <CCol xs={12}>
@@ -374,11 +382,11 @@ function SpecieTypeManager() {
                           {currentPage === Math.ceil(totalSpecies / speciesPerPage)? (
                           <CPaginationItem style={{ backgroundColor: 'lightgrey' }}>{Math.ceil(totalSpecies / speciesPerPage)}</CPaginationItem>
                           ) :
-                          (<CPaginationItem style={{ backgroundColor: 'lightcyan' }}>{Math.ceil(totalSpecies / speciesPerPage)}</CPaginationItem>)}
+                          (<CPaginationItem style={{ backgroundColor: 'lightcyan' }}>{species === undefined? 1 : Math.ceil(totalSpecies / speciesPerPage)}</CPaginationItem>)}
                           
-                          <CPaginationItem style={{ backgroundColor: 'lightblue' }} >{totalSpecies < speciesPerPage? species.length : totalSpecies}</CPaginationItem>
+                          <CPaginationItem style={{ backgroundColor: 'lightblue' }} >{species === undefined? 0 : totalSpecies && species && totalSpecies < speciesPerPage? species.length : totalSpecies}</CPaginationItem>
 
-                          {totalSpecies === 0 || currentPage === Math.ceil(totalSpecies / speciesPerPage)? (
+                          {!totalSpecies || totalSpecies === 0 || currentPage === Math.ceil(totalSpecies / speciesPerPage)? (
                             <CPaginationItem disabled>»</CPaginationItem>) 
                           : (<CPaginationItem className={"custom-pagination-item"} onClick={() => handlePageChange(currentPage + 1)}>»</CPaginationItem>)}
                     </CPagination>
@@ -396,11 +404,11 @@ function SpecieTypeManager() {
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.prototype.toString.call(species) === '[object Array]' && species?.map((item) => 
-                    <React.Fragment key={item.id}>
+                  {Object.prototype.toString.call(species) === '[object Array]' && species?.map((item, index) => 
+                    <React.Fragment key={item.id || index}>
                     <tr>
-                    <td width="5%" className='text-medium-emphasis small'>{item.id}</td>
-                      <td width="5%" className='text-medium-emphasis small'>{item.specieSymbol}</td>
+                    <td width="5%" className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.id}</td>
+                      <td width="5%" className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.specieSymbol}</td>
                       <td width="30%" className='text-medium-emphasis small'>
                       <select className="text-medium-emphasis large" onChange={(e) => setCurrentSpecieTypeSelected(e.target.value)}>
                         <option>&nbsp;&nbsp;&nbsp;</option> 
@@ -436,6 +444,7 @@ function SpecieTypeManager() {
       </div> 
       </>
       ) : null}  
+      <br/>
       </>
     </div>
   );

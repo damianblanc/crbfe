@@ -6,7 +6,7 @@ import { cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer } fro
 
 import CIcon from '@coreui/icons-react'
 
-import './FCIRegulationTable.css';
+import './FCIPositionAdvice.css';
 import './Popup.css';
 
 import Popup from 'reactjs-popup';

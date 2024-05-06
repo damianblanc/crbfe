@@ -1,4 +1,5 @@
 import React from 'react'
+import { Route } from 'react-router-dom';
 
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
 const Colors = React.lazy(() => import('./views/theme/colors/Colors'))
@@ -104,7 +105,7 @@ const routes = [
   { path: '/notifications/toasts', name: 'Toasts', element: Toasts },
   { path: '/widgets', name: 'Widgets', element: Widgets },
   { path: '/base/regulation-management', name: 'FCI Regulation Manager', element: FCIRegulationManager },
-  { path: '/base/position-management', name: 'FCI Regulation Position', element: FCIRegulationPosition },
+  { path: '/base/position-management', name: 'FCI Regulation Position', element: FCIRegulationPosition},
   { path: '/base/advice-management', name: 'FCI Position Advice', element: FCIPositionAdvice },
   { path: '/report/report-management', name: 'FCI Position Bias', element: FCIPositionBias },
   { path: '/base/configuration/groups-management', name: 'FCI Group Manager', element: FCIGroupManager },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import './FCIRegulationTable.css';
+import './FCIRegulationManager.css';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
 import CIcon from '@coreui/icons-react'
@@ -45,7 +45,7 @@ function findAndSumNumbers (inputString) {
   }
 };
 
-function FCIRegulationTable() {
+function FCIRegulationManager() {
   const [regulations, setRegulations] = useState([{ id: '', symbol: '', name: '', description: '', composition: [FCIComposition]}]);
   const [newRow, setNewRow] = useState({ id: '', symbol: '', name: '', description: '', composition: '' });
   const [editRow, setEditRow] = useState({ id: '', symbol: '', name: '', description: '', composition: '', compositionWithId: '' });
@@ -66,6 +66,7 @@ function FCIRegulationTable() {
   const toaster = useRef()
   const [showToast, setShowToast] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [prevPath, setPrevPath] = useState('');
 
   const validateNewRow = (row) => {
     const regex = /^(?:[^:]+:\d+(\.\d+)?%)(?:-[^:]+:\d+(\.\d+)?%)*$/;
@@ -302,8 +303,12 @@ function FCIRegulationTable() {
       localStorage.removeItem("loginTimestamp");
       localStorage.removeItem("user");
       localStorage.removeItem("token");
+      localStorage.removeItem("previousPage");
       navigate('/');
     }
+
+    localStorage.setItem('previousPage', document.location.pathname);
+    localStorage.setItem('currentPage', document.location.pathname);
 
     const fetchRegulations = async () => {
       try {
@@ -599,6 +604,7 @@ function FCIRegulationTable() {
               </p>
               <table style={{border: 'none', marginTop: "-10px"}}>
                 {totalRegulations > 0? (
+                  <tbody>
                   <tr className="text-medium-emphasis small" style={{ border: "none"}}>
                     <td width="11%" style={{ border: "none"}}>Regulation Symbol #</td>
                     <td width="10%" style={{ border: "none"}} className="text-medium-emphasis small">
@@ -614,9 +620,8 @@ function FCIRegulationTable() {
                     <td style={{ width: "30%", border: "none"}}/>
                     <td style={{ width: "10%", border: "none", verticalAlign: "bottom"}}>
                       <CPagination style={{verticalAlign: "bottom"}} align="end" size="sm" 
-                          activePage = {currentPage}
-                          pages = {Math.floor(totalRegulations / regulationsPerPage)}
-                          onActivePageChange={handlePageChange}>
+                          activepage = {currentPage}
+                          pages = {Math.floor(totalRegulations / regulationsPerPage)}>
                             {currentPage === 1? (
                               <CPaginationItem disabled>«</CPaginationItem> ) 
                             : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
@@ -636,9 +641,10 @@ function FCIRegulationTable() {
                       </CPagination>
                     </td>
                 </tr>
+                </tbody>
                 ) : null}
               </table>
-              <table className="text-medium-emphasis small" style={{ border: "none", marginTop: "-30px"}}><tr style={{ border: "none"}}><td style={{ border: "none"}}></td></tr></table>
+              <table className="text-medium-emphasis small" style={{ border: "none", marginTop: "-30px"}}><tbody><tr style={{ border: "none"}}><td style={{ border: "none"}}></td></tr></tbody></table>
               <table className="text-medium-emphasis small">
                 <thead>
                   <tr>
@@ -736,11 +742,9 @@ function FCIRegulationTable() {
                             }))}
                         </td>
                         <td>
-                        {/* <CButton onClick={() => setVisible(!visible)}>Launch demo modal</CButton> */}
                           <CButton shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages(row.fciSymbol)}>
                             <CIcon className="text-medium-emphasis small" icon={cilFile} size="xl"/>
                         </CButton>
-                        <div>{() => listFCIRegulationPercentages(row.fciSymbol)}</div>
                         <CModal
                           visible={visible}
                           alignment="center"
@@ -895,9 +899,10 @@ function FCIRegulationTable() {
             </CCardBody>  
         </CCard>      
        </CCol>
-     </CRow>   
+     </CRow>  
+     <br/> 
     </div>
   );
 };
 
-export default FCIRegulationTable;
+export default FCIRegulationManager;

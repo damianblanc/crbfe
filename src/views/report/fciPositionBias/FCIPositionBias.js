@@ -27,7 +27,7 @@ import { PatternFormat } from 'react-number-format';
 
 import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
 
-import './FCIRegulationTable.css';
+import './FCIRegulationBias.css';
 
 class FCIPercentage {
     constructor(id, specieType, percentage) {
@@ -125,10 +125,19 @@ function FCIPositionBias() {
   const [inputValue, setInputValue] = useState("");
 
   useEffect(() => {
-      const isValid = isLoginTimestampValid();
-      if (!isValid) {
-        navigate('/');
-      }
+    const isValid = isLoginTimestampValid();
+    if (!isValid) {
+      navigate('/');
+    }
+
+    const currentPage = document.location.pathname;
+    localStorage.setItem('currentPage', currentPage);
+    const previousPage = localStorage.getItem("previousPage");
+    if (currentPage !== previousPage) {
+        localStorage.setItem('previousPage', currentPage);
+        window.location.reload();
+    }
+      
     /** FCI Regulations - Symbol and Name */
     const fetchRegulations = async () => {
       try {
@@ -411,14 +420,14 @@ function FCIPositionBias() {
 
 const updateFCIReportQuantity = async () => {
   let q = statistics.reportQuantity + 1;
-  let st = new FCIStatistic(statistics.adviceQuantity, q);
+  let st = new FCIStatistic(statistics.reportQuantity, q);
   setStatistics(prevStatistics => ({
     ...prevStatistics,
     reportQuantity: q
   }));
   const body = JSON.stringify(st);
   try {
-    const responseData = await axios.put('http://localhost:8098/api/v1/statistic/update', body,
+    const responseData = await axios.put('http://localhost:8098/api/v1/statistic/update/report-quantity', body,
     {
       headers: {
         'Content-Type': 'application/json',
@@ -607,13 +616,13 @@ return (
               <CCardBody>
                <table style={{ border: "none", backgroundColor: 'white' }}>
                   <thead>
-                  <td width="2%" style={{ border: "none"}}></td>
                     <tr className="text-medium-emphasis small" style={{ border: "none", backgroundColor: 'white'}}>
+                      <td width="2%" style={{ border: "none"}}></td>
                       <td width="18%" className="text-medium-emphasis large" style={{ border: "none"}}><code>&lt;FCI Regulation Symbol&gt;</code></td>
                       <td width="10%" style={{ border: "none"}}>
                         <select className="text-medium-emphasis large" onChange={(e) => selectFciSymbol(e.target.value)}>
-                          {regulations && regulations?.map((regulation) => 
-                            <React.Fragment key={regulation.id}>
+                          {regulations && regulations?.map((regulation, index) => 
+                            <React.Fragment key={regulation.id || index}>
                             <option value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
                             </React.Fragment>
                           )}
@@ -665,8 +674,8 @@ return (
                                               </tr>  
                                             </thead>  
                                             <tbody>
-                                              {regulationPercentages?.map((p) => 
-                                              <React.Fragment key={p.id}>
+                                              {regulationPercentages?.map((p, index) => 
+                                              <React.Fragment key={p.id || index}>
                                                 <tr className="text-medium-emphasis">
                                                   <td className="text-medium-emphasis small">{p.specieTypeName}</td>
                                                   <td className="text-medium-emphasis small">{p.percentage}</td>
@@ -709,12 +718,13 @@ return (
                       ) : <td></td>}
                     </tr>
                   </thead>
-                  <table style={{ marginTop: "-10px" }}><tr><td>&nbsp;</td></tr></table>
                 </table>
+                <table style={{ marginTop: "-10px" }}><tbody><tr><td>&nbsp;</td></tr></tbody></table>
                 <table>
                 {positions && positions.length > 0? (
+                  <tbody>
                   <tr>
-                    <td className="text-medium-emphasis small" style={{ border: "none"}} width="18%">Position Identifier #</td>
+                    <td className="text-medium-emphasis small" style={{ border: "none"}} width="20%">Position Identifier #</td>
                     <td width="1%" style={{ border: "none"}}/>
                     <td className="text-medium-emphasis small" style={{ border: "none"}} width="12%">
                       <input className="text-medium-emphasis small" style={{ width: "100%"}}
@@ -753,7 +763,7 @@ return (
                         <CIcon className="text-medium-emphasis small" icon={cilMagnifyingGlass} size="xl"/>
                       </CButton>
                     </td>
-                    <td width="5%"></td>
+                    <td style={{ width:'5%', border: "none"}}></td>
                     <td className="text-medium-emphasis small" width="15%" style={{ border: "none"}}>
                       {positions && positions.length > 0? (
                           <code>&lt;FCI Position&gt;</code>
@@ -764,16 +774,17 @@ return (
                       {positions && positions.length > 0? (
                         <select className="text-medium-emphasis large" 
                               onChange={(e) => selectPosition(e.target.value)}>
-                          {positions !== undefined && positions.slice(0, 20).map((fciPosition) => 
-                            <React.Fragment key={fciPosition.id}>
+                          {positions !== undefined && positions.slice(0, 20).map((fciPosition, index) => 
+                            <React.Fragment key={fciPosition.id || index}>
                             <option value={fciPosition.id}>#{fciPosition.id} - {fciPosition.timestamp}&nbsp;&nbsp;&nbsp;</option>
                             </React.Fragment>
                           )}
                         </select>
                       ) : null}
                       </td>
-                      <td width="21%"></td>
+                      <td style={{ width:'21%', border: "none"}}></td>
                   </tr>
+                  </tbody>
                   ) : null}
                </table>
               </CCardBody>
@@ -800,6 +811,7 @@ return (
                   <CCard>
                     <CCardHeader>
                       <table>
+                        <tbody>
                         <tr>
                           <td width="10%">
                             <strong className="text-medium-emphasis small">Report & Analysis</strong>
@@ -813,7 +825,8 @@ return (
                               )}
                            </select>
                          </td>
-                          <td className="text-medium-emphasis small" width="15%">
+                         <td width="2%"/>
+                          <td className="text-medium-emphasis small" width="20%">
                             <strong>
                               Position # {findPositionById() ? findPositionById().id + ' - ' + findPositionById().timestamp : ''}
                             </strong>
@@ -980,8 +993,9 @@ return (
                           </CRow>  }
                           </Popup>}
                           </td>
-                          <td width="28%"></td>
+                          <td width="24%"></td>
                         </tr>
+                        </tbody>
                       </table>
                     </CCardHeader>
                     <CCardBody>
@@ -1028,8 +1042,8 @@ return (
                                   <tbody>
                                     {positionPercentages !== undefined 
                                     && Object.prototype.toString.call(positionPercentages) === '[object Array]' 
-                                    && positionPercentages.map((p) => 
-                                      <React.Fragment key={p.fciSpecieTypeId}>
+                                    && positionPercentages.map((p, index) => 
+                                      <React.Fragment key={p.fciSpecieTypeId || index}>
                                       <tr className="text-medium-emphasis">
                                         <td>{p.specieType}</td>
                                         <td>{p.percentage}%</td>
@@ -1114,6 +1128,7 @@ return (
       ) : null}
       </>
        ) : null}
+       <br/>
        </>
   )
 }

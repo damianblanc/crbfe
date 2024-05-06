@@ -5,7 +5,7 @@ import { cilAlignRight, cilBookmark, cilTrash, cilClipboard, cilNoteAdd, cilSync
 
 import CIcon from '@coreui/icons-react'
 
-import './FCIRegulationTable.css';
+import './FCIGroupManager.css';
 import './Popup.css';
 
 import {CChartPie} from '@coreui/react-chartjs'
@@ -58,6 +58,14 @@ function FCIGroupManager() {
       localStorage.removeItem("user");
       localStorage.removeItem("token");
       navigate('/');
+    }
+
+    const currentPage = document.location.pathname;
+    localStorage.setItem('currentPage', currentPage);
+    const previousPage = localStorage.getItem("previousPage");
+    if (currentPage !== previousPage) {
+        localStorage.setItem('previousPage', currentPage);
+        window.location.reload();
     }
 
     const fetchSpecieTypeGroups = async () => {
@@ -344,13 +352,13 @@ function FCIGroupManager() {
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.prototype.toString.call(specieTypes) === '[object Array]' && specieTypes?.map((item) => 
-                    <React.Fragment key={item.id}>
+                  {Object.prototype.toString.call(specieTypes) === '[object Array]' && specieTypes?.map((item, index) => 
+                    <React.Fragment key={item.id || index}>
                     <tr>
-                      <td width="5%">{item.fciSpecieTypeId}</td>
-                      <td width="5%">{item.name}</td>
+                      <td width="5%" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.fciSpecieTypeId}</td>
+                      <td width="5%" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.name}</td>
                       <td width="30%">{item.description}</td>
-                      <td>{item.specieQuantity}</td>
+                      <td className="large" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.specieQuantity}</td>
                       <td>
                         <CButton component="a" color="string" role="button" size='sm' onClick={() => deleteSpecieType(item.id, item.name)}>
                             <CIcon className="text-medium-emphasis small" icon={cilTrash} size="xl"/>
@@ -423,6 +431,7 @@ function FCIGroupManager() {
        </CRow>
       ) : null}  
       </div>   
+      <br/>
     </div>
   );
 }

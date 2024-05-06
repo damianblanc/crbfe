@@ -1,4 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
+
+import './Dashboard.css';
 
 import {
   CAvatar,
@@ -65,6 +68,97 @@ const Dashboard = () => {
   const [toast, addToast] = useState(0)
   const toaster = useRef()
 
+  const [regulationQuantity, setRegulationQuantity] = useState(0);
+  const [positionQuantity, setPositionQuantity] = useState(0);
+  const [reportsQuantity, setReportsQuantity] = useState(0);
+  const [advicesQuantity, setAdvicesQuantity] = useState(0);
+
+  const [regulationsPerMonth, setRegulationsPerMonth] = useState([]);
+  const [positionsPerMonth, setPositionsPerMonth] = useState([]);
+  const [reportsPerMonth, setReportsPerMonth] = useState([]);
+  const [advicesPerMonth, setAdvicesPerMonth] = useState([]);
+
+  const [firstMonthValue, setFirstMonthValue] = useState("");
+  const [lastMonthValue, setLastMonthValue] = useState("");
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
+  useEffect(() => {
+    const currentPage = document.location.pathname;
+    localStorage.setItem('currentPage', currentPage);
+    const previousPage = localStorage.getItem("previousPage");
+    if (currentPage !== previousPage) {
+        localStorage.setItem('previousPage', currentPage);
+        window.location.reload();
+    }
+
+    const fetchSummarization = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    const fetchRegulationsPerMonth = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/regulations-per-month');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    const fetchPositionsPerMonth = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    const fetchReportsPerMonth = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/reports-per-month');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    const fetchAdvicesPerMonth = async () => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/advices-per-month');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    const setFetchedData = async () => {
+      const tempLoadedSummarization = await fetchSummarization();
+
+      const tempLoadedRegulationsPerMonth = await fetchRegulationsPerMonth();
+      const tempLoadedPositionsPerMonth = await fetchPositionsPerMonth();
+      const tempLoadedReportsPerMonth = await fetchReportsPerMonth();
+      const tempLoadedAdvicesPerMonth = await fetchAdvicesPerMonth();
+
+      setRegulationQuantity(tempLoadedSummarization.fciRegulationQuantity);
+      setPositionQuantity(tempLoadedSummarization.fciPositionQuantity);
+      setReportsQuantity(tempLoadedSummarization.fciReportsQuantity);
+      setAdvicesQuantity(tempLoadedSummarization.fciAdvicesQuantity);
+
+      setRegulationsPerMonth(tempLoadedRegulationsPerMonth);
+      setPositionsPerMonth(tempLoadedPositionsPerMonth);
+      setReportsPerMonth(tempLoadedReportsPerMonth);
+      setAdvicesPerMonth(tempLoadedAdvicesPerMonth);
+      setFirstMonthValue(tempLoadedPositionsPerMonth.length > 0 ? tempLoadedPositionsPerMonth[0].month : "");
+      setLastMonthValue(tempLoadedPositionsPerMonth.length > 0 ? tempLoadedPositionsPerMonth[tempLoadedPositionsPerMonth.length - 1].month : "");
+    };
+    setFetchedData();
+  }, []); 
+
   const errorToast = () => {
     const errorToast = (
       <CToast title="Error Message">
@@ -83,7 +177,7 @@ const Dashboard = () => {
           <strong className="me-auto">Error Message</strong>
           <small>7 min ago</small>
         </CToastHeader>
-        <CToastBody>Hello, world! This is a toast message.</CToastBody>
+        <CToastBody/>
       </CToast>
     )
     return (
@@ -94,20 +188,19 @@ const Dashboard = () => {
     )
   }
 
-
   return (
     <>
       <WidgetsDropdown />
       <CCard className="mb-4">
         <CCardBody>
           <CRow>
-            <CCol sm={5}>
-              <h4 id="traffic" className="card-title mb-0">
-                Traffic
-              </h4>
-              <div className="small text-medium-emphasis">January - July 2021</div>
+            <CCol sm={8}>
+              <div id="traffic" style={{ color:"grey"}}>
+                <b>Distribution Over a Year - [ Regulations - Positions - Reports - Advices ]</b>
+              </div>
+              <div style={{ color:"grey"}}>{lastMonthValue} {currentYear - 1} - {firstMonthValue} {currentYear}</div>
             </CCol>
-            <CCol sm={7} className="d-none d-md-block">
+            <CCol sm={4} className="d-none d-md-block">
               <CButton color="primary" className="float-end">
                 <CIcon icon={cilCloudDownload} />
               </CButton>
@@ -126,51 +219,41 @@ const Dashboard = () => {
             </CCol>
           </CRow>
           <CChartLine
-            style={{ height: '300px', marginTop: '40px' }}
+            style={{ height: '250px', marginTop: '40px', backgroundColor: 'white' }}
             data={{
-              labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+              labels: regulationsPerMonth?.reverse().map((e) => e.month),
               datasets: [
                 {
-                  label: 'My First dataset',
-                  backgroundColor: hexToRgba(getStyle('--cui-info'), 10),
+                  label: 'Regulations',
+                  backgroundColor: hexToRgba(getStyle('--cui-primary'), 80),
                   borderColor: getStyle('--cui-info'),
                   pointHoverBackgroundColor: getStyle('--cui-info'),
-                  borderWidth: 2,
-                  data: [
-                    random(50, 200),
-                    random(50, 200),
-                    random(50, 200),
-                    random(50, 200),
-                    random(50, 200),
-                    random(50, 200),
-                    random(50, 200),
-                  ],
-                  fill: true,
+                  borderWidth: 3,
+                  data: regulationsPerMonth?.map((e) => e.quantity),
                 },
                 {
-                  label: 'My Second dataset',
-                  backgroundColor: 'transparent',
+                  label: 'Positions',
+                  backgroundColor: hexToRgba(getStyle('--cui-success'), 80),
                   borderColor: getStyle('--cui-success'),
                   pointHoverBackgroundColor: getStyle('--cui-success'),
-                  borderWidth: 2,
-                  data: [
-                    random(50, 200),
-                    random(50, 200),
-                    random(50, 200),
-                    random(50, 200),
-                    random(50, 200),
-                    random(50, 200),
-                    random(50, 200),
-                  ],
+                  borderWidth: 3,
+                  data: positionsPerMonth?.reverse().map((e) => e.quantity)
                 },
                 {
-                  label: 'My Third dataset',
-                  backgroundColor: 'transparent',
+                  label: 'Reports',
+                  backgroundColor: hexToRgba(getStyle('--cui-warning'), 80),
+                  borderColor: getStyle('--cui-warning'),
+                  pointHoverBackgroundColor: getStyle('--cui-danger'),
+                  borderWidth: 3,
+                  data: reportsPerMonth?.reverse().map((e) => e.quantity),
+                },
+                {
+                  label: 'Advices',
+                  backgroundColor: hexToRgba(getStyle('--cui-danger'), 100),
                   borderColor: getStyle('--cui-danger'),
                   pointHoverBackgroundColor: getStyle('--cui-danger'),
-                  borderWidth: 1,
-                  borderDash: [8, 5],
-                  data: [65, 65, 65, 65, 65, 65, 65],
+                  borderWidth: 3,
+                  data: advicesPerMonth?.reverse().map((e) => e.quantity),
                 },
               ],
             }}
@@ -180,11 +263,36 @@ const Dashboard = () => {
                 legend: {
                   display: false,
                 },
+                tooltip: {
+                  mode: 'index',
+                  intersect: false,
+                  backgroundColor: 'rgba(0, 0, 0)', 
+                  titleColor: 'white', 
+                  bodyColor: 'white', 
+                  titleFont: {
+                    size: 12, 
+                  },
+                  bodyFont: {
+                    size: 6,
+                  },
+                  callbacks: {
+                    title: (context) => {
+                      const month = context[0].label;
+                      return month; 
+                    },
+                    label: (context) => {
+                      const dataset = context.dataset;
+                      const quantity = dataset.data[context.dataIndex];
+                      const label = dataset.label;
+                      return `${label}: ${quantity}`;
+                    },
+                  },
+                },
               },
               scales: {
                 x: {
                   grid: {
-                    drawOnChartArea: false,
+                    drawOnChartArea: true,
                   },
                 },
                 y: {
@@ -201,10 +309,10 @@ const Dashboard = () => {
                   tension: 0.4,
                 },
                 point: {
-                  radius: 0,
+                  radius: 5,
                   hitRadius: 10,
-                  hoverRadius: 4,
-                  hoverBorderWidth: 3,
+                  hoverRadius: 10,
+                  hoverBorderWidth: 6,
                 },
               },
             }}

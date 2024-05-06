@@ -62,7 +62,7 @@ const WidgetsDropdown = () => {
 
     const fetchReportsPerMonth = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month');
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/reports-per-month');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -71,7 +71,7 @@ const WidgetsDropdown = () => {
 
     const fetchAdvicesPerMonth = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month');
+        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/advices-per-month');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -207,7 +207,7 @@ const WidgetsDropdown = () => {
             <>
               {positionQuantity}{' '}
               <span className="fs-6 fw-normal">
-                ({posPerMonthGrowth.toFixed(2)}% <CIcon icon={cilArrowTop} />)
+                ({posPerMonthGrowth > 0? posPerMonthGrowth.toFixed(0) : 0}% <CIcon icon={cilArrowTop} />)
               </span>
             </>
           }
@@ -293,7 +293,7 @@ const WidgetsDropdown = () => {
             <>
               {reportsQuantity}{' '}
               <span className="fs-6 fw-normal">
-                ({ Math.round(repPerMonthGrowth)}% <CIcon icon={cilArrowTop} />)
+                ({repPerMonthGrowth > 0? repPerMonthGrowth.toFixed(0) : 0}% <CIcon icon={cilArrowTop} />)
               </span>
             </>
           }
@@ -316,13 +316,13 @@ const WidgetsDropdown = () => {
               className="mt-3"
               style={{ height: '70px' }}
               data={{
-                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+                labels: reportsPerMonth?.reverse().map((e) => e.month),
                 datasets: [
                   {
-                    label: 'My First dataset',
+                    label: 'Reports',
                     backgroundColor: 'rgba(255,255,255,.2)',
                     borderColor: 'rgba(255,255,255,.55)',
-                    data: [78, 81, 80, 45, 34, 12, 40],
+                    data: reportsPerMonth?.map((e) => e.quantity),
                     fill: true,
                   },
                 ],
@@ -366,7 +366,7 @@ const WidgetsDropdown = () => {
             <>
               {advicesQuantity}{' '}
               <span className="fs-6 fw-normal">
-                ({ Math.round(advPerMonthGrowth)}% <CIcon icon={cilArrowTop} />)
+              ({advPerMonthGrowth > 0? advPerMonthGrowth.toFixed(0) : 0}% <CIcon icon={cilArrowTop} />)
               </span>
             </>
           }
@@ -389,30 +389,13 @@ const WidgetsDropdown = () => {
               className="mt-3 mx-3"
               style={{ height: '70px' }}
               data={{
-                labels: [
-                  'January',
-                  'February',
-                  'March',
-                  'April',
-                  'May',
-                  'June',
-                  'July',
-                  'August',
-                  'September',
-                  'October',
-                  'November',
-                  'December',
-                  'January',
-                  'February',
-                  'March',
-                  'April',
-                ],
+                labels: advicesPerMonth?.reverse().map((e) => e.month),
                 datasets: [
                   {
-                    label: 'My First dataset',
+                    label: 'Advices',
                     backgroundColor: 'rgba(255,255,255,.2)',
                     borderColor: 'rgba(255,255,255,.55)',
-                    data: [78, 81, 80, 45, 34, 12, 40, 85, 65, 23, 12, 98, 34, 84, 67, 82],
+                    data: advicesPerMonth?.map((e) => e.quantity),
                     barPercentage: 0.6,
                   },
                 ],

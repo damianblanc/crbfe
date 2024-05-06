@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
-import { cilAlignRight, cilBookmark, cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter, cilArrowTop, cilOptions, cilMagnifyingGlass, cilCheckCircle } from '@coreui/icons';
+import { cilSun, cilAlignRight, cilBookmark, cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter, cilArrowTop, cilOptions, cilMagnifyingGlass, cilCheckCircle } from '@coreui/icons';
 import { CChartLine } from '@coreui/react-chartjs'
 
 import CIcon from '@coreui/icons-react'
 
-import './FCIRegulationTable.css';
+import './FCIRegulationPosition.css';
 
 import './Popup.css';
 import Popup from 'reactjs-popup';
@@ -19,19 +19,15 @@ import { NumericFormat } from 'react-number-format';
 
 import { isLoginTimestampValid } from '../../../utils/utils.js';
 import { useNavigate } from 'react-router-dom';
+// import { useLocation } from 'react-router-dom';
+// import { useParams } from 'react-router-dom';
+import PropTypes from 'prop-types';
 
-import {
-  CDropdown,
-  CDropdownMenu,
-  CDropdownItem,
-  CDropdownToggle,
-  CWidgetStatsA
-} from '@coreui/react'
+import { CDropdown, CDropdownMenu, CDropdownItem, CDropdownToggle,CWidgetStatsA } from '@coreui/react'
 
 import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
-
 import { getStyle } from '@coreui/utils'
-import PropTypes from 'prop-types';
+
 
 class FCIPositionCompositionVO {
   constructor(id, specieGroup, specieType, specieSymbol, marketPrice, quantity, valued) {
@@ -53,7 +49,7 @@ class FCIRegulationSymbolName {
   }
 }
 
-function FCIRegulationPosition() {
+function FCIRegulationPosition (prevLocation) {
   const [regulations, setRegulations] = useState([{FCIRegulationSymbolName}]);
   const [positions, setPositions] = useState([{id : '', fciSymbol: '', jsonPosition : '', updatedMarketPosition: '', overview: '', composition: [FCIPositionCompositionVO]}]);
   const [oldestPosition, setOldestPosition] = useState();
@@ -99,6 +95,7 @@ function FCIRegulationPosition() {
   const [noPositionsDateFilter, setNoPositionsDateFilter] = useState(false);
   const [excelDataLoaded, setExcelDataLoaded] = useState(false);
   const fileInputRef = useRef(null);
+  const [prevPath, setPrevPath] = useState('');
 
 
   /** FCI Regulations - Symbol and Name */
@@ -108,6 +105,14 @@ function FCIRegulationPosition() {
       navigate('/');
     }
 
+    const currentPage = document.location.pathname;
+    localStorage.setItem('currentPage', currentPage);
+    const previousPage = localStorage.getItem("previousPage");
+    if (currentPage !== previousPage) {
+        localStorage.setItem('previousPage', currentPage);
+        window.location.reload();
+    }
+    
     const fetchRegulations = async () => {
       try {
         const responseData = await axios.get('http://localhost:8098/api/v1/fci/regulations');
@@ -248,7 +253,6 @@ function FCIRegulationPosition() {
     } catch (error) {
       setErrorMessage(error.response.data.message);
       setShowToast(true);
-      console.log("showToast = ", showToast);
       showToastMessage(error.response.data.message);
     }
   };
@@ -537,6 +541,19 @@ function FCIRegulationPosition() {
     setPositions(comboPositions);
   };
 
+  const timeOfDay = (timestamp) => {
+    const date = new Date(timestamp);
+    const hour = date.getHours();
+
+    if (hour < 12) {
+      return "Morning";
+    } else if (hour < 18) {
+      return "Afternoon";
+    } else {
+      return "Evening";
+    }
+  }
+
   return (
     <>
     <div>
@@ -572,7 +589,7 @@ function FCIRegulationPosition() {
                   <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string'>
                       <CIcon icon={cilBookmark} size="xl"/>
                   </CButton>} position="right" modal lockScroll="false" backgroundColor="rgba(75,192,192,0.4)"
-                   contentStyle={{ width: "60%", height: "60%", overflow: "auto", position: 'absolute', top: '19%', left: '21%'}}>
+                   contentStyle={{ width: "60%", height: "55%", overflow: "auto", position: 'absolute', top: '19%', left: '21%'}}>
                   {
                     <CRow>
                     <CCol xs={12}>
@@ -600,17 +617,20 @@ function FCIRegulationPosition() {
               </CCardHeader>
               <CCardBody>
               <table>
+                <tbody>
                 <tr>
                   <td style={{ border: "none"}}>
                     <table className='table-head-1' style={{ border: "none"}}>
+                      <tbody>
                       <tr style={{ border: "none"}}>
                         <td width="30%" style={{ border: "none"}}><code>&lt;FCI Regulation Symbol&gt;</code></td>
                         <td width="35%" style={{ border: "none"}}>
                           <select className="text-medium-emphasis small"
-                            onChange={(e) => selectFciSymbol(e.target.value)} style={{width: "100%"}}>
-                              {regulations?.map((regulation) => 
-                                <React.Fragment key={regulation.id}>
-                                <option selected={regulation.fciSymbol === regulationSymbol}
+                            onChange={(e) => selectFciSymbol(e.target.value)} style={{width: "100%"}}
+                            value={regulationSymbol}>
+                              {regulations?.map((regulation, index) => 
+                                <React.Fragment key={regulation.id || index} >
+                                <option
                                  value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
                                 </React.Fragment>
                               )}
@@ -625,18 +645,21 @@ function FCIRegulationPosition() {
                         </td>
                         <td width="10%" style={{ border: "none"}}></td>
                       </tr>
+                      </tbody>
                     </table>
                     
                     <table className="text-medium-emphasis small" width="70%" style={{ border: "none"}}>
+                      <tbody>
                       <tr className="text-medium-emphasis" style={{ border: "none"}}>
                         <td width="70%" style={{ border: "none"}}>
                           <table className='table-head' style={{ border: "none"}}>
-                            <td width="5%" style={{ border: "none"}}/>
                               <thead>
-                                <th>Format</th>
-                                <th>File</th>
-                                <th>Position</th>
-                                <th>Actions</th>
+                                <tr>
+                                  <th>Format</th>
+                                  <th>File</th>
+                                  <th>Position</th>
+                                  <th>Actions</th>
+                                </tr>
                               </thead>
                               <tbody>
                                 <tr>
@@ -664,100 +687,102 @@ function FCIRegulationPosition() {
                         </td>
                         <td width="2%" style={{ border: "none"}}/>
                       </tr>
+                      </tbody>
                     </table>
                   </td>
                   <td width="28%" style={{ border: "none"}}>
-  <CCol sm={12} mb={6} style={{ width: "100%"}}>
-    <CWidgetStatsA
-      className="mb-6"
-      color="secondary"
-      style={{ height: '138px'}}
-      value={
-        <>
-          {positionQuantity}{' '}
-          <span className="fs-6 fw-small">
-            ({posPerMonthGrowth? posPerMonthGrowth.toFixed(2) (<CIcon icon={cilArrowTop}/>) : 0}%)
-          </span>
-        </>
-      }
-      title="Positions"
-      chart={
-        <CChartLine
-          className="st-0 sx-0"
-          style={{ height: '70px'}}
-          data={{
-            labels: positionsPerMonth?.reverse().map((e) => e.month),
-            datasets: [
-              {
-                label: 'Positions per Month',
-                backgroundColor: 'grey',
-                borderColor: 'grey',
-                pointBackgroundColor: 'white',
-                data: positionsPerMonth?.map((e) => e.quantity),
-              },
-            ],
-          }}
-          options={{
-            plugins: {
-              legend: {
-                display: false,
-              },
-              tooltip: {
-                backgroundColor: 'blue', 
-                bodyColor: 'blue', 
-                titleColor: 'white', 
-                titleFont: {
-                  size: 6,
-                },
-                bodyFont: {
-                  size: 4,
-                },
-                callbacks: {
-                  title: (context) => context ? `${context[0].label}` : '',
-                  // label: (context) => '',
-                },
-              },
-            },
-            maintainAspectRatio: false,
-            scales: {
-              x: {
-                grid: {
-                  display: false,
-                  drawBorder: false,
-                },
-                ticks: {
-                  display: false,
-                },
-              },
-              y: {
-                min: -100,
-                max: 100,
-                display: false,
-                grid: {
-                  display: false,
-                },
-                ticks: {
-                  display: false,
-                },
-              },
-            },
-            elements: {
-              line: {
-                borderWidth: 1,
-              },
-              point: {
-                radius: 4,
-                hitRadius: 10,
-                hoverRadius: 10,
-              },
-            },
-          }}
-        />
-      }
-    />
-  </CCol>
-</td>
+                    <CCol sm={12} mb={6} style={{ width: "100%"}}>
+                      <CWidgetStatsA
+                        className="mb-6"
+                        color="secondary"
+                        style={{ height: '138px'}}
+                        value={
+                          <>
+                            {positionQuantity}{' '}
+                            <span className="fs-6 fw-small">
+                              ({posPerMonthGrowth > 0? posPerMonthGrowth.toFixed(2) : 0} <CIcon icon={cilArrowTop}/>)
+                            </span>
+                          </>
+                        }
+                        title="Positions"
+                        chart={
+                          <CChartLine
+                            className="st-0 sx-0"
+                            style={{ height: '70px'}}
+                            data={{
+                              labels: positionsPerMonth?.reverse().map((e) => e.month),
+                              datasets: [
+                                {
+                                  label: 'Positions per Month',
+                                  backgroundColor: 'grey',
+                                  borderColor: 'grey',
+                                  pointBackgroundColor: 'white',
+                                  data: positionsPerMonth?.map((e) => e.quantity),
+                                },
+                              ],
+                            }}
+                            options={{
+                              plugins: {
+                                legend: {
+                                  display: false,
+                                },
+                                tooltip: {
+                                  backgroundColor: 'blue', 
+                                  bodyColor: 'blue', 
+                                  titleColor: 'white', 
+                                  titleFont: {
+                                    size: 6,
+                                  },
+                                  bodyFont: {
+                                    size: 4,
+                                  },
+                                  callbacks: {
+                                    title: (context) => context ? `${context[0].label}` : '',
+                                    // label: (context) => '',
+                                  },
+                                },
+                              },
+                              maintainAspectRatio: false,
+                              scales: {
+                                x: {
+                                  grid: {
+                                    display: false,
+                                    drawBorder: false,
+                                  },
+                                  ticks: {
+                                    display: false,
+                                  },
+                                },
+                                y: {
+                                  min: -100,
+                                  max: 100,
+                                  display: false,
+                                  grid: {
+                                    display: false,
+                                  },
+                                  ticks: {
+                                    display: false,
+                                  },
+                                },
+                              },
+                              elements: {
+                                line: {
+                                  borderWidth: 1,
+                                },
+                                point: {
+                                  radius: 4,
+                                  hitRadius: 10,
+                                  hoverRadius: 10,
+                                },
+                              },
+                            }}
+                          />
+                        }
+                      />
+                    </CCol>
+                  </td>
                 </tr>
+                </tbody>
               </table> 
             </CCardBody>
           </CCard>
@@ -776,6 +801,7 @@ function FCIRegulationPosition() {
             </CCardHeader>
             <CCardBody>
                 <table>
+                  <tbody>
                   <tr>
                     <td className="text-medium-emphasis small" width="15%">Position Identifier #</td>
                     <td className="text-medium-emphasis large" width="8%">
@@ -793,7 +819,7 @@ function FCIRegulationPosition() {
                     <td width="1%"/>
                     <td>
                       <CButton shape='rounded' size='sm' color='string' onClick={() => filterPositionListTable()}
-                        disabled={!noPositions || !noPositionsDateFilter} style={{ border: "none"}}>
+                        disabled={!noPositions} style={{ border: "none"}}>
                             <CIcon className="text-medium-emphasis small" icon={cilListFilter} size="xl"/>
                       </CButton>
                     </td>
@@ -834,9 +860,8 @@ function FCIRegulationPosition() {
                       <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
                         {totalPositions > 0? (  
                           <CPagination valign="end" align="end" size="sm" 
-                          activePage = {currentPage}
-                          pages = {Math.floor(totalPositions / positionsPerPage)}
-                          onActivePageChange={handlePageChange}>
+                          activepage = {currentPage}
+                          pages = {Math.floor(totalPositions / positionsPerPage)}>
                             {currentPage === 1 || searchFilteredPosition === true? (
                               <CPaginationItem disabled>«</CPaginationItem> ) 
                             : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
@@ -858,34 +883,36 @@ function FCIRegulationPosition() {
                       </div>
                    </td>
                   </tr>
+                  </tbody>
                 </table>
-                <table><tr><td style={{ width:"80%", height: "10px" }}></td></tr></table>
+                <table><tbody><tr><td style={{ width:"80%", height: "10px" }}></td></tr></tbody></table>
                 <table className="text-medium-emphasis small">
                   <thead>
                     <tr className="text-medium-emphasis">
                       <th>#</th>
                       <th>Position</th>
                       <th>FCI</th>
-                      <th>Date</th>
                       <th>Overview</th>
+                      <th>Date</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {Object.prototype.toString.call(positions) === '[object Array]' && positions?.map((item) => 
+                    {Object.prototype.toString.call(positions) === '[object Array]' && positions?.map((item, index) => 
                       item !== 'undefined'? (
-                      <React.Fragment key={item.fciSymbol}>
+                        <React.Fragment key={`${item.id}-${item.fciSymbol}`}>
                       <tr>
-                        {item.id? (<td width="5%">{item.id}</td>) : (null)}
-                        <td>
+                        {item.id? (
+                        <td width="3%" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.id}</td>) : (null)}
+                        <td width="6%">
                           <>
                             <Popup 
-                              position="left center" visible={visible}
+                              position="right" visible={visible}
                               trigger={
-              
                                 <CButton shape='rounded' size='sm' color='string' >
                                       <CIcon icon={cilClipboard} size="xl"/>
-                                </CButton>}>
+                                </CButton>}
+                                contentStyle={{ width: "60%", height: "auto", overflow: "auto", position: 'absolute', top: '18%', left: '21%'}}>
                             <CRow>
                               <CCol xs={12}>
                                 <CCard>
@@ -904,34 +931,34 @@ function FCIRegulationPosition() {
                                           <CCol xs={12}>
                                             <CCard>
                                             <CCardHeader>
-                                              <strong className="text-medium-emphasis small">{item.fciSymbol} - {item.timestamp} - {item.overview}</strong>
+                                              <span className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.fciSymbol} - {item.timestamp} - {item.overview}</span>
                                             </CCardHeader>
                                             <CCardBody>
-                                              <table>
+                                              <table >
                                                 <thead>
                                                   <tr className="text-medium-emphasis small">
-                                                    <th>Specie Group</th>
-                                                    <th>Specie Type</th>
-                                                    <th>Symbol</th>
-                                                    <th>Market Price</th>
-                                                    <th>Quantity</th>
-                                                    <th>Valued</th>
+                                                    <th className="text-medium-emphasis small">Specie Group</th>
+                                                    <th className="text-medium-emphasis small">Specie Type</th>
+                                                    <th className="text-medium-emphasis small">Symbol</th>
+                                                    <th className="text-medium-emphasis small">Market Price</th>
+                                                    <th className="text-medium-emphasis small">Quantity</th>
+                                                    <th className="text-medium-emphasis small">Valued</th>
                                                   </tr>
                                                 </thead>
                                                 <tbody>
-                                                  {Object.prototype.toString.call(item.composition) === '[object Array]' && item.composition?.map((specie) => 
-                                                  <React.Fragment key={specie.id}>
+                                                  {Object.prototype.toString.call(item.composition) === '[object Array]' && item.composition?.map((specie, index) => 
+                                                  <React.Fragment key={specie.id || index}>
                                                       <tr>
-                                                        <td>{specie.specieGroup}</td>
-                                                        <td>{specie.specieType}</td>
-                                                        <td>{specie.specieSymbol}</td>
-                                                        <td>
+                                                        <td className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{specie.specieGroup}</td>
+                                                        <td className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{specie.specieType}</td>
+                                                        <td className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{specie.specieSymbol}</td>
+                                                        <td className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>
                                                           <div>
                                                             $ <NumericFormat displayType="text" value={Number(specie.marketPrice).toFixed(2)} thousandSeparator="." decimalSeparator=','/>
                                                           </div>
                                                         </td>
-                                                        <td>{specie.quantity}</td>
-                                                        <td>
+                                                        <td className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{specie.quantity}</td>
+                                                        <td className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>
                                                           <div>
                                                             $ <NumericFormat displayType="text" value={Number(specie.valued).toFixed(2)} thousandSeparator="." decimalSeparator=','/>
                                                           </div>
@@ -960,10 +987,10 @@ function FCIRegulationPosition() {
                             </CButton>
                           </>
                         </td>
-                        <td width="5%">{item.fciSymbol}</td>
-                        <td width="15%">{item.timestamp}</td>
-                        <td width="30%">{item.overview}</td>
-                        <td>
+                        <td width="5%" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.fciSymbol}</td>
+                        <td width="40%" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.overview}</td>
+                        <td width="16%" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}><><td style={{ textAlign:"center"}}>{item.timestamp}</td><td style={{ textAlign: "center"}}>{timeOfDay(item.timestamp)}&nbsp;<CIcon icon={cilSun} size="l"/></td></></td>
+                        <td width="12%">
                           <>
                             <CButton shape='rounded' size='sm' color='string' onClick={() => deletePosition(item.id)}>
                                   <CIcon icon={cilTrash} size="xl"/>
@@ -986,6 +1013,7 @@ function FCIRegulationPosition() {
       ) : null}
       </div>   
     </div>
+    <br/>
     </>
   );
 }

@@ -554,6 +554,10 @@ function FCIRegulationPosition (prevLocation) {
     }
   }
 
+  const splitOverview = (overview) => {
+      return overview.split('Totals');
+  }
+
   return (
     <>
     <div>
@@ -931,7 +935,7 @@ function FCIRegulationPosition (prevLocation) {
                                           <CCol xs={12}>
                                             <CCard>
                                             <CCardHeader>
-                                              <span className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.fciSymbol} - {item.timestamp} - {item.overview}</span>
+                                              <span className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.fciSymbol} - {item.timestamp} - {splitOverview(item.overview)[0]}<br/>Totals{splitOverview(item.overview)[1]}</span>
                                             </CCardHeader>
                                             <CCardBody>
                                               <table >
@@ -988,7 +992,7 @@ function FCIRegulationPosition (prevLocation) {
                           </>
                         </td>
                         <td width="5%" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.fciSymbol}</td>
-                        <td width="40%" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.overview}</td>
+                        <td width="40%" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{splitOverview(item.overview)[0]}<br/>Totals{splitOverview(item.overview)[1]}</td>
                         <td width="16%" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}><><td style={{ textAlign:"center"}}>{item.timestamp}</td><td style={{ textAlign: "center"}}>{timeOfDay(item.timestamp)}&nbsp;<CIcon icon={cilSun} size="l"/></td></></td>
                         <td width="12%">
                           <>

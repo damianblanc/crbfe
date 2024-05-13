@@ -211,6 +211,7 @@ function FCIPositionAdvice() {
           setFlatAdvices(tempLoadedFlatAdvices);
           setPositionPercentages(tempLoadedPercentagesValued);
           setStatistics(tempLoadedStatistics);
+          updateFCIAdviceQuantity();
         } else {
           setPositions([]);
         }
@@ -218,6 +219,7 @@ function FCIPositionAdvice() {
     };
     setFetchedData();
   }, []); 
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setExcelFile(file);
@@ -687,8 +689,8 @@ function FCIPositionAdvice() {
                   {advices.map((item, index) => 
                     <React.Fragment key={item.id || index}>
                     <tr>
-                      <td style={{ width: "12%"}}>{item.specieTypeGroup}</td>
-                      <td width={"15%"}> {item.specieType}</td>
+                      <td style={{ width: "12%"}}><b>{item.specieTypeGroup}</b></td>
+                      <td style={{ width: "15%"}}><b>{item.specieType}</b></td>
                       <td style={{ width: "73%"}}>
                           <table>
                             <thead>
@@ -705,27 +707,27 @@ function FCIPositionAdvice() {
                               {item.operationAdvices.map((advice, index) => 
                                     <React.Fragment key={advice.id || index}>
                                       <tr>
-                                        <td>{advice.specieName}</td> 
-                                        <td style={{ color: advice.operationAdvice === 'BUY' ? 'green' : '#000080' }}>{advice.operationAdvice}</td>
-                                        <td style={{ color: advice.operationAdvice === 'BUY' ? 'green' : '#000080' }}>{Math.floor(advice.quantity)}</td> 
-                                        <td>
+                                        <td style={{ color: advice.operationAdvice === 'BUY' ? 'green' : '#000080' }}>{advice.specieName}</td> 
+                                        <td style={{ color: advice.operationAdvice === 'BUY' ? 'green' : '#000080' }}><b>{advice.operationAdvice}</b></td>
+                                        <td style={{ color: advice.operationAdvice === 'BUY' ? 'green' : '#000080' }}><b>{Math.floor(advice.quantity)}</b></td> 
+                                        <td style={{ color: advice.operationAdvice === 'BUY' ? 'green' : '#000080' }}>
                                           {(typeof advice.quantity === 'number')? (
                                           <div>
-                                              <NumericFormat displayType="text" value={parseFloat(advice.quantity.toFixed(2))} decimalSeparator=','/>
+                                              <NumericFormat displayType="text" value={advice.quantity.toFixed(2)} decimalSeparator=','/>
                                           </div>
                                           ) : null}
                                         </td> 
-                                        <td>
+                                        <td style={{ color: advice.operationAdvice === 'BUY' ? 'green' : '#000080' }}>
                                         {(typeof advice.price === 'number')? (
                                           <div>
-                                              $ <NumericFormat displayType="text" value={parseFloat(advice.price.toFixed(2))} thousandSeparator="." decimalSeparator=','/>
+                                              $ <NumericFormat displayType="text" value={advice.price.toFixed(2)} thousandSeparator="." decimalSeparator=','/>
                                           </div>
                                           ) : null}
                                         </td> 
                                         <td>
                                           {(typeof advice.value === 'number')? (
                                           <div style={{ color: advice.operationAdvice === 'BUY' ? 'green' : '#000080' }}>
-                                              $ <NumericFormat displayType="text" value={parseFloat(advice.value.toFixed(2))} thousandSeparator="." decimalSeparator=','/>
+                                              $ <NumericFormat displayType="text" value={advice.value.toFixed(2)} thousandSeparator="." decimalSeparator=','/>
                                           </div>
                                           ) : null}
                                         </td> 

@@ -69,3 +69,27 @@ button:hover {
   color: palevioletred;
   vertical-align: top;
 }
+
+.flex-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.flex-item {
+  flex: 1 1 auto;
+}
+
+.chartjs-tooltip {
+  background-color: rgb(24, 104, 195);
+  border-radius: 5px;
+  padding: 3px;
+  color: rgb(19, 18, 18) !important;
+  font-size: 12px;
+  opacity: 1;
+}

@@ -240,6 +240,7 @@ function FCIPositionBias() {
           setReportTypes(tempLoadedReportTypes);    
           setPositionPercentages(tempLoadedPercentagesValued);
           setStatistics(tempLoadedStatistics);
+          updateFCIReportQuantity();
         }
       }
     };
@@ -644,8 +645,8 @@ return (
                                 <CCardBody>
                                 <CRow>
                                 <CCol xs={5}>
-                                    <CCard className="mb-4">
-                                      <CCardHeader className="text-medium-emphasis small">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FCI Regulation Distribution</CCardHeader>
+                                    <CCard className="mb-6">
+                                      <CCardHeader className="text-medium-emphasis small">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>FCI Regulation Distribution</b></CCardHeader>
                                       <CCardBody>
                                         <CChartPie
                                           data={{
@@ -664,7 +665,7 @@ return (
                                   </CCol>
                                   <CCol>
                                   <CCard className="mb-4">
-                                      <CCardHeader className="text-medium-emphasis small">FCI Regulation Composition</CCardHeader>
+                                      <CCardHeader className="text-medium-emphasis small"><b>FCI Regulation Composition</b></CCardHeader>
                                       <CCardBody>
                                           <table className="text-medium-emphasis" style={{ overflow: "auto"}}>
                                           <thead>
@@ -677,8 +678,8 @@ return (
                                               {regulationPercentages?.map((p, index) => 
                                               <React.Fragment key={p.id || index}>
                                                 <tr className="text-medium-emphasis">
-                                                  <td className="text-medium-emphasis small">{p.specieTypeName}</td>
-                                                  <td className="text-medium-emphasis small">{p.percentage}</td>
+                                                  <td className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{p.specieTypeName}</td>
+                                                  <td className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{p.percentage}</td>
                                                 </tr>
                                               </React.Fragment> 
                                               )}                                       
@@ -813,7 +814,7 @@ return (
                       <table>
                         <tbody>
                         <tr>
-                          <td width="10%">
+                          <td width="12%">
                             <strong className="text-medium-emphasis small">Report & Analysis</strong>
                           </td>
                           <td width="10%">
@@ -826,21 +827,22 @@ return (
                            </select>
                          </td>
                          <td width="2%"/>
-                          <td className="text-medium-emphasis small" width="20%">
+                          <td className="text-medium-emphasis small" width="25%">
                             <strong>
                               Position # {findPositionById() ? findPositionById().id + ' - ' + findPositionById().timestamp : ''}
                             </strong>
                           </td>
-                          <td width="1%"></td>
+                          <td width="5%"></td>
+                          <td className="text-medium-emphasis small" width="4%"><b>Biases</b></td>
                           <td className="text-medium-emphasis small" width="1%">
                           {<Popup trigger={
                           <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages()}>
                               <CIcon icon={cilFile} size="xl"/>
                           </CButton>} position="right center" modal lockScroll="true" backgroundColor="rgba(75,192,192,0.4)"
-                          contentStyle={{ width: "50%", height: "80%", top: '8%', bottom: '5%', left: '5%', right: '10%'}}>
+                          contentStyle={{ width: "50%", height: "65%", overflow: "auto", position: 'absolute', top: '20%', left: '30%'}}>
                           {
                             <CRow>
-                            <CCol xs={12}>
+                            <CCol xl={12}>
                               <CCard>
                                 <CCardHeader>
                                   <strong className="text-medium-emphasis small">FCI {currentFCISymbol} - Current Position Biases</strong>
@@ -848,39 +850,41 @@ return (
                                 <CCardBody>
                                 <CRow>
                                 <CCol>
-                                  <CCard className="mb-8">
-                                    <CCardHeader className="text-medium-emphasis" >Current Position Biases</CCardHeader>
+                                  <CCard>
+                                    <CCardHeader className="text-medium-emphasis small">
+                                    <b>Position #{findPositionById().id + " - " + findPositionById().timestamp}</b>
+                                    </CCardHeader>
                                     <CCardBody>
-                                        <CCol xs={12}>
+                                        <CCol xl={12}>
                                               <CChart
                                                 type="bar"
                                                 data={{
-                                                  labels: positionPercentages?.map((p) => p.specieType + ": " + p.percentage + "%"),
+                                                  labels: positionPercentages?.map((p) => p.specieType + ": " + p.rpercentage + "%"),
                                                   datasets: [
+                                                    // {
+                                                    //   label: 'Biases',
+                                                    //   backgroundColor: 'grey', //'#352c2c',
+                                                    //   data: positionPercentages?.map((p) => p.rvalued),
+                                                    //   type: "line",
+                                                    //   borderColor: "grey",
+                                                    //   fill: false,
+                                                    //   order: 0,
+                                                    //   borderWidth: 2,
+                                                    //   pointBackgroundColor: "#352c2c",
+                                                    //   lineTension: 0,
+                                                    // },
                                                     {
-                                                      label: 'FCI Position Biases Percentage',
-                                                      backgroundColor: 'grey', //'#352c2c',
-                                                      data: positionPercentages?.map((p) => p.rpercentage),
-                                                      type: "line",
-                                                      borderColor: "grey",
-                                                      fill: false,
-                                                      order: 0,
-                                                      borderWidth: 2,
-                                                      pointBackgroundColor: "#352c2c",
-                                                      lineTension: 0,
-                                                    },
-                                                    {
-                                                      label: 'FCI Position Biases Percentage',
+                                                      label: 'Position Biases',
                                                       backgroundColor: '#3c4b64',
-                                                      hoverBackgroundColor: 'rgba(255,99,132,0.4)',
-                                                      hoverBorderColor: 'rgba(255,99,132,1)',
+                                                      hoverBackgroundColor: 'grey',
+                                                      hoverBorderColor: 'grey',
                                                       borderCapStyle: 'square',
                                                       borderColor: '#3c4b64',
                                                       borderWidth: 0,
                                                       borderDash: [0, 0],
                                                       borderDashOffset: 0,
                                                       order: 1,
-                                                      data: positionPercentages?.map((p) => p.rpercentage),
+                                                      data: positionPercentages?.map((p) => p.rvalued),
                                                       // hoverBackgroundColor: "#f87995",
                                                       // hoverBorderColor: '#f87995',
                                                       // hoverBorderWidth: 1,
@@ -915,9 +919,18 @@ return (
                                                 }}
                                                 labels="Percentages"
                                                 options={{
-                                                  aspectRatio: 1.5,
+                                                  aspectRatio: 2,
                                                   tooltips: {
-                                                    enabled: true
+                                                    enabled: true,
+                                                    callbacks: {
+                                                      label: function(context) {
+                                                        if (context.datasetIndex === 1) {
+                                                          return null;
+                                                        } else {
+                                                          return "$ " + context.dataset.label + ': ' + context.parsed.y;
+                                                        }
+                                                      }
+                                                    }
                                                   }
                                                 }}
                                               />
@@ -993,38 +1006,83 @@ return (
                           </CRow>  }
                           </Popup>}
                           </td>
-                          <td width="24%"></td>
+                          <td className="text-medium-emphasis small" width="1%"/>
+                          <td className="text-medium-emphasis small" width="4%"><b>Distribution</b></td>
+                          <td className="text-medium-emphasis small" width="1%">
+                            {<Popup trigger={
+                            <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => listFCIRegulationPercentages()}>
+                                <CIcon icon={cilFile} size="xl"/>
+                            </CButton>} position="right center" modal lockScroll="true" backgroundColor="rgba(75,192,192,0.4)"
+                            contentStyle={{ width: "30%", height: "auto", overflow: "auto", position: 'absolute', top: '20%', left: '44%'}}>
+                            {
+                              <CRow>
+                              <CCol xl={12}>
+                                <CCard>
+                                  <CCardHeader>
+                                    <strong className="text-medium-emphasis small">FCI {currentFCISymbol} - Current Position Distribution</strong>
+                                  </CCardHeader>
+                                  <CCardBody>
+                                  <CRow>
+                                  <CCol>
+                                    <CCard>
+                                      <CCardHeader className="text-medium-emphasis small"><b>Position #{findPositionById().id + " - " + findPositionById().timestamp}</b>
+                                      <br/><strong>Total: $ <NumericFormat displayType="text" value={Array.isArray(positionPercentages)? positionPercentages.reduce((previousValue, p, index) => previousValue +  Number(p.valued) , 0).toFixed(2) : 0} thousandSeparator="." decimalSeparator=','/></strong>
+                                      </CCardHeader>
+                                        <CCardBody>
+                                          {<CChartDoughnut
+                                            data={{
+                                              labels: positionPercentages?.map((p) => p.specieType + ": " + p.percentage + "%"),
+                                              datasets: [
+                                                {
+                                                  data: positionPercentages?.map((p) => p.valued),
+                                                  backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
+                                                  hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
+                                                },
+                                              ],
+                                            }}
+                                            options={{
+                                              plugins: {
+                                                legend: {
+                                                  display: true,
+                                                },
+                                                tooltips: {
+                                                  callbacks: {
+                                                    title: (context) => {
+                                                      const label = context.label;
+                                                      return `<div class="my-tooltip-title">${label}</div>`;
+                                                    },
+                                                    label: (context) => {
+                                                      const label = context.label;
+                                                      const value = context.parsed.y;
+                                                      return `<div class="my-tooltip-label">${label}: ${value}%</div>`;
+                                                    },
+                                                  },
+                                                }
+                                              },
+                                            }}
+                                          />}
+                                        </CCardBody>
+                                    </CCard>
+                                  </CCol>
+                                  </CRow>
+                                  </CCardBody>
+                                  </CCard>
+                                  </CCol>
+                                  </CRow>
+                                }
+                              </Popup>}
+                          </td>    
+                          <td width="8%"></td>
                         </tr>
                         </tbody>
                       </table>
                     </CCardHeader>
                     <CCardBody>
                     <CRow>
-                    <CCol xs={3}>
-                        <CCard className="mb-4">
-                          <CCardHeader className="text-medium-emphasis small">Current Position - Distribution</CCardHeader>
-                          <CCardBody>
-                            {<CChartPie
-                              data={{
-                                labels: positionPercentages?.map((p) => p.specieType),
-                                datasets: [
-                                  {
-                                    data: positionPercentages?.map((p) => p.percentage),
-                                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
-                                    hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
-                                  },
-                                ],
-                              }}
-
-                            />}
-                          </CCardBody>
-                        </CCard>
-                      </CCol>
-
                       <CCol>
                         <CCard className="mb-3">
-                            <CCardHeader className="text-medium-emphasis small">FCI Position Overview - Total Position: $&nbsp; 
-                            <NumericFormat displayType="text" value={Array.isArray(positionPercentages)? positionPercentages.reduce((previousValue, p, index) => previousValue +  Number(p.valued) , 0).toFixed(2) : 0} thousandSeparator="." decimalSeparator=','/>
+                            <CCardHeader className="text-medium-emphasis small"><strong>FCI Position Overview - Total Position: $&nbsp;</strong> 
+                            <strong><NumericFormat displayType="text" value={Array.isArray(positionPercentages)? positionPercentages.reduce((previousValue, p, index) => previousValue +  Number(p.valued) , 0).toFixed(2) : 0} thousandSeparator="." decimalSeparator=','/></strong>
                               </CCardHeader>
                             <CCardBody>
                                 <table className="text-medium-emphasis small">
@@ -1045,28 +1103,28 @@ return (
                                     && positionPercentages.map((p, index) => 
                                       <React.Fragment key={p.fciSpecieTypeId || index}>
                                       <tr className="text-medium-emphasis">
-                                        <td>{p.specieType}</td>
-                                        <td>{p.percentage}%</td>
-                                        <td>
+                                        <td style={{ width: '15%', color: index % 2 != 0 ? 'green' : '#000080' }}>{p.specieType}</td>
+                                        <td style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{p.percentage}%</td>
+                                        <td style={{ width: '17%', color: index % 2 != 0 ? 'green' : '#000080' }}>
                                           $ <NumericFormat displayType="text" value={p.valued} thousandSeparator="." decimalSeparator=','/></td>
                                         <td>
                                           {p.rvalued < 0 ? (
                                             <div style={{ color: '#FF6384' }}>
                                             {p.rpercentage}%
                                             </div>) : (
-                                              <div>{p.rpercentage}%</div>
+                                              <div style={{ color: '#000100' }}>{p.rpercentage}%</div>
                                           )}
                                         </td>
-                                        <td>{p.rvalued < 0 ? (
+                                        <td style={{ width: '17%'}}>{p.rvalued < 0 ? (
                                             <div style={{ color: '#FF6384' }}>
                                               $ <NumericFormat displayType="text" value={p.rvalued} thousandSeparator="." decimalSeparator=','/>
                                             </div>) : (
-                                              <div>
+                                              <div style={{ color: '#000100' }}>
                                               $ <NumericFormat displayType="text" value={p.rvalued} thousandSeparator="." decimalSeparator=','/>
                                               </div>
                                             )}
                                         </td>
-                                        <td>
+                                        <td style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>
                                           {p.fvalued < 0 ? (
                                             <div style={{ color: '#FF6384' }}>
                                             {p.fpercentage}%
@@ -1074,7 +1132,7 @@ return (
                                               <div>{p.fpercentage}%</div>
                                           )}
                                         </td>
-                                        <td>{p.fvalued < 0 ? (
+                                        <td style={{ width: '17%', color: index % 2 != 0 ? 'green' : '#000080' }}>{p.fvalued < 0 ? (
                                             <div style={{ color: '#FF6384' }}>
                                               $ <NumericFormat displayType="text" value={p.fvalued} thousandSeparator="." decimalSeparator=','/>
                                             </div>) : (

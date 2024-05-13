@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
-import { cilAlignRight, cilBookmark, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer } from '@coreui/icons';
+import { cilIndustry, cilAlignRight, cilBookmark, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cibSlides } from '@coreui/icons';
 
 import CIcon from '@coreui/icons-react'
+import { CModal } from '@coreui/react';
 
 import './FCIGroupManager.css';
 import './Popup.css';
 
-import {CChartPie} from '@coreui/react-chartjs'
+import {CChartBar, CChartPie, CChart} from '@coreui/react-chartjs'
 
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
@@ -20,10 +21,11 @@ import { useNavigate } from 'react-router-dom';
 import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
 
 class SpecieTypeGroup {
-    constructor(id, name, description, updatable) {
+    constructor(id, name, description, lot, updatable) {
         this.id = id;
         this.name = name;
         this.description = description;
+        this.lot = lot;
         this.updatable = updatable;
     }
 }
@@ -49,6 +51,7 @@ function FCIGroupManager() {
   const [toast, addToast] = useState(0)
   const toaster = useRef()
   const [showToast, setShowToast] = useState(false);
+  const [visibleAdd, setVisibleAdd] = useState(false);
 
   /** SpecieType Groups */
   useEffect(() => {
@@ -163,6 +166,7 @@ function FCIGroupManager() {
         fetchCreatedSpecieType();
         setSpecieTypes([newSpecieType, ...specieTypes]);
         clearNewSpecieType();
+        setVisibleAdd(false);
     }
   }
 
@@ -204,8 +208,12 @@ function FCIGroupManager() {
     setShowToast(!showToast);
   };
 
+  const showAddGroupCanvas = () => {
+    setVisibleAdd(!visibleAdd);
+  }
+
   return (
-    <div>
+    <>
       {showToast === true?
       <CToaster classname='p-3' placement='top-end' push={toast} ref={toaster}>
         <CToast show={true} animation={true} autohide={true} 
@@ -243,7 +251,7 @@ function FCIGroupManager() {
                     <CCol xs={12}>
                       <CCard>
                         <CCardHeader>
-                          <strong className="text-medium-emphasis small">FCI Regulation</strong>
+                          <strong className="text-medium-emphasis small">FCI Specie Type Group Management</strong>
                         </CCardHeader>
                         <CCardBody>
                         <CRow>
@@ -263,47 +271,54 @@ function FCIGroupManager() {
                       </Popup>}
                 <strong className="text-medium-emphasis small">Specie Type Groups Configuration</strong>
               </CCardHeader>
-              <CCardBody>
+              <CCardBody>  
               <table className="text-medium-emphasis small">
                <thead>
                   <tr>
-                    <td width="20%"><strong><code>&lt;Specie Type Group&gt;</code></strong></td>
-                    <td width="20%">
+                    <td width="15%"><strong><code>&lt;Specie Type Group&gt;</code></strong></td>
+                    <td width="15%">
                       <select className="text-medium-emphasis large" onChange={(e) => selectSpecieTypeGroup(e.target.value)}>
-                        {Object.prototype.toString.call(specieTypeGroups) === '[object Array]' && specieTypeGroups?.map((group) => 
-                          <React.Fragment key={group.id}>
+                        {Object.prototype.toString.call(specieTypeGroups) === '[object Array]' && specieTypeGroups?.map((group, index) => 
+                          <React.Fragment key={group.id || index}>
                           <option value={group.name}>{group.name}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
                           </React.Fragment>
                         )}
                       </select>
                     </td>
                     <td width="50%">
-                    {currentGroup.description}
+                       {currentGroup.description}
                     </td>
-                    <td width="10%">{currentGroup.updatable? (<strong><code>Updatable</code></strong>) 
-                                               : (<strong><code>Not Updatable</code></strong>)}
+                    <td>
+                      <table className="text-medium-emphasis small" width="10%" style={{ marginTop: "1px"}}>
+                        <thead>
+                          <tr>
+                            <th className="text-medium-emphasis large" colSpan={2} style={{ textAlign:'center', border: '1px solid lightgrey' }}>Properties</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td style={{ border: '1px solid lightgrey', color: 'green' }}>&nbsp;&nbsp;Market Refresh&nbsp;&nbsp;</td>
+                            <td className="small" style={{ border: '1px solid lightgrey', color: 'green' }}>{currentGroup.updatable? (<strong>&nbsp;&nbsp;Yes&nbsp;&nbsp;</strong>) 
+                                                      : (<strong>&nbsp;&nbsp;No&nbsp;&nbsp;</strong>)}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style={{ border: '1px solid lightgrey', color: '#000080' }}>&nbsp;&nbsp;Papers per Lot&nbsp;&nbsp;</td>
+                            <td className="large" style={{ border: '1px solid lightgrey', color: '#000080' }}>&nbsp;&nbsp;{currentGroup.lot}&nbsp;&nbsp;</td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </td>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-               </table>
-               <br/>
-               <table className="text-medium-emphasis small" style={{ border: "none", marginBottom: "-10px"}}> 
-               <tr>
-               {currentGroup.updatable? (
-                  <p>
-                    &nbsp;<code>*&nbsp;</code>Updatable property refers to the ability to take current prices from market and apply them to a position
-                  </p>
-               ) : (null)}
-                  </tr>
-                </table>
+                   <td width="2%"></td>
+                   </tr> 
+              </thead>
+              </table>
               </CCardBody>
             </CCard>
         </CCol>
       </CRow> 
       ) : null}
       <br/>
-      <div>
         {specieTypeGroups.length > 0? (
         <CRow>
         <CCol xs={12}>
@@ -312,33 +327,126 @@ function FCIGroupManager() {
               &nbsp;&nbsp;&nbsp;<CIcon icon={cilAlignRight} size="xl"/>&nbsp;&nbsp;&nbsp;
               <strong>Specie Types in Group &nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong>
               <Popup trigger={
-                <CButton shape='rounded' size='xxl' color='string'>
-                    <CIcon className="text-medium-emphasis small" icon={cilClipboard} size="xl"/>
-                </CButton>} position="right">
+                <CButton shape='rounded' size='lg' color='string'>
+                    <CIcon className="text-medium-emphasis small" icon={cilClipboard} size="lg"/>
+                </CButton>} position="right" contentStyle={{ width: '40%', height: '47.5%', top: '40%' }}>
                   {<CRow>
-                      <CCol xs={30}>
-                      <CCard>
-                          <CCard className="mb-6">
-                          <CCardHeader><strong className="text-medium-emphasis small">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Group &nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong></CCardHeader>
-                          <CCardBody>
-                              <CChartPie
+                    <CCol xs={20}>
+                      <CCard className="mb-4">
+                        <CCardHeader className="text-medium-emphasis small">
+                          <tbody>
+                          <table>
+                            <tbody>
+                              <tr>
+                                <td>
+                                <strong><CIcon icon={cilBookmark} size="lg" className="d-flex align-items-center"/></strong>
+                                </td>
+                                <td>
+                                <strong>&nbsp;Group&nbsp;&nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                          </tbody>
+                        </CCardHeader>
+                        <CCardBody>
+                            <CChart
+                              type="bar"
                               data={{
                                   labels: specieTypes?.map((st) => st.name),
                                   datasets: [
                                   {
+                                    label: 'Specie Types in Group',
                                       data: specieTypes?.map((st) => st.specieQuantity),
                                       backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
                                       hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#321fdb', '#3c4b64', '#e55353', '#f9b115', '#2eb85c', '#2982cc', '#212333'],
                                   },
-                                  ],
-                              }}
-                              />
-                          </CCardBody>
-                          </CCard>
-                      </CCard> 
-                      </CCol>
-                    </CRow>}
+                                  ]
+                                }}
+                                labels="Specie Types in Group"
+                                options={{
+                                  title: {
+                                    display: false,
+                                    text: 'Specie Types in Group',
+                                  },
+                                  aspectRatio: 2,
+                                  tooltips: {
+                                    enabled: true,
+                                  },
+                                }}/>
+                        </CCardBody>
+                      </CCard>
+                    </CCol>
+                  </CRow>}
                 </Popup>
+                  <td style={{ width: "1%", border: "none"}}>
+                      <CButton className="text-medium-emphasis small"
+                        shape='rounded' size='sm' color='string' onClick={() => showAddGroupCanvas()}>
+                          <CIcon icon={cilNoteAdd} size="xl"/>
+                      </CButton>
+                  </td>
+                  <CModal
+                        visible={visibleAdd}
+                        alignment="center"
+                        size = "lg"
+                        onClose={() => setVisibleAdd(false)}
+                        aria-labelledby="ScrollingLongContentExampleLabel">
+                      {
+                        <CRow>
+                          <CCol>
+                          <CCard>
+                            <CCardHeader>
+                              <strong className="text-medium-emphasis small">Add Specie Types to Group</strong>
+                            </CCardHeader>
+                            <CCardBody>
+                              <div className="text-medium-emphasis small">
+                                Indicate name and description for a new Specie Type to include in current Group <strong><code>&lt;{currentGroup.name}&gt;</code></strong>
+                              </div>
+                              <br/>
+                              <table className="text-medium-emphasis small">
+                                  <thead>
+                                    <tr>
+                                      <th>Name</th>
+                                      <th>Description</th>
+                                      <th></th>
+                                      <th>Actions</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr>
+                                      <td width="20%">
+                                          <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
+                                            <input
+                                              type="text" 
+                                              style={{width: "90%"}}
+                                              value={newSpecieType.name}
+                                              onChange={(e) => setNewSpecieType({ ...newSpecieType, name: e.target.value })}
+                                            />
+                                          </h4>
+                                      </td>
+                                      <td colSpan="1" width="40%">
+                                        <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
+                                          <input type="text" aria-label="Description"
+                                            style={{width: "95%"}}
+                                            value={newSpecieType.description}
+                                            onChange={(e) => setNewSpecieType({ ...newSpecieType, description: e.target.value })}/>
+                                        </h4>
+                                      </td>
+                                      <td>&nbsp;</td>
+                                      <td className="text-medium-emphasis">
+                                        <CButton component="a" color="string" role="button" size='sm' onClick={() => addSpecieType()}>
+                                            <CIcon icon={cilTransfer} size="xl"/>
+                                        </CButton>
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>  
+                              </CCardBody>  
+                          </CCard>  
+                          </CCol>
+                        </CRow>
+                      }  
+                </CModal>  
             </CCardHeader>
             <CCardBody>
               <table className="text-medium-emphasis small">
@@ -374,65 +482,8 @@ function FCIGroupManager() {
         </CCol>
         </CRow> 
         ) : null}
-        <br/>
-        {specieTypeGroups.length > 0? (
-        <CRow>
-        <CCol>
-        <CCard>
-          <CCardHeader>
-            <strong className="text-medium-emphasis small">Add Specie Types to Group</strong>
-          </CCardHeader>
-          <CCardBody>
-            <div className="text-medium-emphasis small">
-              Indicate name and description for a new Specie Type to include in current Group <strong><code>&lt;{currentGroup.name}&gt;</code></strong>
-            </div>
-            <br/>
-            <table className="text-medium-emphasis small">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th></th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td width="20%">
-                        <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
-                          <input
-                            type="text" 
-                            style={{width: "90%"}}
-                            value={newSpecieType.name}
-                            onChange={(e) => setNewSpecieType({ ...newSpecieType, name: e.target.value })}
-                          />
-                        </h4>
-                    </td>
-                    <td colSpan="1" width="40%">
-                      <h4 className='text-medium-emphasis small'><code>*&nbsp;</code>
-                        <input type="text" aria-label="Description"
-                          style={{width: "95%"}}
-                          value={newSpecieType.description}
-                          onChange={(e) => setNewSpecieType({ ...newSpecieType, description: e.target.value })}/>
-                      </h4>
-                    </td>
-                    <td>&nbsp;</td>
-                    <td className="text-medium-emphasis">
-                      <CButton component="a" color="string" role="button" size='sm' onClick={() => addSpecieType()}>
-                          <CIcon icon={cilTransfer} size="xl"/>
-                      </CButton>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>  
-            </CCardBody>  
-        </CCard>  
-        </CCol>
-       </CRow>
-      ) : null}  
-      </div>   
       <br/>
-    </div>
+    </>
   );
 }
 

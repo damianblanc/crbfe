@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
-import { cilAlignRight, cilBookmark, cilTrash, cilTransfer, cilCheckCircle } from '@coreui/icons';
+import { cilInput, cilAlignRight, cilBookmark, cilTrash, cilTransfer, cilCheckCircle } from '@coreui/icons';
 
 import CIcon from '@coreui/icons-react'
 
@@ -19,10 +19,11 @@ import { useNavigate } from 'react-router-dom';
 import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
 
 class SpecieTypeGroup {
-    constructor(id, name, description, updatable) {
+    constructor(id, name, description, lot, updatable) {
         this.id = id;
         this.name = name;
         this.description = description;
+        this.lot = lot;
         this.updatable = updatable;
     }
 }
@@ -37,11 +38,12 @@ class SpecieType {
 }
 
 class Specie {
-    constructor(id, specieSymbol, fciSpecieTypeId, specieTypeName) {
+    constructor(id, specieSymbol, fciSpecieTypeId, specieTypeName, fciReferencedPositionQuantity) {
         this.id = id;
         this.specieSymbol = specieSymbol;
         this.fciSpecieTypeId = fciSpecieTypeId;
         this.specieTypeName = specieTypeName;
+        this.fciReferencedPositionQuantity = fciReferencedPositionQuantity;
     }
 }
 
@@ -205,6 +207,14 @@ function SpecieTypeManager() {
       const upsertedSpecie = await upsertSpecie(specieTypeGroupName, specieTypeName, specieName);
       setUpdatedSpecie(true);
       setLastUpdatedSpecie(specieName);
+    
+      const updatedSpeciesList = species.map((specie) => {
+        if (specie.specieSymbol === specieName) {
+          return { ...specie, fciReferencedPositionQuantity: 0 };
+        }
+        return specie;
+      });
+      setSpecies(updatedSpeciesList);
     }
     upsertData(specieTypeGroupName, specieTypeName, specieName);
   }
@@ -221,21 +231,19 @@ function SpecieTypeManager() {
     const errors = validateNewSpecieTypeRow(newSpecieType);
     if (Object.keys(errors).length === 0) {
         const fetchCreatedSpecieType = async () => {
-        
-                try {
-                    const body = new SpecieType(null, newSpecieType.name, newSpecieType.description, newSpecieType.updatable);
-                    newSpecieType.fciSpecieTypeId = specieTypes.length + 1;
-                    const responseData = await axios.post('http://localhost:8098/api/v1/component/specie-type-group/' + currentGroup.name + '/specie-type', body,
-                    {
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    });
-                    return responseData.data;
-                } catch (error) {
-                    console.error('Error sending data to the backend:', error);
-                }
-                
+            try {
+                const body = new SpecieType(null, newSpecieType.name, newSpecieType.description, newSpecieType.updatable);
+                newSpecieType.fciSpecieTypeId = specieTypes.length + 1;
+                const responseData = await axios.post('http://localhost:8098/api/v1/component/specie-type-group/' + currentGroup.name + '/specie-type', body,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                return responseData.data;
+            } catch (error) {
+                console.error('Error sending data to the backend:', error);
+            }
         }
         fetchCreatedSpecieType();
         setSpecieTypes([newSpecieType, ...specieTypes]);
@@ -247,8 +255,16 @@ function SpecieTypeManager() {
     setNewSpecieType({ ...newSpecieType, fciSpecieTypeId: '', name: '', description: '', updatable: '' });
   })
 
-  const deleteSpecieType = () => {
-
+  const deleteSpecieTypeAssociation = () => {
+    const upsertSpecie = async (specieTypeGroupName, specieTypeName, specieName) => {
+      try {
+        const responseData = await axios.delete('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/specie-type/' + specieTypeName + '/specie/' + specieName + '/bind');
+        return responseData.data;
+      } catch (error) {
+        console.error('#2 - Error upserting association:', error);
+        setUpdatedSpecie(false);
+      }
+    };
   }
 
   const showToastMessage = (message) => {
@@ -264,7 +280,6 @@ function SpecieTypeManager() {
   };
 
   return (
-    <div>
        <>
       {showToast === true?
       <CToaster classname='p-3' placement='top-end' push={toast} ref={toaster}>
@@ -329,8 +344,8 @@ function SpecieTypeManager() {
                     <td width="15%"><strong><code>&lt;Specie Type Group&gt;</code></strong></td>
                     <td width="80%">
                       <select className="text-medium-emphasis large" onChange={(e) => selectSpecieTypeGroup(e.target.value)}>
-                        {Object.prototype.toString.call(specieTypeGroups) === '[object Array]' && specieTypeGroups?.map((group) => 
-                          <React.Fragment key={group.id}>
+                        {Object.prototype.toString.call(specieTypeGroups) === '[object Array]' && specieTypeGroups?.map((group, index) => 
+                          <React.Fragment key={group.id || index}>
                           <option value={group.name}>{group.name}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
                           </React.Fragment>
                         )}
@@ -342,56 +357,48 @@ function SpecieTypeManager() {
                
                 <tbody></tbody>
                </table>
-               <br/>
-               <table className="text-medium-emphasis small" style={{ border: "none", marginBottom: "-10px"}}> 
-               <tr>
-                  {currentGroup.updatable? (
-                      <p>
-                        &nbsp;<code>*&nbsp;</code>Updatable property refers to the ability to take current prices from market and apply them to a position
-                      </p>
-                  ) : <td></td>}
-                  </tr>
-                </table>
               </CCardBody>
             </CCard>
         </CCol>
       </CRow> 
       <br/>
-      <div>
         <CRow>
         <CCol xs={12}>
           <CCard>
-          <CCardHeader className="text-medium-emphasis small d-flex align-items-center" style={{ padding: '0.5rem 1rem', lineHeight: '3rem' }}>
+             <CCardHeader className="text-medium-emphasis small d-flex align-items-center" style={{ padding: '0.5rem 1rem', lineHeight: '3rem' }}>
               &nbsp;&nbsp;&nbsp;<CIcon icon={cilAlignRight} size="xl"/>&nbsp;&nbsp;&nbsp;
               <strong>Specie Types in Group&nbsp;&nbsp;&nbsp;<code>&lt;{currentGroup.name}&gt;</code></strong>
             </CCardHeader>
             <CCardHeader className="text-medium-emphasis small" style={{ border: "none", marginBottom: "-30px"}}>
-              <tr>
-                 <td width="60%">&nbsp;<code>*&nbsp;</code>Associate each market specie to its required specie type for further recognition at position uploading time</td>
-                 <td style={{ width: "10%", border: "none", verticalAlign: "bottom"}}>
-                    <CPagination style={{verticalAlign: "bottom"}} align="end" size="sm" 
-                        activePage = {currentPage}
-                        pages = {Math.floor(totalSpecies / speciesPerPage)}
-                        onActivePageChange={handlePageChange}>
-                          {currentPage === 1? (
-                            <CPaginationItem disabled>«</CPaginationItem> ) 
-                          : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
-                        
-                          <CPaginationItem style={{ background : currentPage === 1? 'lightgrey' : 'lightcyan' }}
-                              onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
-                          {currentPage === Math.ceil(totalSpecies / speciesPerPage)? (
-                          <CPaginationItem style={{ backgroundColor: 'lightgrey' }}>{Math.ceil(totalSpecies / speciesPerPage)}</CPaginationItem>
-                          ) :
-                          (<CPaginationItem style={{ backgroundColor: 'lightcyan' }}>{species === undefined? 1 : Math.ceil(totalSpecies / speciesPerPage)}</CPaginationItem>)}
+              <table>
+              <tbody>
+                <tr>
+                  <td width="60%">&nbsp;<code>*&nbsp;</code>Associate each market specie to its required specie type for further recognition at position uploading time</td>
+                  <td style={{ width: "10%", border: "none", verticalAlign: "bottom"}}>
+                      <CPagination style={{verticalAlign: "bottom"}} align="end" size="sm" 
+                          activepage = {currentPage}
+                          pages = {Math.floor(totalSpecies / speciesPerPage)}>
+                            {currentPage === 1? (
+                              <CPaginationItem disabled>«</CPaginationItem> ) 
+                            : (<CPaginationItem onClick={() => handlePageChange(currentPage - 1)}>«</CPaginationItem>)}
                           
-                          <CPaginationItem style={{ backgroundColor: 'lightblue' }} >{species === undefined? 0 : totalSpecies && species && totalSpecies < speciesPerPage? species.length : totalSpecies}</CPaginationItem>
+                            <CPaginationItem style={{ background : currentPage === 1? 'lightgrey' : 'lightcyan' }}
+                                onClick={() => handlePageChange(currentPage)}>{currentPage}</CPaginationItem>
+                            {currentPage === Math.ceil(totalSpecies / speciesPerPage)? (
+                            <CPaginationItem style={{ backgroundColor: 'lightgrey' }}>{Math.ceil(totalSpecies / speciesPerPage)}</CPaginationItem>
+                            ) :
+                            (<CPaginationItem style={{ backgroundColor: 'lightcyan' }}>{species === undefined? 1 : Math.ceil(totalSpecies / speciesPerPage)}</CPaginationItem>)}
+                            
+                            <CPaginationItem style={{ backgroundColor: 'lightblue' }} >{species === undefined? 0 : totalSpecies && species && totalSpecies < speciesPerPage? species.length : totalSpecies}</CPaginationItem>
 
-                          {!totalSpecies || totalSpecies === 0 || currentPage === Math.ceil(totalSpecies / speciesPerPage)? (
-                            <CPaginationItem disabled>»</CPaginationItem>) 
-                          : (<CPaginationItem className={"custom-pagination-item"} onClick={() => handlePageChange(currentPage + 1)}>»</CPaginationItem>)}
-                    </CPagination>
-                  </td>
-              </tr>
+                            {!totalSpecies || totalSpecies === 0 || currentPage === Math.ceil(totalSpecies / speciesPerPage)? (
+                              <CPaginationItem disabled>»</CPaginationItem>) 
+                            : (<CPaginationItem className={"custom-pagination-item"} onClick={() => handlePageChange(currentPage + 1)}>»</CPaginationItem>)}
+                      </CPagination>
+                    </td>
+                </tr>
+              </tbody>
+              </table>
             </CCardHeader>
             <CCardBody>
               <table>
@@ -400,6 +407,7 @@ function SpecieTypeManager() {
                     <th className='text-medium-emphasis small'>#</th>
                     <th className='text-medium-emphasis small'>Specie Symbol</th>
                     <th className='text-medium-emphasis small'>Specie Type</th>
+                    <th className='text-medium-emphasis small'>Referenced Positions</th>
                     <th className='text-medium-emphasis small'>Actions</th>
                   </tr>
                 </thead>
@@ -409,28 +417,34 @@ function SpecieTypeManager() {
                     <tr>
                     <td width="5%" className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.id}</td>
                       <td width="5%" className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.specieSymbol}</td>
-                      <td width="30%" className='text-medium-emphasis small'>
-                      <select className="text-medium-emphasis large" onChange={(e) => setCurrentSpecieTypeSelected(e.target.value)}>
+                      <td width="15%" className='text-medium-emphasis small'>
+                      <select className="text-medium-emphasis large"  onChange={(e) => setCurrentSpecieTypeSelected(e.target.value)}>
                         <option>&nbsp;&nbsp;&nbsp;</option> 
-                        {Object.prototype.toString.call(specieTypes) === '[object Array]' && specieTypes?.map((specietype) => 
-                          <React.Fragment key={specietype.id}>
-                           
-                          <option value={specietype.name} selected={item.specieTypeName === specietype.name}>{specietype.name}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
+                        {Object.prototype.toString.call(specieTypes) === '[object Array]' && specieTypes?.map((specietype, index) => 
+                          <React.Fragment key={specietype.id || index}>
+                            <option value={specietype.name}
+                            selected={specietype.name === item.specieTypeName}>
+                            {specietype.name}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</option>
                           </React.Fragment>
                         )}
                       </select>
                     </td>
+                    <td width="5%" className="small" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.fciReferencedPositionQuantity}</td>
                     <td>
-                      <CButton  className='text-medium-emphasis small' component="a" color="string" role="button" size='sm' onClick={() => upsertSpecieToSpecieTypeAssociation(currentGroup.name, currentSpecieTypeName, item.specieSymbol)}>
-                            <CIcon icon={cilTransfer} size="xl"/>
-                        </CButton>
-                        <CButton className='text-medium-emphasis small' component="a" color="string" role="button" size='sm' onClick={() => deleteSpecieType()}>
-                            <CIcon icon={cilTrash} size="xl"/>
-                        </CButton>
-                        &nbsp;&nbsp;&nbsp;&nbsp;
-                        {updatedSpecie && item.specieSymbol === lastupdatedSpecie? 
-                          <CIcon icon={cilCheckCircle} size="l" />
-                        : null}  
+                      <CButton  className='text-medium-emphasis small' component="a" color="string" role="button" size='sm' 
+                        onClick={() => upsertSpecieToSpecieTypeAssociation(currentGroup.name, currentSpecieTypeName, item.specieSymbol)}
+                        disabled={item.fciReferencedPositionQuantity > 0}>
+                          <CIcon icon={item.fciReferencedPositionQuantity === null ? cilInput : cilTransfer} size="xl"/>
+                      </CButton>
+                      <CButton className='text-medium-emphasis small' component="a" color="string" role="button" size='sm' 
+                        onClick={() => deleteSpecieTypeAssociation()}
+                        disabled={item.fciReferencedPositionQuantity > 0}>
+                          <CIcon icon={cilTrash} size="xl"/>
+                      </CButton>
+                      &nbsp;&nbsp;&nbsp;&nbsp;
+                      {updatedSpecie && item.specieSymbol === lastupdatedSpecie? 
+                        <CIcon icon={cilCheckCircle} size="l" />
+                      : null}  
                       </td>
                     </tr>
                     </React.Fragment>
@@ -441,12 +455,10 @@ function SpecieTypeManager() {
          </CCard>
         </CCol>
         </CRow> 
-      </div> 
       </>
       ) : null}  
       <br/>
       </>
-    </div>
   );
 }
 

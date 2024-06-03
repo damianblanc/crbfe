@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import './FCIRegulationManager.css';
 
-import { CPopover, CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
+import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilBook, cilLoopCircular, cilNoteAdd, cilBookmark, cilPencil, cilTrash, cilTransfer, cilMediaSkipBackward, cilFile, cilListFilter } from '@coreui/icons';
+import { cilUpdate, cilBook, cilLoopCircular, cilNoteAdd, cilBookmark, cilPencil, cilTrash, cilTransfer, cilFile, cilListFilter } from '@coreui/icons';
 
 import { CChart, CChartPie } from '@coreui/react-chartjs'
 
 import Popup from 'reactjs-popup';
+
 import 'reactjs-popup/dist/index.css';
+import './FCIRegulationManager.css';
 
 import axios from 'axios';
 
@@ -17,7 +18,6 @@ import { NumericFormat } from 'react-number-format';
 import { isLoginTimestampValid } from '../../../utils/utils.js';
 import { useNavigate } from 'react-router-dom';
 import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
-
 
 class FCIRegulation {
   constructor(id, symbol, name, description, positionQuantity, composition = [FCIComposition]) {
@@ -50,6 +50,7 @@ function FCIRegulationManager() {
   const [regulations, setRegulations] = useState([{ id: '', symbol: '', name: '', description: '', positionQuantity: 0, composition: [FCIComposition]}]);
   const [newRow, setNewRow] = useState({ id: '', symbol: '', name: '', description: '', composition: '' });
   const [editRow, setEditRow] = useState({ id: '', symbol: '', name: '', description: '', composition: '', compositionWithId: '' });
+  const [fciRow, setFciRow] = useState({ id: '', symbol: '', name: '', description: '', composition: ''});
   const [editRowId, setEditRowId] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
   const [validationEditErrors, setValidationEditErrors] = useState({});
@@ -80,6 +81,10 @@ function FCIRegulationManager() {
   const checkboxRefs = useRef([]);
   const [specieTypePercentages, setSpecieTypePercentages] = useState({});
   const [checkboxStates, setCheckboxStates] = useState(Array(specieTypes.length).fill(false));
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [isUpdatingRow, setIsUpdatingRow] = useState(false);
+  const [regulationTitle, setRegulationTitle] = useState('');
+  const [regulationLegend, setRegulationLegend] = useState('');
 
   useEffect(() => {
     const isValid = isLoginTimestampValid();
@@ -154,45 +159,34 @@ function FCIRegulationManager() {
     if (!newRow.description) errors.description = '» Description is required';
     if (!newRow.composition) { 
         errors.composition1 = '» Composition is required';
-    } else if (!regex.test(String(newRow.composition).replace(/\s/g, ''))) {
-        errors.composition2 = '» Composition format should be "<Specie Type>:<Percentage Value> + %" separated by hyphens. I/E: Equity:40.5% - Bond:39.5% - Cash:20%';
-    }
-     
-    var w = String(newRow.composition).replace(/\s/g, '').replace(/%/g, '').split("-");
-    if (w.length === 1) {
-      var sp = w.at(0).split(":").at(0);
-      if (sp.toLowerCase() !== 'cash') {
-        errors.composition5 = '» Composition [Cash] is not defined';
-      }
-      if (!specieTypes.find(element => element.name.toLowerCase() === sp.toLowerCase())) {
-        errors.composition3 = '» Composition [' + sp + '] is not a recognized specie type';
-      }
     } else {
-      let notCash = false;
-      w.map((specie) => {
-        var sp = specie.split(":").at(0);
-        if (!specieTypes.find(element => element.name.toLowerCase() === sp.toLowerCase())) {
-          errors.composition4 = '» Composition [' + sp + '] is not a recognized specie type';
+        var w = String(newRow.composition).replace(/\s/g, '').replace(/%/g, '').split("-");
+        if (w.length === 1) {
+          var sp = w.at(0).split(":").at(0);
+          if (sp.toLowerCase() !== 'cash') {
+            errors.composition5 = '» Composition [Cash] is not defined';
+          }
+          if (!specieTypes.find(element => element.name.toLowerCase().split(' ')[1] === sp.toLowerCase())) {
+            errors.composition3 = '» Composition [' + sp + '] is not a recognized specie type';
+          }
+        } else {
+          let notCash = false;
+          w.map((specie) => {
+            var sp = specie.split(":").at(0);
+            if (!specieTypes.find(element => element.name.toLowerCase().split(' ')[1] === sp.toLowerCase())) {
+              errors.composition4 = '» Composition [' + sp + '] is not a recognized specie type';
+            }
+            notCash = notCash || sp.toLowerCase() === 'cash';
+          });
+          if (!notCash) {
+            errors.composition5 = '» Composition [Cash] is not defined';
+          }
         }
-        notCash = notCash || sp.toLowerCase() === 'cash';
-      });
-      if (!notCash) {
-        errors.composition5 = '» Composition [Cash] is not defined';
-      }
-    }
 
-    const arry = [];
-    for(var i = 0; i < w.length; i++) {
-        arry[i] = w[i].split(":").at(0);
+        if (findAndSumNumbers(newRow.composition) !== 100) {
+          errors.composition7 = '» Composition Percentage must close to 100%';
+        };
     }
-    const duplicatedElements = toFindDuplicates(arry);
-    if (duplicatedElements.length > 0) {
-      errors.composition6 = '» Composition has duplicated [' + duplicatedElements + '] specie types defined';
-    }
-
-    if (findAndSumNumbers(newRow.composition) !== 100) {
-      errors.composition7 = '» Composition Percentage must close to 100%';
-    };
 
     generateErrorMessage(errors, compositions);
     if (Object.keys(errors).length > 0) {
@@ -224,6 +218,64 @@ function FCIRegulationManager() {
 
     return [...new Set(filteredElements)]
   } 
+
+
+  const validateFciRow = () => {
+    const regex = /^(?:[^:]+:\d+(\.\d+)?%)(?:-[^:]+:\d+(\.\d+)?%)*$/;
+    const compositions = ['symbol', 'name', 'description', 'composition1', 'composition2', 'composition3', 'composition4', 'composition5', 'composition6', 'composition7'];
+    const errors = {};
+
+    if (!fciRow.symbol) errors.symbol = '» Symbol is required';
+    if (!fciRow.name) errors.name = '» Name is required';
+    if (!fciRow.description) errors.description = '» Description is required';
+    if (!fciRow.composition) { 
+        errors.composition1 = '» Composition is required';
+    } else {
+        var w = String(fciRow.composition).replace(/\s/g, '').replace(/%/g, '').split("-");
+        if (w.length === 1) {
+          var sp = w.at(0).split(":").at(0);
+          if (sp.toLowerCase() !== 'cash') {
+            errors.composition5 = '» Composition [Cash] is not defined';
+          }
+          if (!specieTypes.find(element => element.name.toLowerCase().split(' ')[1] === sp.toLowerCase())) {
+            errors.composition3 = '» Composition [' + sp + '] is not a recognized specie type';
+          }
+        } else {
+          let notCash = false;
+          w.map((specie) => {
+            var sp = specie.split(":").at(0);
+            if (!specieTypes.find(element => element.name.toLowerCase().split(' ')[1] === sp.toLowerCase())) {
+              errors.composition4 = '» Composition [' + sp + '] is not a recognized specie type';
+            }
+            notCash = notCash || sp.toLowerCase() === 'cash';
+          });
+          if (!notCash) {
+            errors.composition5 = '» Composition [Cash] is not defined';
+          }
+        }
+
+        if (findAndSumNumbers(fciRow.composition) !== 100) {
+          errors.composition7 = '» Composition Percentage must close to 100%';
+        };
+    }
+
+    generateErrorMessage(errors, compositions);
+    if (Object.keys(errors).length > 0) {
+      const errorComponents = generateErrorMessage(errors, compositions);
+    
+      const errorMessage = (
+        <>
+          {errorComponents}
+        </>
+      );
+    
+      setErrorMessage(errorMessage);
+      setShowToast(true);
+      showToastMessage(errorMessage);
+    }
+
+    return errors;
+  };
 
   const validateNewSpecieTypeRow = () => {
     const regex = /^(?:[^:]+:\d+(\.\d+)?%)(?:-[^:]+:\d+(\.\d+)?%)*$/;
@@ -390,52 +442,99 @@ function FCIRegulationManager() {
     setPercentages(updatedResult);
   })
 
+  const clearFciRow = (() => {
+    setFciRow({ ...fciRow, symbol: '', name: '', description: '', composition: '' });
+    setSpecieTypesTable(
+      specieTypes.map((specieType, index) => ({
+        id: index,
+        checked: false,
+        name: specieType.name,
+        percentage: 0,
+      }))
+    );
+    setCheckboxStates(Array(specieTypes.length).fill(false));
+    const result = [];
+    const remainingObject = { name: "Remaining", percentage: 100 };
+    const updatedResult = [...result, remainingObject];
+    setPercentages(updatedResult);
+  })
+
   const handleSpecieTypeCheckSetting = (e, index) => {
     const newCheckboxStates = [...checkboxStates];
     newCheckboxStates[index] = e.target.checked;
     setCheckboxStates(newCheckboxStates);
   };
 
-  const handleNewRow = () => {
+  const handleFciRow = () => {
     const compositeString = specieTypesTable
     .filter(specieType => specieType.checked)
-    .map(specieType => `${specieType.name}: ${specieType.percentage}%`)
-    .join(' - ');
+    .map(specieType => `${specieType.name.split(" ")[1]}: ${specieType.percentage}%`)
+    .join('-');
 
-    newRow.composition = compositeString;
+    fciRow.composition = compositeString;
 
-    const errors = validateNewRow();
+    const errors = validateFciRow();
     if (Object.keys(errors).length === 0) {
-      const f = new FCIRegulation(newRow.id, newRow.symbol, newRow.name, newRow.description, 
-        newRow.composition.replace(/\s/g, '').replace(/%/g, '').split("-") 
-            .map((c, index) => {
+      const f = new FCIRegulation(fciRow.id, fciRow.symbol, fciRow.name, fciRow.description, fciRow.positionQuantity,
+        fciRow.composition.replace(/\s/g, '').replace(/%/g, '').split("-") 
+            .map((c) => {
                 var r = c.split(":");
-                return new FCIComposition(null, findSpecieTypeByName(r.at(0)).fciSpecieTypeId, findSpecieTypeByName(r.at(0)), parseFloat(r.at(1)));
+                return new FCIComposition(null, findSpecieTypeByName(r.at(0)).fciSpecieTypeId, r.at(0), parseFloat(r.at(1)));
        }));
 
-    console.log("JSON.stringify(newRow, null, 1)" + JSON.stringify(f));
+      console.log("JSON.stringify(fciRow, null, 1)" + JSON.stringify(f));
 
-    fetch('http://localhost:8098/api/v1/fci', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(f),
-    })
-      .then((response) => response.json())
-      .then((responseData) => {
-        console.log('Backend response:', responseData);
-        setRegulations([ responseData, ...regulations]);
-        clearNewRow();
-      })    
-      .catch((error) => {
-        console.error('Error sending data to the backend:', error);
-      });
-    setValidationErrors({});
-    setVisibleAdd(false);
-  } else {
-    setValidationErrors(errors);
-  }
+      if (isUpdatingRow) {
+        fetch('http://localhost:8098/api/v1/fci/' + fciRow.symbol, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(f),
+        })
+          .then((response) => response.json())
+          .then((responseData) => {
+            console.log('Backend response:', responseData);
+            setRegulations([ responseData, ...regulations]);
+            clearFciRow();
+            setIsPopupOpen(false);
+            specieTypes.forEach((specieType, index) => {
+              setSpecieTypesTable(prevSpecieTypesTable => [...prevSpecieTypesTable, {id: index, checked: false,  name: specieType.name, percentage: 0}]); 
+            });
+          })    
+          .catch((error) => {
+            console.error('Error sending data to the backend:', error);
+          });
+        setValidationErrors({});
+        setIsUpdatingRow(false);
+        setTotalRegulations(totalRegulations + 1);
+      } else {
+        fetch('http://localhost:8098/api/v1/fci', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(f),
+        })
+          .then((response) => response.json())
+          .then((responseData) => {
+            console.log('Backend response:', responseData);
+            setRegulations([ responseData, ...regulations]);
+            clearFciRow();
+            setIsPopupOpen(false);
+            specieTypes.forEach((specieType, index) => {
+              setSpecieTypesTable(prevSpecieTypesTable => [...prevSpecieTypesTable, {id: index, checked: false,  name: specieType.name, percentage: 0}]); 
+            });
+          })    
+          .catch((error) => {
+            console.error('Error sending data to the backend:', error);
+          });
+        setValidationErrors({});
+        setIsUpdatingRow(false);
+      }
+    } else {
+      setValidationErrors(errors);
+    }
   };
 
   const handleDeleteRow = (id, symbol) => {
@@ -499,7 +598,7 @@ function FCIRegulationManager() {
   function findSpecieTypeByName(name) {
     if(name === undefined) {return}
     return specieTypes.find((element) => {
-      return element.name.toLowerCase() === name.toLowerCase();
+      return element.name.toLowerCase().split(" ")[1] === name.toLowerCase();
     })
   }
 
@@ -583,6 +682,15 @@ function FCIRegulationManager() {
     setShowToast(!showToast);
   };
 
+  const toggleFciPopup = () => {
+    setIsPopupOpen(!isPopupOpen);
+  }
+
+  const setFciPopup = async (value) => {
+    setIsPopupOpen(value);
+    return value;
+  }
+
   const showAddRegulationCanvas = () => {
     setVisibleAdd(!visibleAdd);
   }
@@ -596,7 +704,7 @@ function FCIRegulationManager() {
   };
 
   useEffect(() => {
-    handleNewRowRegulationChange();
+    handleFciRowRegulationChange();
   }, [specieTypesTable]);
 
   const handleSpecieTypeCheck = (e, index) => {
@@ -609,36 +717,36 @@ function FCIRegulationManager() {
           : specieType
       );
   
-      handleNewRowRegulationChange(updatedTable);
+      handleFciRowRegulationChange(updatedTable);
       return updatedTable;
     });
   };
 
   const handleSpecieTypePercentage = (e, index) => {
-    const percentage = e.target.value;
+    const percentage = e.target.value.replace(/,/g, '.');
     setSpecieTypesTable(prevSpecieTypesTable => {
       const updatedTable = prevSpecieTypesTable.map((specieType, i) =>
         i === index
-          ? { ...specieType, percentage: isNaN(percentage) ? specieType.percentage : parseInt(percentage, 10) }
+          ? { ...specieType, percentage: isNaN(percentage) ? specieType.percentage : parseFloat(percentage, 10) }
           : specieType
       );
   
-      handleNewRowRegulationChange(updatedTable);
+      handleFciRowRegulationChange(updatedTable);
       return updatedTable;
     });
   };
   
-  const handleNewRowRegulationChange = (updatedTable) => {
+  const handleFciRowRegulationChange = (updatedTable) => {
     if (updatedTable) {
       const result =  updatedTable
         .filter((spType) => {
           const hasPercentage = spType.percentage !== 0;
-          console.log(`Checkbox for ${spType.name} is ${spType.checked ? "checked" : "not checked"}, percentage is ${hasPercentage ? "present" : "not present"}, its value is ${spType.percentage}`);
+          // console.log(`Checkbox for ${spType.name} is ${spType.checked ? "checked" : "not checked"}, percentage is ${hasPercentage ? "present" : "not present"}, its value is ${spType.percentage}`);
           return spType.checked && hasPercentage;
         })
-        .map((spType) => ({ name: spType.name, percentage: parseInt(spType.percentage, 10) }));
+        .map((spType) => ({ name: spType.name, percentage: parseFloat(spType.percentage, 10).toFixed(2) }));
     
-      const remainingPercentage = 100 - result.reduce((acc, curr) => acc + curr.percentage, 0);
+      const remainingPercentage = 100 - result.reduce((acc, curr) => acc + parseFloat(curr.percentage, 10), 0);
       if (remainingPercentage < 0) {
         setShowToast(true);
         showToastMessage("» Composition Percentage must close to 100%");
@@ -676,16 +784,76 @@ const getBackgroundColors = (percentages) => {
 
 const handleAddPercentage = () => {
   const remainingPercentage = 100 - percentages.reduce(
-    (acc, elem) => acc + (elem.name !== "Remaining" ? elem.percentage : 0),
-    0
+    (acc, elem) => acc + (elem.name !== "Remaining" ? elem.percentage : 0), 0
   );
-  if (remainingPercentage == 100) {
-    const result = [];
-    const remainingObject = { name: "Remaining", percentage: 100 };
-    const updatedResult = [...result, remainingObject];
-    setPercentages(updatedResult);
-  }
+  const result = [];
+  const remainingObject = { name: "Remaining", percentage: 100 };
+  const updatedResult = [...result, remainingObject];
+  setPercentages(updatedResult);
 };
+
+const newCanvasFields = () => {
+  setRegulationTitle('FCI - Create a new Regulation Definition');
+  setRegulationLegend(`Indicate symbol, name, description and composition in a new FCI Regulation including each specie type and its percentage for further reference`);
+  setIsUpdatingRow(false);
+  fciRow.id = '';
+  fciRow.symbol = '';
+  fciRow.name = '';
+  fciRow.description = '';
+  putCompositionIntoSpecieTypesTable(null);
+  handleAddPercentage();
+  setFciPopup(true);
+  return true;
+}
+
+const editCanvasFields = async (row) => {
+  if (row !== undefined) {
+    setIsUpdatingRow(true);
+    setRegulationTitle("FCI - " + row.fciSymbol + " - " + row.name + " - Edition ");  
+    setRegulationLegend('Indicate symbol, name, description and composition in edited FCI - ' + row.fciSymbol + ' - ' + row.name + ' for further reference');
+    fciRow.id = row.id;
+    fciRow.symbol = row.fciSymbol;
+    fciRow.name = row.name;
+    fciRow.description = row.description;
+    putCompositionIntoSpecieTypesTable(row);
+    setFciPopup(true);
+  }
+ 
+};
+
+const putCompositionIntoSpecieTypesTable = (row) => {
+  let i = 0;
+  specieTypesTable.length = 0;
+
+  if (row) {
+    specieTypes.forEach(specieType => {
+      const specieTypeExistsInComposition = row.composition.some(comp => comp.specieTypeName === specieType.name);
+      const compositionElement = row.composition.find(comp => comp.specieTypeName === specieTypes[i].name)
+      specieTypesTable.push({
+        id: i++,
+        checked: specieTypeExistsInComposition,
+        name: specieType.name,
+        percentage: compositionElement ? parseFloat(compositionElement.percentage).toFixed(2) : 0,
+      });
+    });
+  } else {
+    specieTypes.forEach(specieType => {
+      specieTypesTable.push({
+        id: i++,
+        checked: false,
+        name: specieType.name,
+        percentage: 0,
+      });
+    });
+  }
+  
+  handleAddPercentage();
+  handleFciRowRegulationChange(specieTypesTable);
+}
+
+const updateRowSet = (value) => {
+  setIsUpdatingRow(value);
+}
 
   return (
     <div>
@@ -757,48 +925,57 @@ const handleAddPercentage = () => {
                   <tr className="text-medium-emphasis small" style={{ border: "none"}}>
                     <td style={{ width: "2%", border: "none"}}/>
                     <td style={{ width: "2%", border: "none"}}>
-                    <Popup trigger={
-                      <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string'>
+                    <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string'
+                         onClick={() =>{
+                            updateRowSet(false);
+                            newCanvasFields();
+                          }}>
                         <CIcon icon={cilNoteAdd} size="xl"/>
-                      </CButton>} 
-                      position="right" modal lockScroll="false" backgroundColor="rgba(75,192,192,0.4)"
-                      contentStyle={{ width: "75%", height: "70%", overflow: "auto", position: 'absolute', top: '19%', left: '21%'}}
-                      onOpen={handleAddPercentage}>
+                      </CButton>
+                    <Popup 
+                      trigger={<div/>}
+                      modal={true}
+                      open={isPopupOpen}
+                      onClose={() => setFciPopup(false)}
+                      position="right" lockScroll="false" backgroundColor="rgba(75,192,192,0.4)"
+                      contentStyle={{ width: "75%", height: "67%", overflow: "auto", position: 'absolute', top: '19%', left: '21%'}}
+                      onMount={() => isUpdatingRow && isUpdatingRow === true? editCanvasFields : newCanvasFields}>
                          {
                             <CRow>
                              <CCol>
                                <CCard>
-                                <CCardHeader className="text-medium-emphasis small d-flex align-items-center" style={{ padding: '0.5rem 1rem', lineHeight: '1rem' }}>
+                                <CCardHeader className="text-medium-emphasis small d-flex align-items-center" style={{ padding: '0.2rem 1rem' }}>
                                   <table width="100%">
                                   <tbody>
-                                    <tr>
-                                      <table style={{ width: "100%", marginTop: "-25px"}}>
+                                    <tr style={{ height: '10px' }}> 
+                                      <table style={{ width: "100%", marginTop: "-20px"}}>
                                         <tbody>
                                           <tr>
-                                          <td style={{ width:"100%", border: "none"}}>
-                                              &nbsp;&nbsp;&nbsp;
-                                              <CIcon icon={cilNoteAdd} size="xl"/>
-                                              &nbsp;&nbsp;&nbsp;
-                                              <strong>Create a new FCI Regulation</strong>
+                                            <td style={{ width: "80%", border: "none", display: "flex", alignItems: "center", marginTop: "12px" }}>
+                                              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginTop: "0px", marginRight: "20px" }}>
+                                                <CIcon icon={cilNoteAdd} size="xxl" />
+                                              </div>
+                                              <strong>{regulationTitle}</strong>
                                             </td>
-                                            <td className="text-medium-emphasis ms-auto" style={{ width:"20%", border: "none"}}>
-                                              <table style={{display: 'inline-block', float: 'right', width: '90%', marginTop: "2px"}}>
-                                                <tbody>
-                                                  <tr>
-                                                    <td style={{background:'white', border: "none"}}>
-                                                      <CButton className="text-medium-emphasis small" component="a" color="string" role="button" size='sm' onClick={() => handleNewRow()}>
-                                                          <CIcon icon={cilTransfer} size="lg"/>
-                                                      </CButton>
-                                                    </td>
-                                                    <td style={{ background:'lightblue', border: "none"}}>
-                                                      <CButton className="text-medium-emphasis small" component="a" color="string" role="button" size='sm' onClick={() => clearNewRow()}>
-                                                          <CIcon icon={cilTrash} size="lg"/>
-                                                      </CButton>
-                                                    </td>
+                                          <td className="text-medium-emphasis ms-auto" style={{ width: "11%", border: "none" }}>
+                                            <table style={{ display: 'inline-block', float: 'right', width: '94%', marginTop: "5px" }}>
+                                              <tbody>
+                                                <tr>
+                                                  <td style={{ background: 'lightgrey', border: "none", borderRadius: '10px' }}>
+                                                    <CButton className="text-medium-emphasis small" component="a" color="string" role="button" size='sm' onClick={() => handleFciRow()}>
+                                                      <CIcon icon={cilTransfer} size="lg" />
+                                                    </CButton>
+                                                  </td>
+                                                  <td style={{ width: '0.5px', border: 'none', marginLeft: '-2px !important' }}></td>
+                                                  <td style={{ background: 'lightblue', border: "none", borderRadius: '10px' }}>
+                                                    <CButton className="text-medium-emphasis small" component="a" color="string" role="button" size='sm' onClick={() => clearFciRow()}>
+                                                      <CIcon icon={cilTrash} size="lg" />
+                                                    </CButton>
+                                                  </td>
                                                 </tr>
-                                                </tbody>
-                                              </table>
-                                            </td>
+                                              </tbody>
+                                            </table>
+                                          </td>
                                           </tr>
                                         </tbody>
                                       </table>
@@ -807,17 +984,15 @@ const handleAddPercentage = () => {
                                   </table>
                                   </CCardHeader>
                                 <CCardBody>
-                                  <p className="text-medium-emphasis small">
-                                    Indicate symbol, name, description and composition in a new <code>&lt;FCI Regulation&gt;</code> including each specie type and its percentage for further reference
-                                  </p>
+                                  <p className="text-medium-emphasis small">{regulationLegend}</p>
                                 <div className="flex-container">
                                 <table style={{borderRadius: '10px', marginTop: "-0.3%", padding: '0.5rem 1rem', lineHeight: '2rem' }}>
                                   <tbody>
                                     <tr className="flex-row">
-                                      <td className="flex-item" style={{ width:"22%"}}>
+                                      <td className="flex-item" style={{ width:"17%"}}>
                                         <CCard className="xs={4}">
                                           <CCardHeader className="text-medium-emphasis small"><strong>FCI Regulation Definition</strong></CCardHeader>
-                                          <CCardBody style={{ width: '100%', height: '270px', overflowY: 'auto' }}>
+                                          <CCardBody style={{ width: '100%', height: '290px', overflowY: 'auto' }}>
                                           <table className="small" style={{borderRadius: '10px', marginTop: "-0.3%", padding: '0.5rem 1rem', lineHeight: '1rem' }}>
                                               <tbody>
                                                 <tr>
@@ -826,9 +1001,9 @@ const handleAddPercentage = () => {
                                                     <h4 className='small'><code>*&nbsp;</code>
                                                         <input className='large' 
                                                           type="text" 
-                                                          value={newRow.symbol}
+                                                          value={fciRow.symbol}
                                                           style={{width: "50%", color: '#000080'}}
-                                                          onChange={(e) => setNewRow({ ...newRow, symbol: e.target.value })}/>
+                                                          onChange={(e) => setFciRow({ ...fciRow, symbol: e.target.value })}/>
                                                       </h4>
                                                   </td>
                                                   </tr>
@@ -839,8 +1014,8 @@ const handleAddPercentage = () => {
                                                         <input className='large'
                                                           type="text" 
                                                           style={{width: "95%", color: '#000080'}}
-                                                          value={newRow.name}
-                                                          onChange={(e) => setNewRow({ ...newRow, name: e.target.value })}
+                                                          value={fciRow.name}
+                                                          onChange={(e) => setFciRow({ ...fciRow, name: e.target.value })}
                                                         />
                                                       </h4>
                                                   </td>
@@ -851,8 +1026,8 @@ const handleAddPercentage = () => {
                                                     <textarea
                                                       className='large'
                                                       rows={7}
-                                                      value={newRow.description}
-                                                      onChange={(e) => setNewRow({ ...newRow, description: e.target.value })}
+                                                      value={fciRow.description}
+                                                      onChange={(e) => setFciRow({ ...fciRow, description: e.target.value })}
                                                       style={{ width:'100%', color: '#000080', resize: 'none' }}/>
                                                   </td>
                                                 </tr>
@@ -873,12 +1048,12 @@ const handleAddPercentage = () => {
                                             </CCardBody>
                                           </CCard>    
                                         </td>
-                                        <td className="flex-item" style={{ width:"10%"}}> 
+                                        <td className="flex-item" style={{ width:"13%"}}> 
                                           <CCard>
                                             <CCardHeader className="text-medium-emphasis small">
                                                 <strong>Specie Type Percentages</strong>
                                             </CCardHeader>
-                                            <CCardBody style={{ width: '100%', height: '270px', overflowY: 'auto' }}>
+                                            <CCardBody style={{ width: '100%', height: '290px', overflowY: 'auto' }}>
                                               <table className="text-medium-emphasis small" style={{width: '100%', marginTop: "-2px"}}>
                                                 <tbody>
                                                   {specieTypesTable?.map((specieType, index) => 
@@ -888,16 +1063,16 @@ const handleAddPercentage = () => {
                                                           checked={specieType.checked} ref={el => checkboxRefs.current.push(el)} onChange={(e) => handleSpecieTypeCheck(e, index)} />
                                                       </td>
                                                       <td className="small" width="58%" style={{ lineHeight: '2rem' }}>{specieType.name}</td>
-                                                      <td className="small" width="41%" style={{ lineHeight: '1rem' }}>
+                                                      <td className="small" width="55%" style={{ lineHeight: '1rem' }}>
                                                         <input
                                                           type="number"
                                                           min={0}
                                                           max={100}
                                                           value={specieType.percentage}
-                                                          style={{ color: index % 2 != 0 ? 'green' : '#000080' }}
+                                                          style={{ width:'80%', color: index % 2 != 0 ? 'green' : '#000080' }}
                                                           onChange={(e) => {
                                                             const updatedSpecieTypesTable = [...specieTypesTable];
-                                                            updatedSpecieTypesTable[index].percentage = parseInt(e.target.value, 10);
+                                                            updatedSpecieTypesTable[index].percentage = parseFloat(e.target.value.replace(/,/g, '.'), 10);
                                                             setSpecieTypesTable(updatedSpecieTypesTable);
                                                           }}
                                                           onBlur={(e) => handleSpecieTypePercentage(e, index)}
@@ -911,7 +1086,7 @@ const handleAddPercentage = () => {
                                             </CCardBody>
                                           </CCard>    
                                         </td>
-                                        <td className="flex-item" style={{ width:"10%"}}>
+                                        <td className="flex-item" style={{ width:"12%"}}>
                                           <CCard className="xs={6}">
                                             <CCardHeader className="text-medium-emphasis small"><strong>FCI Regulation Distribution</strong></CCardHeader>
                                             <CCardBody>
@@ -1072,7 +1247,8 @@ const handleAddPercentage = () => {
                               <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={ () => handleDeleteRow(row.id, row.symbol)}>
                                   <CIcon icon={cilTrash} size="xl"/>
                               </CButton>&nbsp;
-                              <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={ () =>  handleEditRowForward(row)}>
+                              <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' 
+                                onClick={ () => { editCanvasFields(row) }}>
                                   <CIcon icon={cilPencil} size="xl"/>
                               </CButton>
                               </>
@@ -1119,7 +1295,7 @@ const handleAddPercentage = () => {
                         </CButton>
                         <CModal
                           visible={visible}
-                          alignment="right"
+                          alignment="top"
                           backdrop={false}
                           size = "lg"
                           onClose={() => setVisible(false)}

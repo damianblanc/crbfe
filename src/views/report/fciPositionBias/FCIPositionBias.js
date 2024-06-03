@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CCard, CCardBody, CCol, CCardHeader, CRow, CButton } from '@coreui/react'
+import * as XLSX from 'xlsx';
 
 import CIcon from '@coreui/icons-react'
-import { cilAlignRight, cilBookmark, cilFile, cilMagnifyingGlass } from '@coreui/icons';
+import { cilClipboard, cilAlignRight, cilBookmark, cilFile, cilMagnifyingGlass } from '@coreui/icons';
 
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
@@ -224,23 +225,23 @@ function FCIPositionBias() {
             setCurrentPositionId(0);
           } else {
             setPositions(tempLoadedPositions);
+            const tempLoadedOldestPostion = await fetchOldestPosition(tempLoadedRegulations[0].fciSymbol);
+            setOldestPosition(tempLoadedOldestPostion)
+            setPositionPercentages(tempLoadedPercentagesValued);
+            const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
+            setRegulationPercentages(tempLoadedPercentages);
+            const tempLoadedReportTypes = await fetchReportTypes();
+            setReportTypes(tempLoadedReportTypes);    
+            let tempLoadedPercentagesValued = [];
+            if (tempLoadedPositions && tempLoadedPositions.length > 0) {
+              tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+              setCurrentPositionId(tempLoadedPositions[0].id);
+            }
+            const tempLoadedStatistics = await fetchFCIStaticticsQuantity();
+            setStatistics(tempLoadedStatistics);
+            updateFCIReportQuantity();
          } 
-          const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
-          const tempLoadedReportTypes = await fetchReportTypes();
-          let tempLoadedPercentagesValued = [];
-          if (tempLoadedPositions && tempLoadedPositions.length > 0) {
-            tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
-            setCurrentPositionId(tempLoadedPositions[0].id);
-          }
-          const tempLoadedStatistics = await fetchFCIStaticticsQuantity();
-          const tempLoadedOldestPostion = await fetchOldestPosition(tempLoadedRegulations[0].fciSymbol);
-          setOldestPosition(tempLoadedOldestPostion)
-          setRegulationPercentages(tempLoadedPercentages);
-          setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
-          setReportTypes(tempLoadedReportTypes);    
-          setPositionPercentages(tempLoadedPercentagesValued);
-          setStatistics(tempLoadedStatistics);
-          updateFCIReportQuantity();
+         setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
         }
       }
     };
@@ -533,11 +534,27 @@ const searchPositionsByDate = async (pageNumber) => {
   setTotalPositions(tempLoadedTotalPositions && tempLoadedTotalPositions.length);
   if (tempLoadedTotalPositions && tempLoadedTotalPositions.length == 0) {
     setNoPositionsDateFilter(false);
+    if (currentPositionIdInFilter) {
+      setErrorMessage("» There are no positions with this position identifier between indicated dates");
+      setShowToast(true);
+    } else {
+      setErrorMessage("» There are no positions between indicated dates");
+      setShowToast(true);
+    }
   }
   setSearchFiltered(true);
   setSearchFromDateAfter(searchFromDate);
   setSearchToDateAfter(searchToDate);
+  const biggestPosition = getBiggestPosition(tempLoadedPositions);
+    selectPosition(biggestPosition.id);
 };
+
+const getBiggestPosition = (loadedPositions) => {
+  const biggestPosition = loadedPositions.reduce((max, position) => {
+    return position.id > max.id ? position : max;
+  }, { id: -Infinity });
+  return biggestPosition;
+}
 
 const handleInputChange = (event) => {
   const input = event.target.value;
@@ -553,6 +570,71 @@ const findPositionById = () => {
     return positions.find(p => p.id === currentPositionId);
   }
 }
+
+const downloadExcel = () => {
+  const workbook = XLSX.utils.book_new();
+
+  const headers = [
+    "Specie Type",
+    "Specie Type Distribution",
+    "Specie Type Distribution Valued",
+    "Specie Type Distribution Biases",
+    "Specie Type Distribution Biases Valued",
+    "FCI Distribution",
+    "FCI Distribution Valued"
+  ];
+
+  // Create a new worksheet with the headers
+  const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+
+  // Add the data to the worksheet
+  positionPercentages.forEach(p => {
+    const row = [
+      p.specieType,
+      p.percentage,
+      p.valued,
+      p.rpercentage,
+      p.rvalued,
+      p.fpercentage,
+      p.fvalued
+    ];
+    XLSX.utils.sheet_add_aoa(worksheet, [row], { origin: -1 });
+  });
+
+  // Add the worksheet to the workbook
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Position");
+
+  // Write the workbook to a buffer
+  let buffer = XLSX.write(workbook, { bookType: "xlsx", type: "buffer" });
+
+  // Write the buffer to a binary string
+  XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+
+  // Create a filename with a timestamp
+  const filename = "Report_Position_" + currentFCISymbol + "_" + currentPositionId + "_" + calculateCurrentTimeStamp() + ".xlsx";
+
+  // Write the workbook to a file
+  XLSX.writeFile(workbook, filename);
+
+
+  // const worksheet = XLSX.utils.json_to_sheet(positionPercentages);
+  // const workbook = XLSX.utils.book_new();
+  // XLSX.utils.book_append_sheet(workbook, worksheet, "Position");
+  // let buffer = XLSX.write(workbook, { bookType: "xlsx", type: "buffer" });
+  // XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+  // XLSX.writeFile(workbook, "Report_Position_" + currentFCISymbol + "_" + currentPositionId + "_" + calculateCurrentTimeStamp() + ".xlsx");
+};
+
+const calculateCurrentTimeStamp = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day}_${hours}:${minutes}:${seconds}`;
+};
 
 return (
     <>
@@ -722,7 +804,7 @@ return (
                 </table>
                 <table style={{ marginTop: "-10px" }}><tbody><tr><td>&nbsp;</td></tr></tbody></table>
                 <table>
-                {positions && positions.length > 0? (
+                {/* {positions && positions.length > 0? ( */}
                   <tbody>
                   <tr>
                     <td className="text-medium-emphasis small" style={{ border: "none"}} width="20%">Position Identifier #</td>
@@ -760,15 +842,16 @@ return (
                     </td>
                     <td width="2%" style={{ border: "none"}}></td>
                     <td style={{ border: "none"}} width="2%">
-                      <CButton shape='rounded' size='sm' color='string' onClick={() => searchPositionsByDate(0)} style={{ border: "none"}}>
+                      <CButton shape='rounded' size='sm' color='string' onClick={() => searchPositionsByDate(0)} style={{ border: "none"}}
+                      disabled={positions.length === 0}>
                         <CIcon className="text-medium-emphasis small" icon={cilMagnifyingGlass} size="xl"/>
                       </CButton>
                     </td>
                     <td style={{ width:'5%', border: "none"}}></td>
                     <td className="text-medium-emphasis small" width="15%" style={{ border: "none"}}>
-                      {positions && positions.length > 0? (
+                      {/* {positions && positions.length > 0? ( */}
                           <code>&lt;FCI Position&gt;</code>
-                        ) : null}
+                        {/* ) : null} */}
                     </td>
                     <td width="1%" style={{ border: "none"}}></td>
                     <td width="10%" style={{ border: "none"}}>
@@ -781,12 +864,12 @@ return (
                             </React.Fragment>
                           )}
                         </select>
-                      ) : null}
+                      ) : (<div className='text-medium-emphasis small'>No positions</div>)}
                       </td>
                       <td style={{ width:'21%', border: "none"}}></td>
                   </tr>
                   </tbody>
-                  ) : null}
+                  {/* ) : null} */}
                </table>
               </CCardBody>
             </CCard>
@@ -827,9 +910,16 @@ return (
                            </select>
                          </td>
                          <td width="2%"/>
-                          <td className="text-medium-emphasis small" width="25%">
+                         <td width="1%"></td>
+                          <td width="4%">
+                            <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => downloadExcel(positionPercentages) } 
+                              disabled={positionPercentages && positionPercentages.length === 0}>
+                                <CIcon icon={cilClipboard} size="xl"/>
+                            </CButton>
+                          </td>
+                          <td className="text-medium-emphasis small" width="23%">
                             <strong>
-                              Position # {findPositionById() ? findPositionById().id + ' - ' + findPositionById().timestamp : ''}
+                              Position # {findPositionById() !== undefined ? findPositionById().id + ' - ' + findPositionById().timestamp : ''}
                             </strong>
                           </td>
                           <td width="5%"></td>
@@ -852,7 +942,7 @@ return (
                                 <CCol>
                                   <CCard>
                                     <CCardHeader className="text-medium-emphasis small">
-                                    <b>Position #{findPositionById().id + " - " + findPositionById().timestamp}</b>
+                                    <b>Position #{findPositionById() !== undefined ? findPositionById().id + " - " + findPositionById().timestamp : ''}</b>
                                     </CCardHeader>
                                     <CCardBody>
                                         <CCol xl={12}>
@@ -1025,7 +1115,7 @@ return (
                                   <CRow>
                                   <CCol>
                                     <CCard>
-                                      <CCardHeader className="text-medium-emphasis small"><b>Position #{findPositionById().id + " - " + findPositionById().timestamp}</b>
+                                      <CCardHeader className="text-medium-emphasis small"><b>Position #{findPositionById() !== undefined ? findPositionById().id + " - " + findPositionById().timestamp: ''}</b>
                                       <br/><strong>Total: $ <NumericFormat displayType="text" value={Array.isArray(positionPercentages)? positionPercentages.reduce((previousValue, p, index) => previousValue +  Number(p.valued) , 0).toFixed(2) : 0} thousandSeparator="." decimalSeparator=','/></strong>
                                       </CCardHeader>
                                         <CCardBody>
@@ -1072,7 +1162,7 @@ return (
                                 }
                               </Popup>}
                           </td>    
-                          <td width="8%"></td>
+                          <td width="3%"></td>
                         </tr>
                         </tbody>
                       </table>

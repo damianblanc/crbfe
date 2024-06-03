@@ -153,8 +153,8 @@ const Dashboard = () => {
       setPositionsPerMonth(tempLoadedPositionsPerMonth);
       setReportsPerMonth(tempLoadedReportsPerMonth);
       setAdvicesPerMonth(tempLoadedAdvicesPerMonth);
-      setFirstMonthValue(tempLoadedPositionsPerMonth.length > 0 ? tempLoadedPositionsPerMonth[0].month : "");
-      setLastMonthValue(tempLoadedPositionsPerMonth.length > 0 ? tempLoadedPositionsPerMonth[tempLoadedPositionsPerMonth.length - 1].month : "");
+      setFirstMonthValue(tempLoadedPositionsPerMonth && tempLoadedPositionsPerMonth.length > 0 ? tempLoadedPositionsPerMonth[0].month : "");
+      setLastMonthValue(tempLoadedPositionsPerMonth && tempLoadedPositionsPerMonth.length > 0 ? tempLoadedPositionsPerMonth[tempLoadedPositionsPerMonth.length - 1].month : "");
     };
     setFetchedData();
   }, []); 

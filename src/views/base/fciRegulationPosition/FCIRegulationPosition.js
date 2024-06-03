@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
-import { cilSun, cilAlignRight, cilBookmark, cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter, cilArrowTop, cilOptions, cilMagnifyingGlass, cilCheckCircle } from '@coreui/icons';
+import { cilSun, cilAlignRight, cilBookmark, cilFile, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cilListFilter, cilArrowTop, cilOptions, cilMagnifyingGlass, cilCheckCircle, cilMoon } from '@coreui/icons';
 import { CChartLine } from '@coreui/react-chartjs'
 
 import CIcon from '@coreui/icons-react'
@@ -520,7 +520,7 @@ function FCIRegulationPosition (prevLocation) {
     const tempLoadedTotalPositions = await fetchTotalFilteredPosition();
     setPositions(tempLoadedPositions);
     setTotalPositions(tempLoadedTotalPositions.length);
-    if (tempLoadedTotalPositions.length == 0) {
+    if (tempLoadedTotalPositions && tempLoadedTotalPositions.length == 0) {
       setNoPositionsDateFilter(false);
     }
     setSearchFiltered(true);
@@ -549,8 +549,10 @@ function FCIRegulationPosition (prevLocation) {
       return "Morning";
     } else if (hour < 18) {
       return "Afternoon";
-    } else {
+    } else if (hour < 20) {
       return "Evening";
+    } else {
+      return "Night";
     }
   }
 
@@ -993,7 +995,7 @@ function FCIRegulationPosition (prevLocation) {
                         </td>
                         <td width="5%" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{item.fciSymbol}</td>
                         <td width="40%" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}>{splitOverview(item.overview)[0]}<br/>Totals{splitOverview(item.overview)[1]}</td>
-                        <td width="16%" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}><><td style={{ textAlign:"center"}}>{item.timestamp}</td><td style={{ textAlign: "center"}}>{timeOfDay(item.timestamp)}&nbsp;<CIcon icon={cilSun} size="l"/></td></></td>
+                        <td width="16%" style={{ color: index % 2 != 0 ? 'green' : '#000080' }}><><td style={{ textAlign:"center"}}>{item.timestamp}</td><td style={{ textAlign: "center"}}>{timeOfDay(item.timestamp)}&nbsp;<CIcon icon={timeOfDay(item.timestamp) === 'Night'? cilMoon : cilSun} size="l"/></td></></td>
                         <td width="12%">
                           <>
                             <CButton shape='rounded' size='sm' color='string' onClick={() => deletePosition(item.id)}>

@@ -71,7 +71,7 @@ function FCIPositionAdvice() {
   const [showToast, setShowToast] = useState(false);
 
   const [searchFiltered, setSearchFiltered] = useState(false);
-  const [oldestPoition, setOldestPosition] = useState();
+  const [oldestPosition, setOldestPosition] = useState();
   const [searchFilteredPosition, setSearchFilteredPosition] = useState(false);
   const [searchCurrentPositionId, setSearchCurrentPositionId] = useState(1);
   const [selectedFCISymbol, setSelectedFCISymbol] = useState('');
@@ -85,9 +85,6 @@ function FCIPositionAdvice() {
   const [searchToDateAfter, setSearchToDateAfter] = useState('');
 
   const [currentPositionIdInFilter, setCurrentPositionIdInFilter] = useState(0);
-
-  const minPositionId = Math.min(...positions.map(position => position.id));
-  const maxPositionId = Math.max(...positions.map(position => position.id));
 
   const [noPositions, setNoPositions] = useState(false);
   const [noPositionsDateFilter, setNoPositionsDateFilter] = useState(false);
@@ -125,6 +122,15 @@ function FCIPositionAdvice() {
     const fetchPositions = async (fciSymbol) => {
       try {
         const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/id-created-on')
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    const fetchOldestPosition = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/oldest');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -182,6 +188,7 @@ function FCIPositionAdvice() {
 
     const setFetchedData = async () => {
       const tempLoadedRegulations = await fetchRegulations();
+      setSelectedFCISymbol(tempLoadedRegulations[0].fciSymbol);
       setRegulations(tempLoadedRegulations);
       if (!tempLoadedRegulations || tempLoadedRegulations.length == 0) {
         setErrorMessage("» There are no FCI Regulations defined, please access regulation management");
@@ -192,26 +199,29 @@ function FCIPositionAdvice() {
           if (tempLoadedPositions.length == 0) {
             setErrorMessage("» FCI [" + tempLoadedRegulations[0].fciSymbol + "] has no positions informed");
             setShowToast(true);
-          } 
-          const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
-          setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
-          let tempLoadedAdvices = [];
-          let tempLoadedFlatAdvices = [];
-          let tempLoadedPercentagesValued = [];
-          if (tempLoadedPositions.length > 0) {
-            tempLoadedAdvices = await fetchAdvices(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
-            tempLoadedFlatAdvices = await fetchFlatAdvices(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
-            tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
-            setCurrentPositionId(tempLoadedPositions[0].id);
+          } else {
+            let tempLoadedAdvices = [];
+            let tempLoadedFlatAdvices = [];
+            let tempLoadedPercentagesValued = [];
+            if (tempLoadedPositions && tempLoadedPositions.length > 0) {
+              tempLoadedAdvices = await fetchAdvices(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+              tempLoadedFlatAdvices = await fetchFlatAdvices(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+              tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
+              setCurrentPositionId(tempLoadedPositions[0].id);
+              const tempLoadedStatistics = await fetchFCIStaticticsQuantity();
+              setOldestPosition(tempLoadedOldestPostion);
+              setPositionPercentages(tempLoadedPercentagesValued);
+              setStatistics(tempLoadedStatistics);
+              updateFCIAdviceQuantity();
+              const tempLoadedOldestPostion = await fetchOldestPosition(tempLoadedRegulations[0].fciSymbol);
+              const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
+              setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
+              setRegulationPercentages(tempLoadedPercentages);
+              setAdvices(tempLoadedAdvices);
+              setFlatAdvices(tempLoadedFlatAdvices);
+            }
           }
-          const tempLoadedStatistics = await fetchFCIStaticticsQuantity();
           setPositions(tempLoadedPositions);
-          setRegulationPercentages(tempLoadedPercentages);
-          setAdvices(tempLoadedAdvices);
-          setFlatAdvices(tempLoadedFlatAdvices);
-          setPositionPercentages(tempLoadedPercentagesValued);
-          setStatistics(tempLoadedStatistics);
-          updateFCIAdviceQuantity();
         } else {
           setPositions([]);
         }
@@ -261,8 +271,8 @@ function FCIPositionAdvice() {
     return `${year}-${month}-${day}_${hours}:${minutes}:${seconds}`;
   };
 
-  const selectPosition = (position) => {
-    if (position !== undefined) {
+  const selectPosition = (positionId) => {
+    if (positionId !== undefined) {
       /** FCI Position - Advices */
       const fetchAdvices = async (fciSymbol, positionId) => {
         try {
@@ -274,8 +284,8 @@ function FCIPositionAdvice() {
       };
 
       const setFetchedData = async () => {
-        const tempLoadedAdvices = await fetchAdvices(currentFCISymbol, position);
-        setCurrentPositionId(position);
+        const tempLoadedAdvices = await fetchAdvices(currentFCISymbol, positionId);
+        setCurrentPositionId(positionId);
         setAdvices(tempLoadedAdvices);
       }
 
@@ -310,6 +320,15 @@ function FCIPositionAdvice() {
     const fetchPositions = async (fciSymbol) => {
       try {
         const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
+        return responseData.data;
+      } catch (error) {
+        console.error('Error sending data to the backend:', error);
+      }
+    };
+
+    const fetchOldestPosition = async (fciSymbol) => {
+      try {
+        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/oldest');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -376,12 +395,14 @@ function FCIPositionAdvice() {
 
       const setFetchedData = async (fciSymbol) => {
         setCurrentFCISymbol(fciSymbol);
+        setSelectedFCISymbol(fciSymbol);
         const tempLoadedPositions = await fetchPositions(fciSymbol);
+        const tempLoadedOldestPostion = await fetchOldestPosition(fciSymbol);
         const tempLoadedPercentages = await fetchPercentages(fciSymbol);
         let tempLoadedAdvices = [];
         let tempLoadedFlatAdvices = [];
         let tempLoadedPercentagesValued = [];
-        if (tempLoadedPositions.length == 0) {
+        if (tempLoadedPositions && tempLoadedPositions.length == 0) {
           setErrorMessage("» FCI [" + fciSymbol + "] has no positions informed");
           setShowToast(true);
         } else {
@@ -393,6 +414,7 @@ function FCIPositionAdvice() {
         const tempLoadedStatistics = await fetchFCIStaticticsQuantity();
 
         setPositions(tempLoadedPositions);
+        setOldestPosition(tempLoadedOldestPostion);
         setRegulationPercentages(tempLoadedPercentages);
         setAdvices(tempLoadedAdvices);
         setFlatAdvices(tempLoadedFlatAdvices);
@@ -459,7 +481,7 @@ function FCIPositionAdvice() {
     let fromDate;
     let toDate;
     if (searchFromDate == "") {
-      fromDate = oldestPoition.timestamp.split(" ")[0];
+      fromDate = oldestPosition.timestamp.split(" ")[0];
       setSearchFromDate(fromDate);
     } else {
       fromDate = searchFromDate;
@@ -492,14 +514,31 @@ function FCIPositionAdvice() {
     const tempLoadedPositions = await fetchFilteredPosition(pageNumber);
     const tempLoadedTotalPositions = await fetchTotalFilteredPosition();
     setPositions(tempLoadedPositions);
-    setTotalPositions(tempLoadedTotalPositions.length);
-    if (tempLoadedTotalPositions.length == 0) {
+    setTotalPositions(tempLoadedTotalPositions && tempLoadedTotalPositions.length);
+    if (tempLoadedTotalPositions && tempLoadedTotalPositions.length == 0) {
       setNoPositionsDateFilter(false);
+      if (currentPositionIdInFilter) {
+        setErrorMessage("» There are no positions with this position identifier between indicated dates");
+        setShowToast(true);
+      } else {
+        setErrorMessage("» There are no positions between indicated dates");
+        setShowToast(true);
+      }
     }
     setSearchFiltered(true);
     setSearchFromDateAfter(searchFromDate);
     setSearchToDateAfter(searchToDate);
+    const biggestPosition = getBiggestPosition(tempLoadedPositions);
+    selectPosition(biggestPosition.id);
   };
+
+  const getBiggestPosition = (loadedPositions) => {
+    const biggestPosition = loadedPositions.reduce((max, position) => {
+      return position.id > max.id ? position : max;
+    }, { id: -Infinity });
+    return biggestPosition;
+  }
+  
 
   const handleInputChange = (event) => {
     const input = event.target.value;
@@ -534,7 +573,7 @@ function FCIPositionAdvice() {
         </CToast>
       </CToaster>
       : null}
-    {regulations.length > 0? (
+    {regulations && regulations.length > 0? (
         <CRow>
         <CCol xs={12}>
             <CCard>
@@ -570,37 +609,38 @@ function FCIPositionAdvice() {
               </CCardHeader>
               <CCardBody>
                 <table className="no-border" width={"100%"}>
-                    <thead className="no-border">
-                        <tr className="text-medium-emphasis">
-                          <td width="20%" className="text-medium-emphasis" style={{ border: "none"}}><code>&lt;FCI Regulation Symbol&gt;</code></td>
-                          <td width="30%" style={{ border: "none"}}>
-                            <select className="text-medium-emphasis large" onChange={(e) => selectFciSymbol(e.target.value)}>
-                              {regulations?.map((regulation, index) => 
-                                <React.Fragment key={regulation.id || index}>
-                                <option value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
-                                </React.Fragment>
-                              )}
-                            </select>
-                          </td>
-                          <td width="55%" style={{ border: "none"}}/>
-                        </tr>
-                    </thead>
+                  <thead className="no-border">
+                    <tr className="text-medium-emphasis">
+                      <td width="15%" className="text-medium-emphasis" style={{ border: "none"}}><code>&lt;FCI Regulation Symbol&gt;</code></td>
+                      <td style={{ width: '30%', border: "none", marginRight: '15%'}}>
+                        <select className="text-medium-emphasis large" onChange={(e) => selectFciSymbol(e.target.value)}>
+                          {regulations?.map((regulation, index) => 
+                            <React.Fragment key={regulation.id || index}>
+                            <option value={regulation.fciSymbol}>{regulation.fciSymbol} - {regulation.fciName}&nbsp;&nbsp;&nbsp;</option>
+                            </React.Fragment>
+                          )}
+                        </select>
+                      </td>
+                      {/* <td width="55%" style={{ border: "none"}}/> */}
+                    </tr>
+                  </thead>
                 </table>
-                <table style={{marginTop: "-10px", border: "none"}}><tbody><tr style={{ border: "none"}}><td style={{ border: "none"}}/></tr></tbody></table>
-                <table>
-                {positions && positions.length > 0? (
+                {/* <table style={{marginTop: "-10px", border: "none"}}><tbody><tr style={{ border: "none"}}><td style={{ border: "none"}}/></tr></tbody></table> */}
+                {/* {positions && positions.length > 0? ( */}
+                  <table style={{ width: '100%', marginTop: '10px', border: 'none'}}>
                   <tbody>
                   <tr>
-                    <td className="text-medium-emphasis small" style={{ width: "18%", border: "none"}}>Position Identifier #</td>
-                    <td width="1%" style={{ border: "none"}}/>
-                    <td width="12%" className="text-medium-emphasis small" style={{ border: "none"}}>
+                    <td className="text-medium-emphasis small" style={{ width: "15%", border: "none"}}>Position Identifier #</td>
+                    {/* <td width="1%" style={{ border: "none"}}/> */}
+                    <td width="8%" className="text-medium-emphasis small" style={{ border: "none"}}>
                       <input className="text-medium-emphasis small" style={{ width: "100%"}}
                       value={inputValue} onChange={handleInputChange}/>
                     </td>
                     <td width="10%" style={{ border: "none"}}/>
-                    <td width="2%" className="text-medium-emphasis small" style={{ border: "none"}}>&nbsp;&nbsp;&nbsp;From</td>
-                    <td width="2%" style={{ border: "none"}}></td>
-                    <td width="5%" style={{ border: "none"}}>
+                    {/* <td width="2%" className="text-medium-emphasis small" style={{ border: "none"}}>&nbsp;&nbsp;&nbsp;From</td> */}
+                    {/* <td width="2%" style={{ border: "none"}}></td> */}
+                    <td width="2%" style={{ border: "none"}}>
+                    From
                       <input 
                         type="date"
                         className="text-medium-emphasis small"
@@ -610,10 +650,11 @@ function FCIPositionAdvice() {
                         //disabled={searchFilteredPosition || !noPositions}
                       />
                     </td>
-                    <td width="2%" style={{ border: "none"}}></td>
-                    <td width="2%" className="text-medium-emphasis small" style={{ border: "none"}}>To</td>
-                    <td width="1%" style={{ border: "none"}}></td>
-                    <td width="4%" style={{ border: "none"}}>
+                    {/* <td width="2%" style={{ border: "none"}}></td> */}
+                    {/* <td width="1%" className="text-medium-emphasis small" style={{ border: "none"}}></td> */}
+                    {/* <td width="1%" style={{ border: "none"}}></td> */}
+                    <td width="2%" style={{ border: "none"}}>
+                    To
                       <input
                         type="date"
                         className="text-medium-emphasis small"
@@ -624,20 +665,22 @@ function FCIPositionAdvice() {
                       //  disabled={searchFilteredPosition || !noPositions}
                       />
                     </td>
-                    <td width="2%" style={{ border: "none"}}></td>
-                    <td style={{ border: "none"}} width="2%">
-                      <CButton shape='rounded' size='sm' color='string' onClick={() => searchPositionsByDate(0)} style={{ border: "none"}}>
+                    {/* <td width="2%" style={{ border: "none"}}></td> */}
+                    <td style={{ border: "none"}} width="1%">
+                      <CButton shape='rounded' size='sm' color='string' onClick={() => searchPositionsByDate(0)} style={{ border: "none"}}
+                       disabled={positions.length === 0}>
                         <CIcon className="text-medium-emphasis small" icon={cilMagnifyingGlass} size="xl"/>
                       </CButton>
                     </td>
-                    <td style={{ width:'5%', border: "none"}}/>
-                    <td className="text-medium-emphasis small" width="15%" style={{ border: "none"}}>
-                      {positions && positions.length > 0? (
+                    {/* <td style={{ width:'5%', border: "none"}}/> */}
+                    {/* <td className="text-medium-emphasis small" width="5%" style={{ border: "none"}}> */}
+                    <td className="text-medium-emphasis small" width="5%" style={{ border: "none"}}>
+                      {/* {positions && positions.length > 0? ( */}
                           <code>&lt;FCI Position&gt;</code>
-                        ) : null}
+                        {/* ) : null} */}
                     </td>
-                    <td width="1%" style={{ border: "none"}}></td>
-                    <td width="10%" style={{ border: "none"}}>
+                    {/* <td width="1%" style={{ border: "none"}}></td> */}
+                    <td width="8%" style={{ border: "none"}}>
                       {positions && positions.length > 0? (
                         <select className="text-medium-emphasis large" 
                               onChange={(e) => selectPosition(e.target.value)}>
@@ -647,22 +690,22 @@ function FCIPositionAdvice() {
                             </React.Fragment>
                           )}
                         </select>
-                      ) : null}
+                      ) : (<div className='text-medium-emphasis small'>No positions</div>)}
                       </td>
-                      <td style={{ width:'19%', border: "none"}}></td>
+                      <td style={{ width:'1%', border: "none"}}></td>
                   </tr>
                   </tbody>
-                  ) : null}
-               </table>
+                  </table>
+                   {/* ) : null} */}
              </CCardBody>
             </CCard>
         </CCol>
     </CRow>
     ) : null}
-    {positions.length > 0? (
+    {positions && positions.length > 0? (
       <>
     <br/>
-    {regulations.length > 0? (
+    {regulations && regulations.length > 0? (
     <CRow>
         <CCol xs={12}>
           <CCard>
@@ -674,7 +717,7 @@ function FCIPositionAdvice() {
               <p className="text-medium-emphasis small">
                 Refers to a <code>&lt;FCI Regulation Position List&gt;</code> that advices operations based on positon detected biases
                 <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={() => downloadExcel(advices) } 
-                  disabled={advices.length === 0}>
+                  disabled={advices && advices.length === 0}>
                       <CIcon icon={cilClipboard} size="xl"/>
                 </CButton>
               </p>
@@ -686,7 +729,7 @@ function FCIPositionAdvice() {
                   </tr>
                 </thead>
                 <tbody>
-                  {advices.map((item, index) => 
+                  {advices && advices.map((item, index) => 
                     <React.Fragment key={item.id || index}>
                     <tr>
                       <td style={{ width: "12%"}}><b>{item.specieTypeGroup}</b></td>

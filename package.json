@@ -8,15 +8,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:coreui/coreui-free-react-admin-template.git"
+    "url": "git@github.com:damianblanc/calculate-regulation-disarrangement.git"
   },
   "license": "MIT",
-  "author": "The CoreUI Team (https://github.com/orgs/coreui/people)",
+  "author": "Sync Sphere Labs Team",
   "scripts": {
     "build": "react-scripts build",
     "eject": "react-scripts eject",
     "lint": "eslint \"src/**/*.js\"",
-    "start": "react-scripts start",
+    "start": "NODE_OPTIONS=--loader=browserify-zlib react-scripts start",
     "test": "react-scripts test",
     "test:cov": "npm test -- --coverage --watchAll=false",
     "test:debug": "react-scripts --inspect-brk test --runInBand"
@@ -30,9 +30,11 @@
     "@coreui/react-chartjs": "3.0.0-rc.0",
     "@coreui/utils": "^2.0.2",
     "axios": "^1.6.1",
+    "browserify-zlib": "^0.2.0",
     "chart.js": "^3.9.1",
     "classnames": "^2.3.2",
-    "core-js": "^3.31.0",
+    "core-js": "^3.37.1",
+    "cors": "^2.8.5",
     "moment": "^2.30.1",
     "node-xlsx": "^0.23.0",
     "prop-types": "^15.8.1",

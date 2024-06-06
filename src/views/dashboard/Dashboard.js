@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+import { useLocation } from 'react-router-dom';
 
 import './Dashboard.css';
 
@@ -53,6 +53,8 @@ import {
   cilUserFemale,
 } from '@coreui/icons'
 
+import api from './../config.js';
+
 import avatar1 from 'src/assets/images/avatars/1.jpg'
 import avatar2 from 'src/assets/images/avatars/2.jpg'
 import avatar3 from 'src/assets/images/avatars/3.jpg'
@@ -82,6 +84,15 @@ const Dashboard = () => {
   const [lastMonthValue, setLastMonthValue] = useState("");
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
+  const location = useLocation();
+
+  useEffect(() => {
+    const urlParam = new URLSearchParams(location.search).get('url');
+    if (urlParam) {
+      api.defaults.baseURL = urlParam;
+    }
+  }, [location]);
+
   useEffect(() => {
     const currentPage = document.location.pathname;
     localStorage.setItem('currentPage', currentPage);
@@ -93,7 +104,7 @@ const Dashboard = () => {
 
     const fetchSummarization = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize');
+        const responseData = await api.get('/api/v1/summarize');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -102,7 +113,7 @@ const Dashboard = () => {
 
     const fetchRegulationsPerMonth = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/regulations-per-month');
+        const responseData = await api.get('/api/v1/summarize/regulations-per-month');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -111,7 +122,7 @@ const Dashboard = () => {
 
     const fetchPositionsPerMonth = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month');
+        const responseData = await api.get('/api/v1/summarize/positions-per-month');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -120,7 +131,7 @@ const Dashboard = () => {
 
     const fetchReportsPerMonth = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/reports-per-month');
+        const responseData = await api.get('/api/v1/summarize/reports-per-month');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -129,7 +140,7 @@ const Dashboard = () => {
 
     const fetchAdvicesPerMonth = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/advices-per-month');
+        const responseData = await api.get('/api/v1/summarize/advices-per-month');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);

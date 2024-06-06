@@ -31,7 +31,7 @@ export default function FCIComposition({ composition }) {
     const [data, setData] = useState([]);
 
     async function fetchData() {
-        const url = 'http://localhost:8098/api/v1/component/specie-types';
+        const url = BASE_URL + '/api/v1/component/specie-types';
         try {
           const response = await Axios.get(url)
           setData(response.data);

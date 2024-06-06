@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom';
 import {
   CButton,
   CCard,
@@ -15,18 +16,26 @@ import CIcon from '@coreui/icons-react'
 import { cilLockLocked, cilUser } from '@coreui/icons'
 
 import axios from 'axios';
+import api from './../../config.js';
 
 function Register() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
+  const location = useLocation();
+
+  useEffect(() => {
+    const urlParam = new URLSearchParams(location.search).get('url');
+    if (urlParam) {
+      api.defaults.baseURL = urlParam;
+    }
+  }, [location]);  
 
   const handleSubmit = async (e) => {
     // e.preventDefault();
 
     try {
-      const response = await axios.post('http://localhost:8098/api/v1/register', {
-        method: 'POST',
+      const response = await api.post('/api/v1/register', {
         headers: {
           // 'Content-Type': 'application/json',
           // "Access-Control-Allow-Origin": "*",

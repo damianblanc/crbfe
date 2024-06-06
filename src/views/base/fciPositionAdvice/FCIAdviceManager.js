@@ -13,6 +13,7 @@ import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
 
 import axios from 'axios';
+import BASE_URL from './../../config.js';
 
 class FCIPosition {
   constructor(id, fciSymbol, timestamp, overview, jsonPosition, updatedMarketPosition) {
@@ -45,7 +46,7 @@ function FCIAdviceManager() {
   useEffect(() => {
     const fetchRegulations = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/symbol-name');
+        const responseData = await axios.get(BASE_URL + '/api/v1/fci/symbol-name');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -54,7 +55,7 @@ function FCIAdviceManager() {
 
     const fetchPositions = async (fciSymbol) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
+        const responseData = await axios.get(BASE_URL + '/api/v1/fci/' + fciSymbol + '/position');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -86,7 +87,7 @@ function FCIAdviceManager() {
   const fetchCreatedPosition = async () => {
     try {
       const body = "{\"position\":" + JSON.stringify(excelData, null, 1) + "}";
-      const responseData = await axios.post('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position', body,
+      const responseData = await axios.post(BASE_URL + '/api/v1/fci/' + selectedFCISymbol + '/position', body,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -102,7 +103,7 @@ function FCIAdviceManager() {
   const selectFciSymbol = async (fciSymbol) => {
     const fetchPositions = async (fciSymbol) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
+        const responseData = await axios.get(BASE_URL + '/api/v1/fci/' + fciSymbol + '/position');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -113,7 +114,7 @@ function FCIAdviceManager() {
       if (fciSymbol !== undefined) {
         setSelectedFCISymbol(fciSymbol);
         try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
+          const responseData = await axios.get(BASE_URL + '/api/v1/fci/' + fciSymbol + '/position');
           return responseData.data;
         } catch (error) {
           console.error('Error sending data to the backend:', error);

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton} from '@coreui/react'
 import { cilAlignRight, cilBookmark, cilClipboard, cilListFilter, cilMagnifyingGlass } from '@coreui/icons';
 import CIcon from '@coreui/icons-react'
 
-import axios from 'axios';
+import api from './../../config.js';
 
 import { NumericFormat } from 'react-number-format';
 
@@ -91,6 +92,15 @@ function FCIPositionAdvice() {
 
   const [inputValue, setInputValue] = useState("");
 
+  const location = useLocation();
+
+  useEffect(() => {
+    const urlParam = new URLSearchParams(location.search).get('url');
+    if (urlParam) {
+      api.defaults.baseURL = urlParam;
+    }
+  }, [location]);
+
   useEffect(() => {
     const isValid = isLoginTimestampValid();
     if (!isValid) {
@@ -111,7 +121,7 @@ function FCIPositionAdvice() {
     /** FCI Regulations - Symbol and Name */
     const fetchRegulations = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/regulations')
+        const responseData = await api.get('/api/v1/fci/regulations')
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -121,7 +131,7 @@ function FCIPositionAdvice() {
     /** FCI Positions - Id and CreatedOn */
     const fetchPositions = async (fciSymbol) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/id-created-on')
+        const responseData = await api.get('/api/v1/fci/' + fciSymbol + '/position/id-created-on')
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -130,7 +140,7 @@ function FCIPositionAdvice() {
 
     const fetchOldestPosition = async (fciSymbol) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/oldest');
+        const responseData = await api.get('/api/v1/fci/' + fciSymbol + '/position/oldest');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -140,7 +150,7 @@ function FCIPositionAdvice() {
      /** FCI Regulation Percentages - First Element */
     const fetchPercentages = async (fciSymbol) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/regulation-percentages')
+        const responseData = await api.get('/api/v1/fci/' + fciSymbol + '/regulation-percentages')
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -150,7 +160,7 @@ function FCIPositionAdvice() {
     /** FCI Position - Advices */
     const fetchAdvices = async (fciSymbol, positionId) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/advice/criteria/price_uniformly_distribution')
+        const responseData = await api.get('/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/advice/criteria/price_uniformly_distribution')
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -159,7 +169,7 @@ function FCIPositionAdvice() {
 
     const fetchFlatAdvices = async (fciSymbol, positionId) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/advice/criteria/price_uniformly_distribution/flat')
+        const responseData = await api.get('/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/advice/criteria/price_uniformly_distribution/flat')
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -169,7 +179,7 @@ function FCIPositionAdvice() {
     /** FCI Position Overview */
     const fetchFCIPositionPercentagesValued = async (fciSymbol, positionId) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/percentage-valued/refresh/true');
+        const responseData = await api.get('/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/percentage-valued/refresh/true');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -179,7 +189,7 @@ function FCIPositionAdvice() {
     /** FCI Advice Quantity */
     const fetchFCIStaticticsQuantity = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/statistic');
+        const responseData = await api.get('/api/v1/statistic');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -209,11 +219,11 @@ function FCIPositionAdvice() {
               tempLoadedPercentagesValued = await fetchFCIPositionPercentagesValued(tempLoadedRegulations[0].fciSymbol, tempLoadedPositions[0].id);
               setCurrentPositionId(tempLoadedPositions[0].id);
               const tempLoadedStatistics = await fetchFCIStaticticsQuantity();
-              setOldestPosition(tempLoadedOldestPostion);
               setPositionPercentages(tempLoadedPercentagesValued);
               setStatistics(tempLoadedStatistics);
               updateFCIAdviceQuantity();
-              const tempLoadedOldestPostion = await fetchOldestPosition(tempLoadedRegulations[0].fciSymbol);
+              const tempLoadedOldestPosition = await fetchOldestPosition(tempLoadedRegulations[0].fciSymbol);
+              setOldestPosition(tempLoadedOldestPosition);
               const tempLoadedPercentages = await fetchPercentages(tempLoadedRegulations[0].fciSymbol);
               setCurrentFCISymbol(tempLoadedRegulations[0].fciSymbol);
               setRegulationPercentages(tempLoadedPercentages);
@@ -276,7 +286,7 @@ function FCIPositionAdvice() {
       /** FCI Position - Advices */
       const fetchAdvices = async (fciSymbol, positionId) => {
         try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/advice/criteria/price_uniformly_distribution')
+          const responseData = await api.get('/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/advice/criteria/price_uniformly_distribution')
           return responseData.data;
         } catch (error) {
           console.error('Error sending data to the backend:', error);
@@ -303,7 +313,7 @@ function FCIPositionAdvice() {
     }));
     const body = JSON.stringify(st);
     try {
-      const responseData = await axios.put('http://localhost:8098/api/v1/statistic/update/advice-quantity', body,
+      const responseData = await api.put('/api/v1/statistic/update/advice-quantity', body,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -319,7 +329,7 @@ function FCIPositionAdvice() {
   const selectFciSymbol = async (fciSymbol) => {
     const fetchPositions = async (fciSymbol) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
+        const responseData = await api.get('/api/v1/fci/' + fciSymbol + '/position');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -328,7 +338,7 @@ function FCIPositionAdvice() {
 
     const fetchOldestPosition = async (fciSymbol) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/oldest');
+        const responseData = await api.get('/api/v1/fci/' + fciSymbol + '/position/oldest');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -337,7 +347,7 @@ function FCIPositionAdvice() {
 
     const fetchPositionWithFciSymbol = async (fciSymbol) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
+        const responseData = await api.get('/api/v1/fci/' + fciSymbol + '/position');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -347,7 +357,7 @@ function FCIPositionAdvice() {
       /** FCI Regulation Percentages - First Element */
       const fetchPercentages = async (fciSymbol) => {
         try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/regulation-percentages')
+          const responseData = await api.get('/api/v1/fci/' + fciSymbol + '/regulation-percentages')
           return responseData.data;
         } catch (error) {
           console.error('Error sending data to the backend:', error);
@@ -357,7 +367,7 @@ function FCIPositionAdvice() {
       /** FCI Position - Advices */
       const fetchAdvices = async (fciSymbol, positionId) => {
         try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/advice/criteria/price_uniformly_distribution')
+          const responseData = await api.get('/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/advice/criteria/price_uniformly_distribution')
           return responseData.data;
         } catch (error) {
           console.error('Error sending data to the backend:', error);
@@ -366,7 +376,7 @@ function FCIPositionAdvice() {
   
       const fetchFlatAdvices = async (fciSymbol, positionId) => {
         try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/advice/criteria/price_uniformly_distribution/flat')
+          const responseData = await api.get('/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/advice/criteria/price_uniformly_distribution/flat')
           return responseData.data;
         } catch (error) {
           console.error('Error sending data to the backend:', error);
@@ -376,7 +386,7 @@ function FCIPositionAdvice() {
       /** FCI Position Overview */
       const fetchFCIPositionPercentagesValued = async (fciSymbol, positionId) => {
         try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/percentage-valued/refresh/true');
+          const responseData = await api.get('/api/v1/calculate-bias/fci/' + fciSymbol + '/position/' + positionId + '/percentage-valued/refresh/true');
           return responseData.data;
         } catch (error) {
           console.error('Error sending data to the backend:', error);
@@ -386,7 +396,7 @@ function FCIPositionAdvice() {
       /** FCI Advice Quantity */
       const fetchFCIStaticticsQuantity = async () => {
         try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/statistic');
+          const responseData = await api.get('/api/v1/statistic');
           return responseData.data;
         } catch (error) {
           console.error('Error sending data to the backend:', error);
@@ -454,10 +464,10 @@ function FCIPositionAdvice() {
     const fetchFilteredPosition = async () => {
       try {
         if (searchCurrentPositionId !== "") {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + searchCurrentPositionId + '/filtered');
+          const responseData = await api.get('/api/v1/fci/' + selectedFCISymbol + '/position/' + searchCurrentPositionId + '/filtered');
           return responseData.data;
         } else {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/page/' + 0 + '/page_size/' + positionsPerPage);
+          const responseData = await api.get('/api/v1/fci/' + selectedFCISymbol + '/position/page/' + 0 + '/page_size/' + positionsPerPage);
           return responseData.data;
         }
       } catch (error) {
@@ -496,7 +506,7 @@ function FCIPositionAdvice() {
   
     const fetchFilteredPosition = async (pageNumber) => {
       try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + fromDate + '/to/' + toDate + '/page/' + pageNumber + '/page_size/' + positionsPerPage);
+          const responseData = await api.get('/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + fromDate + '/to/' + toDate + '/page/' + pageNumber + '/page_size/' + positionsPerPage);
           return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -505,7 +515,7 @@ function FCIPositionAdvice() {
   
     const fetchTotalFilteredPosition = async () => {
       try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + fromDate + '/to/' + toDate + '/page/0');
+          const responseData = await api.get('/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + fromDate + '/to/' + toDate + '/page/0');
           return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);

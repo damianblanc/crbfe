@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
 import { cilIndustry, cilAlignRight, cilBookmark, cilTrash, cilClipboard, cilNoteAdd, cilSync, cilTransfer, cibSlides } from '@coreui/icons';
@@ -14,7 +15,7 @@ import {CChartBar, CChartPie, CChart} from '@coreui/react-chartjs'
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
 
-import axios from 'axios';
+import api from './../../../config.js';
 
 import { isLoginTimestampValid } from '../../../../utils/utils.js';
 import { useNavigate } from 'react-router-dom';
@@ -52,6 +53,14 @@ function FCIGroupManager() {
   const toaster = useRef()
   const [showToast, setShowToast] = useState(false);
   const [visibleAdd, setVisibleAdd] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const urlParam = new URLSearchParams(location.search).get('url');
+    if (urlParam) {
+      api.defaults.baseURL = urlParam;
+    }
+  }, [location]);
 
   /** SpecieType Groups */
   useEffect(() => {
@@ -73,7 +82,7 @@ function FCIGroupManager() {
 
     const fetchSpecieTypeGroups = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group');
+        const responseData = await api.get('/api/v1/component/specie-type-group');
         return responseData.data;
       } catch (error) {
         console.error('#1 - Error receiving specieTypeGroups:', error);
@@ -98,7 +107,7 @@ function FCIGroupManager() {
   const selectSpecieTypeGroup = async (specieTypeGroupName) => {
     const fetchSpecieTypeGroup = async (specieTypeGroupName) => {
         try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' + specieTypeGroupName);
+          const responseData = await api.get('/api/v1/component/specie-type-group/' + specieTypeGroupName);
           return responseData.data;
         } catch (error) {
           console.error('#1 - Error receiving specieTypeGroups:', error);
@@ -146,7 +155,7 @@ function FCIGroupManager() {
                 try {
                     const body = new SpecieType(null, newSpecieType.name, newSpecieType.description, newSpecieType.updatable);
                     newSpecieType.fciSpecieTypeId = specieTypes.length + 1;
-                    const responseData = await axios.post('http://localhost:8098/api/v1/component/specie-type-group/' + currentGroup.name + '/specie-type', body,
+                    const responseData = await api.post('/api/v1/component/specie-type-group/' + currentGroup.name + '/specie-type', body,
                     {
                         headers: {
                             'Content-Type': 'application/json',
@@ -177,7 +186,7 @@ function FCIGroupManager() {
   const deleteSpecieType = (index, specieTypeName) => {
     const doDeleteSpecieType = async (specieTypeName) => {
       try {
-        const responseData = await axios.delete('http://localhost:8098/api/v1/component/specie-type-group/' + currentGroup.name + '/specie-type/' + specieTypeName);
+        const responseData = await api.delete('/api/v1/component/specie-type-group/' + currentGroup.name + '/specie-type/' + specieTypeName);
         const updatedSpecieTypes = specieTypes.filter(specie => specie.name !== specieTypeName);
         setSpecieTypes(updatedSpecieTypes);
         return responseData.data;

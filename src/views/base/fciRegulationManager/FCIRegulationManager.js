@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
 import CIcon from '@coreui/icons-react'
@@ -11,7 +12,7 @@ import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
 import './FCIRegulationManager.css';
 
-import axios from 'axios';
+import api from './../../config.js';
 
 import { CModal } from '@coreui/react';
 import { NumericFormat } from 'react-number-format';
@@ -86,6 +87,15 @@ function FCIRegulationManager() {
   const [regulationTitle, setRegulationTitle] = useState('');
   const [regulationLegend, setRegulationLegend] = useState('');
 
+  const location = useLocation();
+
+  useEffect(() => {
+    const urlParam = new URLSearchParams(location.search).get('url');
+    if (urlParam) {
+      api.defaults.baseURL = urlParam;
+    }
+  }, [location]);
+
   useEffect(() => {
     const isValid = isLoginTimestampValid();
     if (!isValid) {
@@ -101,7 +111,7 @@ function FCIRegulationManager() {
 
     const fetchRegulations = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/page/0/page_size/' + regulationsPerPage);
+        const responseData = await api.get('/api/v1/fci/page/0/page_size/' + regulationsPerPage);
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -110,7 +120,7 @@ function FCIRegulationManager() {
 
     const fetchSpecieTypes = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type');
+        const responseData = await api.get('/api/v1/component/specie-type');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -119,7 +129,7 @@ function FCIRegulationManager() {
 
     const fetchTotalRegulations = async (fciSymbol) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci');
+        const responseData = await api.get('/api/v1/fci');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -443,7 +453,7 @@ function FCIRegulationManager() {
   })
 
   const clearFciRow = (() => {
-    setFciRow({ ...fciRow, symbol: '', name: '', description: '', composition: '' });
+    setFciRow({ ...fciRow, name: '', description: '', composition: '' });
     setSpecieTypesTable(
       specieTypes.map((specieType, index) => ({
         id: index,
@@ -465,7 +475,7 @@ function FCIRegulationManager() {
     setCheckboxStates(newCheckboxStates);
   };
 
-  const handleFciRow = () => {
+  const handleFciRow = async () => {
     const compositeString = specieTypesTable
     .filter(specieType => specieType.checked)
     .map(specieType => `${specieType.name.split(" ")[1]}: ${specieType.percentage}%`)
@@ -482,65 +492,68 @@ function FCIRegulationManager() {
                 return new FCIComposition(null, findSpecieTypeByName(r.at(0)).fciSpecieTypeId, r.at(0), parseFloat(r.at(1)));
        }));
 
-      console.log("JSON.stringify(fciRow, null, 1)" + JSON.stringify(f));
-
       if (isUpdatingRow) {
-        fetch('http://localhost:8098/api/v1/fci/' + fciRow.symbol, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(f),
-        })
-          .then((response) => response.json())
-          .then((responseData) => {
-            console.log('Backend response:', responseData);
-            setRegulations([ responseData, ...regulations]);
-            clearFciRow();
-            setIsPopupOpen(false);
-            specieTypes.forEach((specieType, index) => {
-              setSpecieTypesTable(prevSpecieTypesTable => [...prevSpecieTypesTable, {id: index, checked: false,  name: specieType.name, percentage: 0}]); 
-            });
-          })    
-          .catch((error) => {
-            console.error('Error sending data to the backend:', error);
-          });
-        setValidationErrors({});
-        setIsUpdatingRow(false);
-        setTotalRegulations(totalRegulations + 1);
+        const tempLoadedUpdatedRegulation = updateRegulationWrap(fciRow.symbol, f);
       } else {
-        fetch('http://localhost:8098/api/v1/fci', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(f),
-        })
-          .then((response) => response.json())
-          .then((responseData) => {
-            console.log('Backend response:', responseData);
-            setRegulations([ responseData, ...regulations]);
-            clearFciRow();
-            setIsPopupOpen(false);
-            specieTypes.forEach((specieType, index) => {
-              setSpecieTypesTable(prevSpecieTypesTable => [...prevSpecieTypesTable, {id: index, checked: false,  name: specieType.name, percentage: 0}]); 
-            });
-          })    
-          .catch((error) => {
-            console.error('Error sending data to the backend:', error);
-          });
-        setValidationErrors({});
-        setIsUpdatingRow(false);
+        const tempLoadedCreatedRegulation = await createRegulationWrap(f);
       }
     } else {
       setValidationErrors(errors);
     }
   };
 
+  const createRegulationWrap = async (regulationToCreate) => {
+    const createRegulation = async (regulationToCreate) => {
+      const stringifiedBody = JSON.stringify(regulationToCreate);
+      const responseData = await api.post('/api/v1/fci', stringifiedBody, {
+        headers: {
+            'Content-Type': 'application/json',
+        }
+      });
+      return responseData.data;
+    }
+    const fetchCreatedRegulation = async () => {
+        const tempLoadedCreatedRegulation = await createRegulation(regulationToCreate);
+        setRegulations([ tempLoadedCreatedRegulation, ...regulations]);
+        clearFciRow();
+        setIsPopupOpen(false);
+        specieTypes.forEach((specieType, index) => {
+          setSpecieTypesTable(prevSpecieTypesTable => [...prevSpecieTypesTable, {id: index, checked: false,  name: specieType.name, percentage: 0}]); 
+          setValidationErrors({});
+          setIsUpdatingRow(false);
+        });
+    }
+    fetchCreatedRegulation();
+   }
+
+   const updateRegulationWrap = async (fciSymbol, regulationToUpdate) => {
+    const updateRegulation = async (fciSymbol, regulationToUpdate) => {
+      const stringifiedBody = JSON.stringify(regulationToUpdate);
+      const responseData = await api.put('/api/v1/fci/' + fciSymbol, stringifiedBody, {
+        headers: {
+            'Content-Type': 'application/json',
+        }
+      });
+      return responseData.data;
+    }
+    const fetchUpdatedRegulation = async (fciSymbol) => {
+        const tempLoadedUpdatedRegulation = await updateRegulation(fciSymbol, regulationToUpdate);
+        setRegulations([ tempLoadedUpdatedRegulation, ...regulations]);
+        clearFciRow();
+        setIsPopupOpen(false);
+        specieTypes.forEach((specieType, index) => {
+          setSpecieTypesTable(prevSpecieTypesTable => [...prevSpecieTypesTable, {id: index, checked: false,  name: specieType.name, percentage: 0}]); 
+        });
+        setValidationErrors({});
+        setIsUpdatingRow(false);
+        setTotalRegulations(totalRegulations + 1);
+    }
+    fetchUpdatedRegulation(fciSymbol);
+   }
+
   const handleDeleteRow = (id, symbol) => {
     console.log("delete symbol = " + symbol);
-    fetch(`http://localhost:8098/api/v1/fci/${symbol}`, {
-      method: 'DELETE',
+    api.delete('/api/v1/fci/' + symbol, {
     }).then(() => {
       const updatedData = regulations.filter((row) => row.id !== id);
       setRegulations(updatedData);
@@ -569,19 +582,29 @@ function FCIRegulationManager() {
                 return new FCIComposition(index + 1, findSpecieTypeById(r.at(0)).fciSpecieTypeId, parseFloat(r.at(1)));
             
        }));
-      
-      fetch('http://localhost:8098/api/v1/fci/' + editRow.symbol + "'", {
-        method: 'PUT',
-        body: JSON.stringify(f),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }).then(() => {
-        setEditRowId(0);
-        fetch('http://localhost:8098/api/v1/fci')
-          .then((response) => response.json())
-          .then((json) => setRegulations(json));
-      });
+
+      const updateRegulation = async () => {
+        const responseData = await api.put('/api/v1/fci' + editRow.symbol + "", JSON.stringify(f),
+        {
+          headers: {
+              'Content-Type': 'application/json',
+          }
+        });
+        return responseData.data;
+      }
+
+      const retrieveRegulations = async () => {
+        try {
+          const responseData = await api.get('/api/v1/fci');
+          return responseData.data;
+        } catch (error) {
+          console.error('Error sending data to the backend:', error);
+        }
+      }
+      updateRegulation();
+      setEditRowId(0);
+      const tempLoadedRetrievedRegulations = retrieveRegulations();
+      setRegulations(tempLoadedRetrievedRegulations);
       setValidationEditErrors({});
     } else {
       setValidationEditErrors(errors);
@@ -605,7 +628,7 @@ function FCIRegulationManager() {
   const listFCIRegulationPercentages = async (fciSymbol) => {
     setVisible(!visible);
     try {
-      const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/regulation-percentages')
+      const responseData = await api.get('/api/v1/fci/' + fciSymbol + '/regulation-percentages')
       setRegulationPercentages(responseData.data);
     } catch (error) {
       console.error('Error sending data to the backend:', error);
@@ -615,10 +638,9 @@ function FCIRegulationManager() {
   const handlePageChange = async (pageNumber) => {
     setCurrentPage(pageNumber);
     let pPage = pageNumber - 1;
-    console.log("url: http://localhost:8098/api/v1/fci/page/" + pPage + '/page_size/' + regulationsPerPage);
     const fetchPositions = async (pageNumber) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/page/' + pPage + '/page_size/' + regulationsPerPage);
+        const responseData = await api.get('/api/v1/fci/page/' + pPage + '/page_size/' + regulationsPerPage);
         return responseData.data;
       } catch (error) {
         console.error('#1 - Error receiving specieTypeAssociation:', error);
@@ -637,10 +659,10 @@ function FCIRegulationManager() {
     const fetchFilteredPosition = async () => {
       try {
         if (searchCurrentRegulationSymbol !== "") {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + searchCurrentRegulationSymbol + '/filtered');
+          const responseData = await api.get('/api/v1/fci/' + searchCurrentRegulationSymbol + '/filtered');
           return responseData.data;
         } else {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/page/' + 0 + '/page_size/' + regulationsPerPage);
+          const responseData = await api.get('/api/v1/fci/page/' + 0 + '/page_size/' + regulationsPerPage);
           return responseData.data;
         }
       } catch (error) {
@@ -663,7 +685,7 @@ function FCIRegulationManager() {
 
   const fetchTotalRegulations = async (fciSymbol) => {
     try {
-      const responseData = await axios.get('http://localhost:8098/api/v1/fci');
+      const responseData = await api.get('/api/v1/fci');
       return responseData.data;
     } catch (error) {
       console.error('Error sending data to the backend:', error);
@@ -1003,7 +1025,8 @@ const updateRowSet = (value) => {
                                                           type="text" 
                                                           value={fciRow.symbol}
                                                           style={{width: "50%", color: '#000080'}}
-                                                          onChange={(e) => setFciRow({ ...fciRow, symbol: e.target.value })}/>
+                                                          onChange={(e) => setFciRow({ ...fciRow, symbol: e.target.value })}
+                                                          disabled={isUpdatingRow && isUpdatingRow === true}/>
                                                       </h4>
                                                   </td>
                                                   </tr>
@@ -1244,7 +1267,9 @@ const updateRowSet = (value) => {
                             </>
                             ) : (
                               <>
-                              <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' onClick={ () => handleDeleteRow(row.id, row.symbol)}>
+                              <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' 
+                                onClick={ () => handleDeleteRow(row.id, row.fciSymbol)}
+                                disabled={row.positionQuantity !== 0}>
                                   <CIcon icon={cilTrash} size="xl"/>
                               </CButton>&nbsp;
                               <CButton className="text-medium-emphasis small" shape='rounded' size='sm' color='string' 

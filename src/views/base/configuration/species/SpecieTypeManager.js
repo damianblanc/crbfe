@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
 import { cilInput, cilAlignRight, cilBookmark, cilTrash, cilTransfer, cilCheckCircle } from '@coreui/icons';
@@ -6,12 +7,11 @@ import { cilInput, cilAlignRight, cilBookmark, cilTrash, cilTransfer, cilCheckCi
 import CIcon from '@coreui/icons-react'
 
 import './SpecieTypeManager.css';
-
 import './Popup.css';
 import 'reactjs-popup/dist/index.css';
 import Popup from 'reactjs-popup';
 
-import axios from 'axios';
+import api from './../../../config.js';
 
 import { isLoginTimestampValid } from '../../../../utils/utils.js';
 import { useNavigate } from 'react-router-dom';
@@ -64,6 +64,14 @@ function SpecieTypeManager() {
   const [toast, addToast] = useState(0)
   const toaster = useRef()
   const [showToast, setShowToast] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const urlParam = new URLSearchParams(location.search).get('url');
+    if (urlParam) {
+      api.defaults.baseURL = urlParam;
+    }
+  }, [location]);
 
   /** SpecieType Groups */
   useEffect(() => {
@@ -85,7 +93,7 @@ function SpecieTypeManager() {
   
     const fetchSpecieTypeGroups = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group');
+        const responseData = await api.get('/api/v1/component/specie-type-group');
         return responseData.data;
       } catch (error) {
         console.error('#1 - Error receiving specieTypeGroups:', error);
@@ -94,7 +102,7 @@ function SpecieTypeManager() {
 
     const fetchSpecies = async (specieTypeGroupName, pageNumber) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/bind/page/' + pageNumber);
+        const responseData = await api.get('/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/bind/page/' + pageNumber);
         return responseData.data;
       } catch (error) {
         console.error('#1 - Error receiving specieTypeGroups:', error);
@@ -106,7 +114,7 @@ function SpecieTypeManager() {
 
     const fetchTotalSpecies = async (specieTypeGroupName) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/bind');
+        const responseData = await api.get('/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/bind');
         return responseData.data;
       } catch (error) {
         console.error('#1 - Error receiving specieTypeGroups:', error);
@@ -134,10 +142,9 @@ function SpecieTypeManager() {
   const handlePageChange = async (pageNumber) => {
     setCurrentPage(pageNumber);
     let pPage = pageNumber - 1;
-    console.log("url: http://localhost:8098/api/v1/component/specie-type-group/" +  currentGroup.name + '/bind/page/' + pPage);
     const fetchSpecies = async (pageNumber) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  currentGroup.name + '/bind/page/' + pPage);
+        const responseData = await api.get('/api/v1/component/specie-type-group/' +  currentGroup.name + '/bind/page/' + pPage);
         return responseData.data;
       } catch (error) {
         console.error('#1 - Error receiving specieTypeAssociation:', error);
@@ -151,7 +158,7 @@ function SpecieTypeManager() {
   const selectSpecieTypeGroup = async (specieTypeGroupName) => {
     const fetchSpecieTypeGroup = async (specieTypeGroupName) => {
         try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' + specieTypeGroupName);
+          const responseData = await api.get('/api/v1/component/specie-type-group/' + specieTypeGroupName);
           return responseData.data;
         } catch (error) {
           console.error('#1 - Error receiving specieTypeGroups:', error);
@@ -159,7 +166,7 @@ function SpecieTypeManager() {
       };
     const fetchSpecies = async (specieTypeGroupName, specieTypeName) => {
         try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/bind/page/0');
+          const responseData = await api.get('/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/bind/page/0');
           return responseData.data;
         } catch (error) {
           console.error('#1 - Error receiving specieTypeGroups:', error);
@@ -168,7 +175,7 @@ function SpecieTypeManager() {
 
     const fetchTotalSpecies = async (specieTypeGroupName) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/bind');
+        const responseData = await api.get('/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/bind');
         return responseData.data;
       } catch (error) {
         console.error('#1 - Error receiving specieTypeGroups:', error);
@@ -195,7 +202,7 @@ function SpecieTypeManager() {
   const upsertSpecieToSpecieTypeAssociation = (specieTypeGroupName, specieTypeName, specieName) => {
     const upsertSpecie = async (specieTypeGroupName, specieTypeName, specieName) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/specie-type/' + specieTypeName + '/specie/' + specieName + '/bind');
+        const responseData = await api.get('/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/specie-type/' + specieTypeName + '/specie/' + specieName + '/bind');
         return responseData.data;
       } catch (error) {
         console.error('#2 - Error upserting association:', error);
@@ -234,7 +241,7 @@ function SpecieTypeManager() {
             try {
                 const body = new SpecieType(null, newSpecieType.name, newSpecieType.description, newSpecieType.updatable);
                 newSpecieType.fciSpecieTypeId = specieTypes.length + 1;
-                const responseData = await axios.post('http://localhost:8098/api/v1/component/specie-type-group/' + currentGroup.name + '/specie-type', body,
+                const responseData = await api.post('/api/v1/component/specie-type-group/' + currentGroup.name + '/specie-type', body,
                 {
                     headers: {
                         'Content-Type': 'application/json',
@@ -258,7 +265,7 @@ function SpecieTypeManager() {
   const deleteSpecieTypeAssociation = () => {
     const upsertSpecie = async (specieTypeGroupName, specieTypeName, specieName) => {
       try {
-        const responseData = await axios.delete('http://localhost:8098/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/specie-type/' + specieTypeName + '/specie/' + specieName + '/bind');
+        const responseData = await api.delete('/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/specie-type/' + specieTypeName + '/specie/' + specieName + '/bind');
         return responseData.data;
       } catch (error) {
         console.error('#2 - Error upserting association:', error);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   CButton,
   CCard,
@@ -19,6 +19,7 @@ import axios from 'axios';
 
 import { CToast, CToastBody, CToastHeader, CToaster } from '@coreui/react'
 import icon from '../../../assets/images/avatars/icon.jpg' 
+import api from './../../config.js';
 
 function Login() {
   const [username, setUsername] = useState('');
@@ -28,6 +29,14 @@ function Login() {
   const toaster = useRef()
   const [showToast, setShowToast] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const location = useLocation();
+
+  useEffect(() => {
+    const urlParam = new URLSearchParams(location.search).get('url');
+    if (urlParam) {
+      api.defaults.baseURL = urlParam;
+    }
+  }, [location]);
 
   useEffect(() => {
       localStorage.removeItem("loginTimestamp");
@@ -51,7 +60,8 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:8098/api/v1/user/login', {
+      // const response = await axios.post('http://192.168.0.253:8098/api/v1/user/login', {
+      const response = await api.post('/api/v1/user/login', {
         username: username,
         password: password
       });

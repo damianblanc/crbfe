@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom';
 import {
   CRow,
   CCol,
@@ -13,7 +14,7 @@ import { CChartBar, CChartLine } from '@coreui/react-chartjs'
 import CIcon from '@coreui/icons-react'
 import { cilArrowBottom, cilArrowTop, cilOptions } from '@coreui/icons'
 
-import axios from 'axios';
+import api from './../config.js';
 
 
 const WidgetsDropdown = () => {
@@ -32,10 +33,19 @@ const WidgetsDropdown = () => {
   const [repPerMonthGrowth, setRepPerMonthGrowth] = useState(0);
   const [advPerMonthGrowth, setAdvPerMonthGrowth] = useState(0);
 
+  const location = useLocation();
+
+  useEffect(() => {
+    const urlParam = new URLSearchParams(location.search).get('url');
+    if (urlParam) {
+      api.defaults.baseURL = urlParam;
+    }
+  }, [location]);
+
   useEffect(() => {
     const fetchSummarization = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize');
+        const responseData = await api.get('/api/v1/summarize');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -44,7 +54,7 @@ const WidgetsDropdown = () => {
 
     const fetchRegulationsPerMonth = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/regulations-per-month');
+        const responseData = await api.get('/api/v1/summarize/regulations-per-month');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -53,7 +63,7 @@ const WidgetsDropdown = () => {
 
     const fetchPositionsPerMonth = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month');
+        const responseData = await api.get('/api/v1/summarize/positions-per-month');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -62,7 +72,7 @@ const WidgetsDropdown = () => {
 
     const fetchReportsPerMonth = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/reports-per-month');
+        const responseData = await api.get('/api/v1/summarize/reports-per-month');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -71,7 +81,7 @@ const WidgetsDropdown = () => {
 
     const fetchAdvicesPerMonth = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/advices-per-month');
+        const responseData = await api.get('/api/v1/summarize/advices-per-month');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);

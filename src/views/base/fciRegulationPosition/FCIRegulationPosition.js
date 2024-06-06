@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
 import { CCard, CCardBody, CCardHeader, CCol, CRow, CButton, CPagination, CPaginationItem} from '@coreui/react'
@@ -13,7 +14,7 @@ import './Popup.css';
 import Popup from 'reactjs-popup';
 import 'reactjs-popup/dist/index.css';
 
-import axios from 'axios';
+import api from './../../config.js';
 
 import { NumericFormat } from 'react-number-format';
 
@@ -97,6 +98,16 @@ function FCIRegulationPosition (prevLocation) {
   const fileInputRef = useRef(null);
   const [prevPath, setPrevPath] = useState('');
 
+  const selectRef = useRef(null);
+
+  const location = useLocation();
+
+  useEffect(() => {
+    const urlParam = new URLSearchParams(location.search).get('url');
+    if (urlParam) {
+      api.defaults.baseURL = urlParam;
+    }
+  }, [location]);
 
   /** FCI Regulations - Symbol and Name */
   useEffect(() => {
@@ -115,7 +126,7 @@ function FCIRegulationPosition (prevLocation) {
     
     const fetchRegulations = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/regulations');
+        const responseData = await api.get('/api/v1/fci/regulations');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -124,7 +135,7 @@ function FCIRegulationPosition (prevLocation) {
 
     const fetchPositions = async (fciSymbol, pageNumber) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/page/' + pageNumber + '/page_size/' + positionsPerPage);
+        const responseData = await api.get('/api/v1/fci/' + fciSymbol + '/position/page/' + pageNumber + '/page_size/' + positionsPerPage);
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -133,7 +144,7 @@ function FCIRegulationPosition (prevLocation) {
 
     const fetchTotalPositions = async (fciSymbol) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
+        const responseData = await api.get('/api/v1/fci/' + fciSymbol + '/position');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -142,7 +153,7 @@ function FCIRegulationPosition (prevLocation) {
 
     const fetchPositionsPerMonth = async (fciSymbol) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month/fci/' + fciSymbol);
+        const responseData = await api.get('/api/v1/summarize/positions-per-month/fci/' + fciSymbol);
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -151,7 +162,7 @@ function FCIRegulationPosition (prevLocation) {
 
     const fetchOldestPosition = async (fciSymbol) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/oldest');
+        const responseData = await api.get('/api/v1/fci/' + fciSymbol + '/position/oldest');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -205,8 +216,8 @@ function FCIRegulationPosition (prevLocation) {
     const fetchPositions = async (pageNumber) => {
       try {
         const responseData = searchFiltered? 
-        (await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + searchFromDateAfter + '/to/' + searchToDateAfter + '/page/' + pPage + '/page_size/' + positionsPerPage)) 
-        : (await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/page/' + pPage + '/page_size/' + positionsPerPage));
+        (await api.get('/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + searchFromDateAfter + '/to/' + searchToDateAfter + '/page/' + pPage + '/page_size/' + positionsPerPage)) 
+        : (await api.get('/api/v1/fci/' + selectedFCISymbol + '/position/page/' + pPage + '/page_size/' + positionsPerPage));
         return responseData.data;
       } catch (error) {
         console.error('#1 - Error receiving specieTypeAssociation:', error);
@@ -220,7 +231,7 @@ function FCIRegulationPosition (prevLocation) {
   const setFetchedData = async () => {
     const fetchPositionsPerMonth = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month/fci/' + selectedFCISymbol);
+        const responseData = await api.get('/api/v1/summarize/positions-per-month/fci/' + selectedFCISymbol);
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -242,7 +253,7 @@ function FCIRegulationPosition (prevLocation) {
   const fetchCreatedPosition = async () => {
     try {
       const body = "{\"position\":" + JSON.stringify(excelData, null, 1) + "}";
-      const response = await axios.post('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position', body,
+      const response = await api.post('/api/v1/fci/' + selectedFCISymbol + '/position', body,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -260,7 +271,7 @@ function FCIRegulationPosition (prevLocation) {
   const deletePosition = async (fciPositionId) => {
     const fetchPositionsPerMonth = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month/fci/' + selectedFCISymbol);
+        const responseData = await api.get('/api/v1/summarize/positions-per-month/fci/' + selectedFCISymbol);
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -280,7 +291,7 @@ function FCIRegulationPosition (prevLocation) {
 
   const fetchDeletedPosition = async (fciPositionId) => {
     try {
-      const response = await axios.delete('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + fciPositionId);
+      const response = await api.delete('/api/v1/fci/' + selectedFCISymbol + '/position/' + fciPositionId);
       return response.data;
     } catch (error) {
       console.error('Error sending data to the backend:', error);
@@ -303,7 +314,7 @@ function FCIRegulationPosition (prevLocation) {
    
     const fetchPositionsPerPage = async () => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/page/' + 0 + '/page_size/' + positionsPerPage);
+        const responseData = await api.get('/api/v1/fci/' + fciSymbol + '/position/page/' + 0 + '/page_size/' + positionsPerPage);
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -313,7 +324,7 @@ function FCIRegulationPosition (prevLocation) {
 
     const fetchPositionsPerMonth = async (fciSymbol) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/summarize/positions-per-month/fci/' + fciSymbol);
+        const responseData = await api.get('/api/v1/summarize/positions-per-month/fci/' + fciSymbol);
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -322,7 +333,7 @@ function FCIRegulationPosition (prevLocation) {
 
      const fetchTotalPositions = async (fciSymbol) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position');
+        const responseData = await api.get('/api/v1/fci/' + fciSymbol + '/position');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -331,7 +342,7 @@ function FCIRegulationPosition (prevLocation) {
 
     const fetchOldestPosition = async (fciSymbol) => {
       try {
-        const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/oldest');
+        const responseData = await api.get('/api/v1/fci/' + fciSymbol + '/position/oldest');
         return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -346,7 +357,6 @@ function FCIRegulationPosition (prevLocation) {
       if (tempLoadedPositionsPerPage && tempLoadedPositionsPerPage.length == 0) {
         setErrorMessage("» FCI [" + fciSymbol + "] has no positions informed");
         setShowToast(true);
-        setRegulationSymbol('');
       }  
       const tempLoadedOldestPostion = await fetchOldestPosition(fciSymbol);
       let totalPositions = tempLoadedPositionsPerMonth.reduce((accumulator, currentValue) => accumulator + currentValue.quantity, 0);
@@ -355,6 +365,7 @@ function FCIRegulationPosition (prevLocation) {
       setOldestPosition(tempLoadedOldestPostion);
       setTotalPositions(tempLoadedTotalPositions.length);
       setNoPositions(tempLoadedTotalPositions.length > 0);
+      setRegulationSymbol(fciSymbol);
     }
    setFetchedData();
   }  
@@ -393,8 +404,7 @@ function FCIRegulationPosition (prevLocation) {
   };
 
   const refreshPosition = (fciSymbol, positionId) => {
-    fetch('http://localhost:8098/api/v1/fci/' + fciSymbol + '/position/' + positionId + '/refresh', {
-      method: 'GET',
+    api.get('/api/v1/fci/' + fciSymbol + '/position/' + positionId + '/refresh', {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -437,10 +447,10 @@ function FCIRegulationPosition (prevLocation) {
     const fetchFilteredPosition = async () => {
       try {
         if (searchCurrentPositionId !== "") {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + searchCurrentPositionId + '/filtered');
+          const responseData = await api.get('/api/v1/fci/' + selectedFCISymbol + '/position/' + searchCurrentPositionId + '/filtered');
           return responseData.data;
         } else {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/page/' + 0 + '/page_size/' + positionsPerPage);
+          const responseData = await api.get('/api/v1/fci/' + selectedFCISymbol + '/position/page/' + 0 + '/page_size/' + positionsPerPage);
           return responseData.data;
         }
       } catch (error) {
@@ -501,7 +511,7 @@ function FCIRegulationPosition (prevLocation) {
 
     const fetchFilteredPosition = async (pageNumber) => {
       try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + fromDate + '/to/' + toDate + '/page/' + pageNumber + '/page_size/' + positionsPerPage);
+          const responseData = await api.get('/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + fromDate + '/to/' + toDate + '/page/' + pageNumber + '/page_size/' + positionsPerPage);
           return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -510,7 +520,7 @@ function FCIRegulationPosition (prevLocation) {
 
     const fetchTotalFilteredPosition = async () => {
       try {
-          const responseData = await axios.get('http://localhost:8098/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + fromDate + '/to/' + toDate + '/page/0');
+          const responseData = await api.get('/api/v1/fci/' + selectedFCISymbol + '/position/' + currentPositionIdInFilter + '/from/' + fromDate + '/to/' + toDate + '/page/0');
           return responseData.data;
       } catch (error) {
         console.error('Error sending data to the backend:', error);
@@ -559,6 +569,20 @@ function FCIRegulationPosition (prevLocation) {
   const splitOverview = (overview) => {
       return overview.split('Totals');
   }
+
+  const handleInputChange = (e) => {
+    const inputValue = e.target.value;
+    setRegulationSymbol(inputValue);
+  
+    const selectOptions = Array.from(selectRef.current.options);
+    for (let i = 0; i < selectOptions.length; i++) {
+      if (selectOptions[i].value.includes(inputValue)) {
+        selectRef.current.value = selectOptions[i].value;
+        setRegulationSymbol(selectOptions[i].value);
+        break;
+      }
+    }
+  };
 
   return (
     <>
@@ -633,7 +657,7 @@ function FCIRegulationPosition (prevLocation) {
                         <td width="35%" style={{ border: "none"}}>
                           <select className="text-medium-emphasis small"
                             onChange={(e) => selectFciSymbol(e.target.value)} style={{width: "100%"}}
-                            value={regulationSymbol}>
+                            value={regulationSymbol} ref={selectRef}>
                               {regulations?.map((regulation, index) => 
                                 <React.Fragment key={regulation.id || index} >
                                 <option
@@ -646,7 +670,7 @@ function FCIRegulationPosition (prevLocation) {
                         <td className="text-medium-emphasis small" style={{ border: "none"}} width="10%">Symbol</td>
                         <td width="16%" className="text-medium-emphasis small" style={{ border: "none"}}>
                           <input id="regulationSymbol" type="text" className="text-medium-emphasis small" style={{ width:"80%", height: "22px" }}
-                              onChange={(e) => setRegulationSymbol(e.target.value)}
+                              onChange={(e) => handleInputChange(e)}
                               value={regulationSymbol}/>
                         </td>
                         <td width="10%" style={{ border: "none"}}></td>

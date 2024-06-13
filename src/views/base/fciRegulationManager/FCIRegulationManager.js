@@ -83,6 +83,7 @@ function FCIRegulationManager() {
   const [specieTypePercentages, setSpecieTypePercentages] = useState({});
   const [checkboxStates, setCheckboxStates] = useState(Array(specieTypes.length).fill(false));
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [wasUpdatingRow, setWasUpdatingRow] = useState(false);
   const [isUpdatingRow, setIsUpdatingRow] = useState(false);
   const [regulationTitle, setRegulationTitle] = useState('');
   const [regulationLegend, setRegulationLegend] = useState('');
@@ -818,12 +819,15 @@ const newCanvasFields = () => {
   setRegulationTitle('FCI - Create a new Regulation Definition');
   setRegulationLegend(`Indicate symbol, name, description and composition in a new FCI Regulation including each specie type and its percentage for further reference`);
   setIsUpdatingRow(false);
-  fciRow.id = '';
-  fciRow.symbol = '';
-  fciRow.name = '';
-  fciRow.description = '';
-  putCompositionIntoSpecieTypesTable(null);
-  handleAddPercentage();
+  if (wasUpdatingRow) {
+    fciRow.id = '';
+    fciRow.symbol = '';
+    fciRow.name = '';
+    fciRow.description = '';
+    putCompositionIntoSpecieTypesTable(null);
+    handleAddPercentage();
+    setWasUpdatingRow(false);
+  }
   setFciPopup(true);
   return true;
 }
@@ -831,6 +835,7 @@ const newCanvasFields = () => {
 const editCanvasFields = async (row) => {
   if (row !== undefined) {
     setIsUpdatingRow(true);
+    setWasUpdatingRow(true);
     setRegulationTitle("FCI - " + row.fciSymbol + " - " + row.name + " - Edition ");  
     setRegulationLegend('Indicate symbol, name, description and composition in edited FCI - ' + row.fciSymbol + ' - ' + row.name + ' for further reference');
     fciRow.id = row.id;

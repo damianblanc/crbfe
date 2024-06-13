@@ -200,30 +200,35 @@ function SpecieTypeManager() {
   }
 
   const upsertSpecieToSpecieTypeAssociation = (specieTypeGroupName, specieTypeName, specieName) => {
-    const upsertSpecie = async (specieTypeGroupName, specieTypeName, specieName) => {
-      try {
-        const responseData = await api.get('/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/specie-type/' + specieTypeName + '/specie/' + specieName + '/bind');
-        return responseData.data;
-      } catch (error) {
-        console.error('#2 - Error upserting association:', error);
-        setUpdatedSpecie(false);
-      }
-    };
-
-    const upsertData = async (specieTypeGroupName, specieTypeName, specieName) => {
-      const upsertedSpecie = await upsertSpecie(specieTypeGroupName, specieTypeName, specieName);
-      setUpdatedSpecie(true);
-      setLastUpdatedSpecie(specieName);
-    
-      const updatedSpeciesList = species.map((specie) => {
-        if (specie.specieSymbol === specieName) {
-          return { ...specie, fciReferencedPositionQuantity: 0 };
+    const noSpacesStr = specieTypeName.replace(/\s/g, '');
+    if (noSpacesStr.length == 0) {
+       deleteSpecieTypeAssociation(specieTypeGroupName, specieName);
+    } else {
+      const upsertSpecie = async (specieTypeGroupName, specieTypeName, specieName) => {
+        try {
+          const responseData = await api.get('/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/specie-type/' + specieTypeName + '/specie/' + specieName + '/bind');
+          return responseData.data;
+        } catch (error) {
+          console.error('#2 - Error upserting association:', error);
+          setUpdatedSpecie(false);
         }
-        return specie;
-      });
-      setSpecies(updatedSpeciesList);
+      };
+
+      const upsertData = async (specieTypeGroupName, specieTypeName, specieName) => {
+        const upsertedSpecie = await upsertSpecie(specieTypeGroupName, specieTypeName, specieName);
+        setUpdatedSpecie(true);
+        setLastUpdatedSpecie(specieName);
+      
+        const updatedSpeciesList = species.map((specie) => {
+          if (specie.specieSymbol === specieName) {
+            return { ...specie, fciReferencedPositionQuantity: 0 };
+          }
+          return specie;
+        });
+        setSpecies(updatedSpeciesList);
+      }
+      upsertData(specieTypeGroupName, specieTypeName, specieName);
     }
-    upsertData(specieTypeGroupName, specieTypeName, specieName);
   }
 
   const validateNewSpecieTypeRow = (newSpecieType) => {
@@ -262,16 +267,17 @@ function SpecieTypeManager() {
     setNewSpecieType({ ...newSpecieType, fciSpecieTypeId: '', name: '', description: '', updatable: '' });
   })
 
-  const deleteSpecieTypeAssociation = () => {
-    const upsertSpecie = async (specieTypeGroupName, specieTypeName, specieName) => {
+  const deleteSpecieTypeAssociation = (specieTypeGroupName, specieName) => {
+    const deleteSpecie = async (specieTypeGroupName, specieName) => {
       try {
-        const responseData = await api.delete('/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/specie-type/' + specieTypeName + '/specie/' + specieName + '/bind');
+        const responseData = await api.delete('/api/v1/component/specie-type-group/' +  specieTypeGroupName + '/specie/' + specieName + '/bind');
         return responseData.data;
       } catch (error) {
         console.error('#2 - Error upserting association:', error);
         setUpdatedSpecie(false);
       }
     };
+    deleteSpecie(specieTypeGroupName, specieName);
   }
 
   const showToastMessage = (message) => {
@@ -444,7 +450,7 @@ function SpecieTypeManager() {
                           <CIcon icon={item.fciReferencedPositionQuantity === null ? cilInput : cilTransfer} size="xl"/>
                       </CButton>
                       <CButton className='text-medium-emphasis small' component="a" color="string" role="button" size='sm' 
-                        onClick={() => deleteSpecieTypeAssociation()}
+                        onClick={() => deleteSpecieTypeAssociation(currentGroup.name, item.specieSymbol)}
                         disabled={item.fciReferencedPositionQuantity > 0}>
                           <CIcon icon={cilTrash} size="xl"/>
                       </CButton>
